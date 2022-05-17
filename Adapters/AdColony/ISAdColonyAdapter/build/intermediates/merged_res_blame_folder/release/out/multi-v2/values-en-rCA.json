@@ -1,0 +1,34 @@
+{
+    "logs": [
+        {
+            "outputFile": "/Users/alond/workspace/iS-Mediation-Android/Adapters/AdColony/ISAdColonyAdapter/build/intermediates/res/merged/release/values-en-rCA/values-en-rCA.xml",
+            "map": [
+                {
+                    "source": "/Users/alond/.gradle/caches/transforms-2/files-2.1/da8568c619f922711a1db2b86e02ae74/core-1.2.0/res/values-en-rCA/values-en-rCA.xml",
+                    "from": {
+                        "startLines": "2",
+                        "startColumns": "4",
+                        "startOffsets": "55",
+                        "endColumns": "100",
+                        "endOffsets": "151"
+                    }
+                }
+            ]
+        },
+        {
+            "outputFile": "/Users/alond/workspace/iS-Mediation-Android/Adapters/AdColony/ISAdColonyAdapter/build/intermediates/incremental/mergeReleaseResources/merged.dir/values-en-rCA/values-en-rCA.xml",
+            "map": [
+                {
+                    "source": "/Users/alond/.gradle/caches/transforms-2/files-2.1/da8568c619f922711a1db2b86e02ae74/core-1.2.0/res/values-en-rCA/values-en-rCA.xml",
+                    "from": {
+                        "startLines": "2",
+                        "startColumns": "4",
+                        "startOffsets": "55",
+                        "endColumns": "100",
+                        "endOffsets": "151"
+                    }
+                }
+            ]
+        }
+    ]
+}

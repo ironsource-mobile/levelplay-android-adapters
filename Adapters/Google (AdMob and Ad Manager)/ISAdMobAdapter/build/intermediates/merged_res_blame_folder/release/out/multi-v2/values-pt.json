@@ -1,0 +1,34 @@
+{
+    "logs": [
+        {
+            "outputFile": "/Users/alond/workspace/iS-Mediation-Android/Adapters/Google (AdMob and Ad Manager)/ISAdMobAdapter/build/intermediates/incremental/mergeReleaseResources/merged.dir/values-pt/values-pt.xml",
+            "map": [
+                {
+                    "source": "/Users/alond/.gradle/caches/transforms-2/files-2.1/254f7b5172fe1f935aa2a178d9a33879/core-1.6.0/res/values-pt/values-pt.xml",
+                    "from": {
+                        "startLines": "2",
+                        "startColumns": "4",
+                        "startOffsets": "55",
+                        "endColumns": "100",
+                        "endOffsets": "151"
+                    }
+                }
+            ]
+        },
+        {
+            "outputFile": "/Users/alond/workspace/iS-Mediation-Android/Adapters/Google (AdMob and Ad Manager)/ISAdMobAdapter/build/intermediates/res/merged/release/values-pt/values-pt.xml",
+            "map": [
+                {
+                    "source": "/Users/alond/.gradle/caches/transforms-2/files-2.1/254f7b5172fe1f935aa2a178d9a33879/core-1.6.0/res/values-pt/values-pt.xml",
+                    "from": {
+                        "startLines": "2",
+                        "startColumns": "4",
+                        "startOffsets": "55",
+                        "endColumns": "100",
+                        "endOffsets": "151"
+                    }
+                }
+            ]
+        }
+    ]
+}
