@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- This template represents a native banner ad with a media view and no body text. -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="320dp"
+    android:layout_height="50dp"
+    android:orientation="horizontal">
+
+    <FrameLayout
+        android:id="@+id/native_icon_view"
+        style="@style/SmallIconView">
+
+        <ImageView
+            android:id="@+id/native_icon_image_view"
+            style="@style/SmallIconView"
+            tools:ignore="ContentDescription" />
+    </FrameLayout>
+
+    <FrameLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content">
+
+        <FrameLayout
+            android:id="@+id/native_media_content_view"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent" />
+
+        <LinearLayout
+            android:id="@+id/native_ad_content_linear_layout"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            tools:ignore="UselessParent">
+
+            <RelativeLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginHorizontal="2dp">
+
+                <TextView
+                    android:id="@+id/native_title_text_view"
+                    style="@style/com.applovin.mediation.nativeAds.MaxNativeAdView.SmallScrollingTitleTextView"
+                    android:layout_width="wrap_content"
+                    android:layout_alignParentStart="true"
+                    android:layout_alignParentLeft="true"
+                    android:layout_marginBottom="1dp"
+                    android:layout_toStartOf="@+id/options_view"
+                    android:layout_toLeftOf="@id/options_view"
+                    tools:text="TITLE_TEXT_VIEW" />
+
+                <FrameLayout
+                    android:id="@+id/options_view"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_alignParentEnd="true"
+                    android:layout_alignParentRight="true" />
+            </RelativeLayout>
+
+            <RelativeLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginHorizontal="2dp">
+
+                <TextView
+                    style="@style/com.applovin.mediation.nativeAds.MaxNativeAdView.SmallAdBadgeTextView"
+                    android:layout_alignParentStart="true"
+                    android:layout_alignParentLeft="true" />
+
+                <Button
+                    android:id="@+id/native_cta_button"
+                    style="@style/com.applovin.mediation.nativeAds.MaxNativeAdView.CTAButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="24dp"
+                    android:layout_alignParentEnd="true"
+                    android:layout_alignParentRight="true"
+                    android:layout_marginBottom="2dp"
+                    android:textSize="15sp"
+                    tools:ignore="RelativeOverlap"
+                    tools:text="CTA" />
+            </RelativeLayout>
+        </LinearLayout>
+    </FrameLayout>
+</LinearLayout>

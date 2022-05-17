@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- This template represents a standard native leader ad. -->
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="728dp"
+    android:layout_height="90dp">
+
+    <LinearLayout
+        android:id="@+id/native_leader_icon_and_text_layout"
+        android:layout_width="wrap_content"
+        android:layout_height="match_parent"
+        android:layout_alignParentStart="true"
+        android:layout_alignParentLeft="true"
+        android:layout_toStartOf="@+id/native_cta_button"
+        android:layout_toLeftOf="@id/native_cta_button"
+        android:orientation="horizontal">
+
+        <FrameLayout
+            android:id="@+id/native_icon_view"
+            style="@style/LargeIconView">
+
+            <ImageView
+                android:id="@+id/native_icon_image_view"
+                style="@style/LargeIconView"
+                tools:ignore="ContentDescription" />
+        </FrameLayout>
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:orientation="horizontal">
+
+            <FrameLayout
+                android:id="@+id/native_media_content_view"
+                android:layout_width="180dp"
+                android:layout_height="match_parent" />
+
+            <LinearLayout
+                android:id="@+id/native_ad_content_linear_layout"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_vertical"
+                android:layout_marginHorizontal="8dp"
+                android:orientation="vertical"
+                tools:ignore="UselessParent">
+
+                <RelativeLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content">
+
+                    <TextView
+                        android:id="@+id/native_title_text_view"
+                        style="@style/com.applovin.mediation.nativeAds.MaxNativeAdView.LargeScrollingTitleTextView"
+                        android:layout_alignParentStart="true"
+                        android:layout_alignParentLeft="true"
+                        android:layout_marginBottom="6dp"
+                        android:layout_toStartOf="@+id/options_view"
+                        android:layout_toLeftOf="@id/options_view"
+                        tools:text="TITLE_TEXT_VIEW" />
+
+                    <FrameLayout
+                        android:id="@+id/options_view"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_alignParentEnd="true"
+                        android:layout_alignParentRight="true" />
+                </RelativeLayout>
+
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal">
+
+                    <TextView style="@style/com.applovin.mediation.nativeAds.MaxNativeAdView.LargeAdBadgeTextView" />
+
+                    <TextView
+                        android:id="@+id/native_body_text_view"
+                        style="@style/com.applovin.mediation.nativeAds.MaxNativeAdView.LargeScrollingBodyTextView"
+                        tools:text="BODY_TEXT_VIEW" />
+                </LinearLayout>
+            </LinearLayout>
+        </LinearLayout>
+    </LinearLayout>
+
+    <Button
+        android:id="@+id/native_cta_button"
+        style="@style/com.applovin.mediation.nativeAds.MaxNativeAdView.CTAButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentEnd="true"
+        android:layout_alignParentRight="true"
+        android:layout_centerVertical="true"
+        android:layout_marginEnd="8dp"
+        android:layout_marginRight="8dp"
+        android:paddingHorizontal="8dp"
+        android:textSize="20sp"
+        tools:text="CTA" />
+</RelativeLayout>

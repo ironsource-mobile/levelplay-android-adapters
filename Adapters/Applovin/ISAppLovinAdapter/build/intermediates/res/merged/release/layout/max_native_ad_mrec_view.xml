@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- This template represents a standard native MREC ad. -->
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="300dp"
+    android:layout_height="250dp">
+
+    <include
+        android:id="@+id/native_icon_and_text_layout"
+        layout="@layout/max_native_ad_banner_icon_and_text_layout"
+        android:layout_width="match_parent"
+        android:layout_height="50dp"
+        android:layout_marginHorizontal="8dp"
+        android:layout_marginTop="4dp" />
+
+    <FrameLayout
+        android:id="@+id/native_media_content_view"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_above="@+id/native_cta_button"
+        android:layout_below="@+id/native_icon_and_text_layout"
+        android:layout_marginTop="4dp" />
+
+    <Button
+        android:id="@+id/native_cta_button"
+        style="@style/com.applovin.mediation.nativeAds.MaxNativeAdView.CTAButton"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:layout_marginHorizontal="8dp"
+        android:layout_marginTop="4dp"
+        android:layout_marginBottom="4dp"
+        android:textSize="17sp"
+        tools:text="CTA" />
+</RelativeLayout>

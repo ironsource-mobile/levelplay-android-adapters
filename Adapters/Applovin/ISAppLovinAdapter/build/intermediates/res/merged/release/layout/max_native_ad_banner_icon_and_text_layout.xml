@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="wrap_content"
+    android:layout_height="match_parent"
+    android:layout_alignParentStart="true"
+    android:layout_alignParentLeft="true"
+    android:layout_toStartOf="@+id/native_cta_button"
+    android:layout_toLeftOf="@id/native_cta_button"
+    android:orientation="horizontal">
+
+    <FrameLayout
+        android:id="@+id/native_icon_view"
+        style="@style/SmallIconView">
+
+        <ImageView
+            android:id="@+id/native_icon_image_view"
+            style="@style/SmallIconView"
+            tools:ignore="ContentDescription" />
+    </FrameLayout>
+
+    <LinearLayout
+        android:id="@+id/native_ad_content_linear_layout"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_vertical"
+        android:layout_marginHorizontal="4dp"
+        android:orientation="vertical">
+
+        <RelativeLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content">
+
+            <TextView
+                android:id="@+id/native_title_text_view"
+                style="@style/com.applovin.mediation.nativeAds.MaxNativeAdView.SmallScrollingTitleTextView"
+                android:layout_alignParentStart="true"
+                android:layout_alignParentLeft="true"
+                android:layout_marginBottom="1dp"
+                android:layout_toStartOf="@+id/options_view"
+                android:layout_toLeftOf="@id/options_view"
+                tools:text="TITLE_TEXT_VIEW" />
+
+            <FrameLayout
+                android:id="@+id/options_view"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignParentEnd="true"
+                android:layout_alignParentRight="true" />
+        </RelativeLayout>
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+
+            <TextView style="@style/com.applovin.mediation.nativeAds.MaxNativeAdView.SmallAdBadgeTextView" />
+
+            <TextView
+                android:id="@+id/native_body_text_view"
+                style="@style/com.applovin.mediation.nativeAds.MaxNativeAdView.SmallScrollingBodyTextView"
+                tools:text="BODY_TEXT_VIEW" />
+        </LinearLayout>
+    </LinearLayout>
+</LinearLayout>

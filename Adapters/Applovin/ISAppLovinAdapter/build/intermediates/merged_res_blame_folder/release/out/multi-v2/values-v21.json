@@ -1,0 +1,74 @@
+{
+    "logs": [
+        {
+            "outputFile": "/Users/alond/workspace/iS-Mediation-Android/Adapters/Applovin/ISAppLovinAdapter/build/intermediates/incremental/mergeReleaseResources/merged.dir/values-v21/values-v21.xml",
+            "map": [
+                {
+                    "source": "/Users/alond/.gradle/caches/transforms-2/files-2.1/865443292d5bd6672a6f14d2c1905e74/jetified-applovin-sdk-11.3.3/res/values-v21/values-v21.xml",
+                    "from": {
+                        "startLines": "2,8,11",
+                        "startColumns": "4,4,4",
+                        "startOffsets": "55,534,788",
+                        "endLines": "7,10,15",
+                        "endColumns": "12,12,12",
+                        "endOffsets": "529,783,1176"
+                    },
+                    "to": {
+                        "startLines": "18,24,27",
+                        "startColumns": "4,4,4",
+                        "startOffsets": "1360,1839,2093",
+                        "endLines": "23,26,31",
+                        "endColumns": "12,12,12",
+                        "endOffsets": "1834,2088,2481"
+                    }
+                },
+                {
+                    "source": "/Users/alond/.gradle/caches/transforms-2/files-2.1/5fbd07c6af180873c091cee69f2b869c/core-1.0.0/res/values-v21/values-v21.xml",
+                    "from": {
+                        "startLines": "2,3,4,5,6,7,8,9,10,13",
+                        "startColumns": "4,4,4,4,4,4,4,4,4,4",
+                        "startOffsets": "55,159,223,290,354,470,596,722,850,1022",
+                        "endLines": "2,3,4,5,6,7,8,9,12,17",
+                        "endColumns": "103,63,66,63,115,125,125,127,12,12",
+                        "endOffsets": "154,218,285,349,465,591,717,845,1017,1355"
+                    }
+                }
+            ]
+        },
+        {
+            "outputFile": "/Users/alond/workspace/iS-Mediation-Android/Adapters/Applovin/ISAppLovinAdapter/build/intermediates/res/merged/release/values-v21/values-v21.xml",
+            "map": [
+                {
+                    "source": "/Users/alond/.gradle/caches/transforms-2/files-2.1/865443292d5bd6672a6f14d2c1905e74/jetified-applovin-sdk-11.3.3/res/values-v21/values-v21.xml",
+                    "from": {
+                        "startLines": "2,8,11",
+                        "startColumns": "4,4,4",
+                        "startOffsets": "55,534,788",
+                        "endLines": "7,10,15",
+                        "endColumns": "12,12,12",
+                        "endOffsets": "529,783,1176"
+                    },
+                    "to": {
+                        "startLines": "18,24,27",
+                        "startColumns": "4,4,4",
+                        "startOffsets": "1360,1839,2093",
+                        "endLines": "23,26,31",
+                        "endColumns": "12,12,12",
+                        "endOffsets": "1834,2088,2481"
+                    }
+                },
+                {
+                    "source": "/Users/alond/.gradle/caches/transforms-2/files-2.1/5fbd07c6af180873c091cee69f2b869c/core-1.0.0/res/values-v21/values-v21.xml",
+                    "from": {
+                        "startLines": "2,3,4,5,6,7,8,9,10,13",
+                        "startColumns": "4,4,4,4,4,4,4,4,4,4",
+                        "startOffsets": "55,159,223,290,354,470,596,722,850,1022",
+                        "endLines": "2,3,4,5,6,7,8,9,12,17",
+                        "endColumns": "103,63,66,63,115,125,125,127,12,12",
+                        "endOffsets": "154,218,285,349,465,591,717,845,1017,1355"
+                    }
+                }
+            ]
+        }
+    ]
+}

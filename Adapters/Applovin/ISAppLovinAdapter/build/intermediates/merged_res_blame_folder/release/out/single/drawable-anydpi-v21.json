@@ -1,0 +1,22 @@
+[
+    {
+        "merged": "/Users/alond/workspace/iS-Mediation-Android/Adapters/Applovin/ISAppLovinAdapter/build/intermediates/res/merged/release/drawable-anydpi-v21/applovin_ic_check_mark_borderless.xml",
+        "source": "/Users/alond/.gradle/caches/transforms-2/files-2.1/865443292d5bd6672a6f14d2c1905e74/jetified-applovin-sdk-11.3.3/res/drawable-anydpi-v21/applovin_ic_check_mark_borderless.xml"
+    },
+    {
+        "merged": "/Users/alond/workspace/iS-Mediation-Android/Adapters/Applovin/ISAppLovinAdapter/build/intermediates/res/merged/release/drawable-anydpi-v21/applovin_ic_share.xml",
+        "source": "/Users/alond/.gradle/caches/transforms-2/files-2.1/865443292d5bd6672a6f14d2c1905e74/jetified-applovin-sdk-11.3.3/res/drawable-anydpi-v21/applovin_ic_share.xml"
+    },
+    {
+        "merged": "/Users/alond/workspace/iS-Mediation-Android/Adapters/Applovin/ISAppLovinAdapter/build/intermediates/res/merged/release/drawable-anydpi-v21/applovin_ic_check_mark_bordered.xml",
+        "source": "/Users/alond/.gradle/caches/transforms-2/files-2.1/865443292d5bd6672a6f14d2c1905e74/jetified-applovin-sdk-11.3.3/res/drawable-anydpi-v21/applovin_ic_check_mark_bordered.xml"
+    },
+    {
+        "merged": "/Users/alond/workspace/iS-Mediation-Android/Adapters/Applovin/ISAppLovinAdapter/build/intermediates/res/merged/release/drawable-anydpi-v21/applovin_ic_x_mark.xml",
+        "source": "/Users/alond/.gradle/caches/transforms-2/files-2.1/865443292d5bd6672a6f14d2c1905e74/jetified-applovin-sdk-11.3.3/res/drawable-anydpi-v21/applovin_ic_x_mark.xml"
+    },
+    {
+        "merged": "/Users/alond/workspace/iS-Mediation-Android/Adapters/Applovin/ISAppLovinAdapter/build/intermediates/res/merged/release/drawable-anydpi-v21/applovin_ic_disclosure_arrow.xml",
+        "source": "/Users/alond/.gradle/caches/transforms-2/files-2.1/865443292d5bd6672a6f14d2c1905e74/jetified-applovin-sdk-11.3.3/res/drawable-anydpi-v21/applovin_ic_disclosure_arrow.xml"
+    }
+]

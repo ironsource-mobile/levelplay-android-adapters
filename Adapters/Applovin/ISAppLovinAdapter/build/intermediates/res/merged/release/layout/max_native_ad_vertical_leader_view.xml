@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- This template represents a standard native vertical leader ad. -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="728dp"
+    android:layout_height="90dp">
+
+    <LinearLayout
+        android:id="@+id/inner_parent_layout"
+        android:layout_width="90dp"
+        android:layout_height="728dp"
+        android:gravity="center_vertical"
+        android:orientation="vertical"
+        android:rotation="270"
+        android:transformPivotX="45dp"
+        android:transformPivotY="45dp"
+        tools:ignore="UselessParent">
+
+        <FrameLayout
+            android:id="@+id/options_view"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center" />
+
+        <FrameLayout
+            android:id="@+id/native_icon_view"
+            style="@style/LargeIconView">
+
+            <ImageView
+                android:id="@+id/native_icon_image_view"
+                style="@style/LargeIconView"
+                tools:ignore="ContentDescription" />
+        </FrameLayout>
+
+        <FrameLayout
+            android:id="@+id/native_media_content_view"
+            style="@style/LargeIconView" />
+
+        <TextView
+            style="@style/com.applovin.mediation.nativeAds.MaxNativeAdView.LargeAdBadgeTextView"
+            android:layout_margin="4dp" />
+
+        <TextView
+            android:id="@+id/native_title_text_view"
+            style="@style/com.applovin.mediation.nativeAds.MaxNativeAdView.LargeVerticalTitleTextSize"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="8dp"
+            android:gravity="center"
+            android:paddingHorizontal="4dp"
+            tools:text="TITLE_TEXT_VIEW" />
+
+        <TextView
+            android:id="@+id/native_body_text_view"
+            style="@style/com.applovin.mediation.nativeAds.MaxNativeAdView.LargeVerticalBodyTextSize"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="8dp"
+            android:gravity="center"
+            android:paddingHorizontal="4dp"
+            tools:text="BODY_TEXT_VIEW" />
+
+        <Button
+            android:id="@+id/native_cta_button"
+            style="@style/com.applovin.mediation.nativeAds.MaxNativeAdView.CTAButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal"
+            android:layout_marginHorizontal="4dp"
+            android:layout_marginBottom="8dp"
+            android:minWidth="0dp"
+            android:minHeight="0dp"
+            android:padding="2dp"
+            android:singleLine="false"
+            android:textSize="20sp"
+            tools:text="CTA" />
+    </LinearLayout>
+</LinearLayout>
