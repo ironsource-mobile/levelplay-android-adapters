@@ -1,14 +1,14 @@
 [
     {
-        "merged": "/Users/alond/workspace/iS-Mediation-Android/Adapters/AdColony/ISAdColonyAdapter/build/intermediates/res/merged/release/color/common_google_signin_btn_text_light.xml",
-        "source": "/Users/alond/.gradle/caches/transforms-2/files-2.1/056c21e8e04aa1b429a8697dd7afac71/jetified-play-services-base-17.6.0/res/color/common_google_signin_btn_text_light.xml"
+        "merged": "/private/var/lib/jenkins/workspace/Upload-To-Open-Source-Git-Android/Adapters/AdColony/ISAdColonyAdapter/build/intermediates/res/merged/release/color/common_google_signin_btn_text_dark.xml",
+        "source": "/Users/jenkins/.gradle/caches/transforms-2/files-2.1/056c21e8e04aa1b429a8697dd7afac71/jetified-play-services-base-17.6.0/res/color/common_google_signin_btn_text_dark.xml"
     },
     {
-        "merged": "/Users/alond/workspace/iS-Mediation-Android/Adapters/AdColony/ISAdColonyAdapter/build/intermediates/res/merged/release/color/common_google_signin_btn_tint.xml",
-        "source": "/Users/alond/.gradle/caches/transforms-2/files-2.1/056c21e8e04aa1b429a8697dd7afac71/jetified-play-services-base-17.6.0/res/color/common_google_signin_btn_tint.xml"
+        "merged": "/private/var/lib/jenkins/workspace/Upload-To-Open-Source-Git-Android/Adapters/AdColony/ISAdColonyAdapter/build/intermediates/res/merged/release/color/common_google_signin_btn_text_light.xml",
+        "source": "/Users/jenkins/.gradle/caches/transforms-2/files-2.1/056c21e8e04aa1b429a8697dd7afac71/jetified-play-services-base-17.6.0/res/color/common_google_signin_btn_text_light.xml"
     },
     {
-        "merged": "/Users/alond/workspace/iS-Mediation-Android/Adapters/AdColony/ISAdColonyAdapter/build/intermediates/res/merged/release/color/common_google_signin_btn_text_dark.xml",
-        "source": "/Users/alond/.gradle/caches/transforms-2/files-2.1/056c21e8e04aa1b429a8697dd7afac71/jetified-play-services-base-17.6.0/res/color/common_google_signin_btn_text_dark.xml"
+        "merged": "/private/var/lib/jenkins/workspace/Upload-To-Open-Source-Git-Android/Adapters/AdColony/ISAdColonyAdapter/build/intermediates/res/merged/release/color/common_google_signin_btn_tint.xml",
+        "source": "/Users/jenkins/.gradle/caches/transforms-2/files-2.1/056c21e8e04aa1b429a8697dd7afac71/jetified-play-services-base-17.6.0/res/color/common_google_signin_btn_tint.xml"
     }
 ]

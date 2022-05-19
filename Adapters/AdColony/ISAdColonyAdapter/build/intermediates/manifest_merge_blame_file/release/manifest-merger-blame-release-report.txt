@@ -4,37 +4,37 @@
 4
 5    <uses-sdk
 6        android:minSdkVersion="16"
-6-->/Users/alond/workspace/iS-Mediation-Android/Adapters/AdColony/ISAdColonyAdapter/src/main/AndroidManifest.xml
+6-->/private/var/lib/jenkins/workspace/Upload-To-Open-Source-Git-Android/Adapters/AdColony/ISAdColonyAdapter/src/main/AndroidManifest.xml
 7        android:targetSdkVersion="30" />
-7-->/Users/alond/workspace/iS-Mediation-Android/Adapters/AdColony/ISAdColonyAdapter/src/main/AndroidManifest.xml
+7-->/private/var/lib/jenkins/workspace/Upload-To-Open-Source-Git-Android/Adapters/AdColony/ISAdColonyAdapter/src/main/AndroidManifest.xml
 8
 9    <uses-permission android:name="android.permission.INTERNET" />
-9-->/Users/alond/workspace/iS-Mediation-Android/Adapters/AdColony/ISAdColonyAdapter/src/main/AndroidManifest.xml:4:5-66
-9-->/Users/alond/workspace/iS-Mediation-Android/Adapters/AdColony/ISAdColonyAdapter/src/main/AndroidManifest.xml:4:22-64
+9-->/private/var/lib/jenkins/workspace/Upload-To-Open-Source-Git-Android/Adapters/AdColony/ISAdColonyAdapter/src/main/AndroidManifest.xml:4:5-66
+9-->/private/var/lib/jenkins/workspace/Upload-To-Open-Source-Git-Android/Adapters/AdColony/ISAdColonyAdapter/src/main/AndroidManifest.xml:4:22-64
 10    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
-10-->/Users/alond/workspace/iS-Mediation-Android/Adapters/AdColony/ISAdColonyAdapter/src/main/AndroidManifest.xml:5:5-78
-10-->/Users/alond/workspace/iS-Mediation-Android/Adapters/AdColony/ISAdColonyAdapter/src/main/AndroidManifest.xml:5:22-76
+10-->/private/var/lib/jenkins/workspace/Upload-To-Open-Source-Git-Android/Adapters/AdColony/ISAdColonyAdapter/src/main/AndroidManifest.xml:5:5-78
+10-->/private/var/lib/jenkins/workspace/Upload-To-Open-Source-Git-Android/Adapters/AdColony/ISAdColonyAdapter/src/main/AndroidManifest.xml:5:22-76
 11
 12    <application>
-12-->/Users/alond/workspace/iS-Mediation-Android/Adapters/AdColony/ISAdColonyAdapter/src/main/AndroidManifest.xml:7:5-19:19
+12-->/private/var/lib/jenkins/workspace/Upload-To-Open-Source-Git-Android/Adapters/AdColony/ISAdColonyAdapter/src/main/AndroidManifest.xml:7:5-19:19
 13
 14        <!-- AdColony -->
 15        <activity
-15-->/Users/alond/workspace/iS-Mediation-Android/Adapters/AdColony/ISAdColonyAdapter/src/main/AndroidManifest.xml:10:9-13:50
+15-->/private/var/lib/jenkins/workspace/Upload-To-Open-Source-Git-Android/Adapters/AdColony/ISAdColonyAdapter/src/main/AndroidManifest.xml:10:9-13:50
 16            android:name="com.adcolony.sdk.AdColonyInterstitialActivity"
-16-->/Users/alond/workspace/iS-Mediation-Android/Adapters/AdColony/ISAdColonyAdapter/src/main/AndroidManifest.xml:11:13-73
+16-->/private/var/lib/jenkins/workspace/Upload-To-Open-Source-Git-Android/Adapters/AdColony/ISAdColonyAdapter/src/main/AndroidManifest.xml:11:13-73
 17            android:configChanges="keyboardHidden|orientation|screenSize"
-17-->/Users/alond/workspace/iS-Mediation-Android/Adapters/AdColony/ISAdColonyAdapter/src/main/AndroidManifest.xml:12:13-74
+17-->/private/var/lib/jenkins/workspace/Upload-To-Open-Source-Git-Android/Adapters/AdColony/ISAdColonyAdapter/src/main/AndroidManifest.xml:12:13-74
 18            android:hardwareAccelerated="true" />
-18-->/Users/alond/workspace/iS-Mediation-Android/Adapters/AdColony/ISAdColonyAdapter/src/main/AndroidManifest.xml:13:13-47
+18-->/private/var/lib/jenkins/workspace/Upload-To-Open-Source-Git-Android/Adapters/AdColony/ISAdColonyAdapter/src/main/AndroidManifest.xml:13:13-47
 19        <activity
-19-->/Users/alond/workspace/iS-Mediation-Android/Adapters/AdColony/ISAdColonyAdapter/src/main/AndroidManifest.xml:14:9-17:50
+19-->/private/var/lib/jenkins/workspace/Upload-To-Open-Source-Git-Android/Adapters/AdColony/ISAdColonyAdapter/src/main/AndroidManifest.xml:14:9-17:50
 20            android:name="com.adcolony.sdk.AdColonyAdViewActivity"
-20-->/Users/alond/workspace/iS-Mediation-Android/Adapters/AdColony/ISAdColonyAdapter/src/main/AndroidManifest.xml:15:13-67
+20-->/private/var/lib/jenkins/workspace/Upload-To-Open-Source-Git-Android/Adapters/AdColony/ISAdColonyAdapter/src/main/AndroidManifest.xml:15:13-67
 21            android:configChanges="keyboardHidden|orientation|screenSize"
-21-->/Users/alond/workspace/iS-Mediation-Android/Adapters/AdColony/ISAdColonyAdapter/src/main/AndroidManifest.xml:16:13-74
+21-->/private/var/lib/jenkins/workspace/Upload-To-Open-Source-Git-Android/Adapters/AdColony/ISAdColonyAdapter/src/main/AndroidManifest.xml:16:13-74
 22            android:hardwareAccelerated="true" />
-22-->/Users/alond/workspace/iS-Mediation-Android/Adapters/AdColony/ISAdColonyAdapter/src/main/AndroidManifest.xml:17:13-47
+22-->/private/var/lib/jenkins/workspace/Upload-To-Open-Source-Git-Android/Adapters/AdColony/ISAdColonyAdapter/src/main/AndroidManifest.xml:17:13-47
 23    </application>
 24
 25</manifest>

@@ -5,7 +5,6 @@ import android.text.TextUtils;
 import android.view.Gravity;
 import android.widget.FrameLayout;
 
-
 import com.adcolony.sdk.AdColony;
 import com.adcolony.sdk.AdColonyAdOptions;
 import com.adcolony.sdk.AdColonyAdSize;
