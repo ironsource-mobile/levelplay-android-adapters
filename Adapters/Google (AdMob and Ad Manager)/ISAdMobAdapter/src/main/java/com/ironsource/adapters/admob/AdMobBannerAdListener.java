@@ -13,6 +13,7 @@ import com.ironsource.mediationsdk.utils.ErrorBuilder;
 
 import java.lang.ref.WeakReference;
 
+// AdMob banner listener
 public class AdMobBannerAdListener extends AdListener {
     // data
     private String mAdUnitId;
@@ -27,9 +28,9 @@ public class AdMobBannerAdListener extends AdListener {
         mAdView = adView;
     }
 
+    // ad finished loading
     @Override
-    // closed the ad that was open after a click
-    public void onAdClosed() {
+    public void onAdLoaded() {
         IronLog.ADAPTER_CALLBACK.verbose("adUnitId = " + mAdUnitId);
 
         if (mListener == null) {
@@ -37,21 +38,19 @@ public class AdMobBannerAdListener extends AdListener {
             return;
         }
 
-        mListener.onBannerAdScreenDismissed();
-    }
-
-    @Override
-    public void onAdClicked() {
-        IronLog.ADAPTER_CALLBACK.verbose("adUnitId = " + mAdUnitId);
-
-        if (mListener == null) {
-            IronLog.INTERNAL.verbose("listener is null");
+        if (mAdView == null) {
+            IronLog.INTERNAL.verbose("adView is null");
             return;
         }
 
-        mListener.onBannerAdClicked();
+        FrameLayout.LayoutParams layoutParams = new FrameLayout.LayoutParams(FrameLayout.LayoutParams.WRAP_CONTENT, FrameLayout.LayoutParams.WRAP_CONTENT);
+        layoutParams.gravity = Gravity.CENTER;
+        mListener.onBannerAdLoaded(mAdView, layoutParams);
+        mListener.onBannerAdShown();
+
     }
 
+    // ad request failed
     @Override
     public void onAdFailedToLoad(LoadAdError loadAdError) {
         IronLog.ADAPTER_CALLBACK.verbose("adUnitId = " + mAdUnitId);
@@ -86,8 +85,8 @@ public class AdMobBannerAdListener extends AdListener {
         mListener.onBannerAdLoadFailed(ironSourceErrorObject);
     }
 
+    //ad opened an overlay that covers the screen after a click
     @Override
-    //click banner + ad opened
     public void onAdOpened() {
         IronLog.ADAPTER_CALLBACK.verbose("adUnitId = " + mAdUnitId);
 
@@ -99,31 +98,33 @@ public class AdMobBannerAdListener extends AdListener {
         mListener.onBannerAdScreenPresented();
     }
 
-    //load success
+    //banner shown - removed adShown callback from here because sometimes, on reload, this callback is called before onAdLoaded
     @Override
-    public void onAdLoaded() {
+    public void onAdImpression() {
         IronLog.ADAPTER_CALLBACK.verbose("adUnitId = " + mAdUnitId);
+    }
 
+
+    // banner was clicked
+    @Override
+    public void onAdClicked() {
+        IronLog.ADAPTER_CALLBACK.verbose("adUnitId = " + mAdUnitId);
         if (mListener == null) {
             IronLog.INTERNAL.verbose("listener is null");
             return;
         }
+        mListener.onBannerAdClicked();
+    }
 
-        if (mAdView == null) {
-            IronLog.INTERNAL.verbose("adView is null");
+    // the user is about to return to the app after clicking on an ad.
+    @Override
+    public void onAdClosed() {
+        IronLog.ADAPTER_CALLBACK.verbose("adUnitId = " + mAdUnitId);
+        if (mListener == null) {
+            IronLog.INTERNAL.verbose("listener is null");
             return;
         }
-
-        FrameLayout.LayoutParams layoutParams = new FrameLayout.LayoutParams(FrameLayout.LayoutParams.WRAP_CONTENT, FrameLayout.LayoutParams.WRAP_CONTENT);
-        layoutParams.gravity = Gravity.CENTER;
-        mListener.onBannerAdLoaded(mAdView, layoutParams);
-        mListener.onBannerAdShown();
-
+        mListener.onBannerAdScreenDismissed();
     }
 
-    @Override
-    //banner shown - removed adShown callback from here because sometimes, on reload, this callback is called before onAdLoaded
-    public void onAdImpression() {
-        IronLog.ADAPTER_CALLBACK.verbose("adUnitId = " + mAdUnitId);
-    }
 }

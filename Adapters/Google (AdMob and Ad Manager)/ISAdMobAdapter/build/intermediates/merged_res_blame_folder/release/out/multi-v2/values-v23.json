@@ -1,10 +1,10 @@
 {
     "logs": [
         {
-            "outputFile": "/Users/alond/workspace/iS-Mediation-Android/Adapters/Google (AdMob and Ad Manager)/ISAdMobAdapter/build/intermediates/res/merged/release/values-v23/values-v23.xml",
+            "outputFile": "/private/var/lib/jenkins/workspace/Upload-To-Open-Source-Git-Android/Adapters/Google (AdMob and Ad Manager)/ISAdMobAdapter/build/intermediates/incremental/mergeReleaseResources/merged.dir/values-v23/values-v23.xml",
             "map": [
                 {
-                    "source": "/Users/alond/.gradle/caches/transforms-2/files-2.1/71dfb2c4e7229d54e7a49533553926db/work-runtime-2.7.0/res/values-v23/values-v23.xml",
+                    "source": "/Users/jenkins/.gradle/caches/transforms-2/files-2.1/71dfb2c4e7229d54e7a49533553926db/work-runtime-2.7.0/res/values-v23/values-v23.xml",
                     "from": {
                         "startLines": "2,3",
                         "startColumns": "4,4",
@@ -16,10 +16,10 @@
             ]
         },
         {
-            "outputFile": "/Users/alond/workspace/iS-Mediation-Android/Adapters/Google (AdMob and Ad Manager)/ISAdMobAdapter/build/intermediates/incremental/mergeReleaseResources/merged.dir/values-v23/values-v23.xml",
+            "outputFile": "/private/var/lib/jenkins/workspace/Upload-To-Open-Source-Git-Android/Adapters/Google (AdMob and Ad Manager)/ISAdMobAdapter/build/intermediates/res/merged/release/values-v23/values-v23.xml",
             "map": [
                 {
-                    "source": "/Users/alond/.gradle/caches/transforms-2/files-2.1/71dfb2c4e7229d54e7a49533553926db/work-runtime-2.7.0/res/values-v23/values-v23.xml",
+                    "source": "/Users/jenkins/.gradle/caches/transforms-2/files-2.1/71dfb2c4e7229d54e7a49533553926db/work-runtime-2.7.0/res/values-v23/values-v23.xml",
                     "from": {
                         "startLines": "2,3",
                         "startColumns": "4,4",

@@ -1,10 +1,10 @@
 {
     "logs": [
         {
-            "outputFile": "/Users/alond/workspace/iS-Mediation-Android/Adapters/Google (AdMob and Ad Manager)/ISAdMobAdapter/build/intermediates/incremental/mergeReleaseResources/merged.dir/values-am/values-am.xml",
+            "outputFile": "/private/var/lib/jenkins/workspace/Upload-To-Open-Source-Git-Android/Adapters/Google (AdMob and Ad Manager)/ISAdMobAdapter/build/intermediates/res/merged/release/values-am/values-am.xml",
             "map": [
                 {
-                    "source": "/Users/alond/.gradle/caches/transforms-2/files-2.1/056c21e8e04aa1b429a8697dd7afac71/jetified-play-services-base-17.6.0/res/values-am/values.xml",
+                    "source": "/Users/jenkins/.gradle/caches/transforms-2/files-2.1/056c21e8e04aa1b429a8697dd7afac71/jetified-play-services-base-17.6.0/res/values-am/values.xml",
                     "from": {
                         "startLines": "4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20",
                         "startColumns": "0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0",
@@ -21,24 +21,7 @@
                     }
                 },
                 {
-                    "source": "/Users/alond/.gradle/caches/transforms-2/files-2.1/254f7b5172fe1f935aa2a178d9a33879/core-1.6.0/res/values-am/values-am.xml",
-                    "from": {
-                        "startLines": "2",
-                        "startColumns": "4",
-                        "startOffsets": "55",
-                        "endColumns": "100",
-                        "endOffsets": "151"
-                    },
-                    "to": {
-                        "startLines": "34",
-                        "startColumns": "4",
-                        "startOffsets": "3518",
-                        "endColumns": "100",
-                        "endOffsets": "3614"
-                    }
-                },
-                {
-                    "source": "/Users/alond/.gradle/caches/transforms-2/files-2.1/f36b7e6b6681ed218058216b77c2716e/jetified-play-services-basement-17.6.0/res/values-am/values.xml",
+                    "source": "/Users/jenkins/.gradle/caches/transforms-2/files-2.1/f36b7e6b6681ed218058216b77c2716e/jetified-play-services-basement-17.6.0/res/values-am/values.xml",
                     "from": {
                         "startLines": "4",
                         "startColumns": "0",
@@ -55,7 +38,24 @@
                     }
                 },
                 {
-                    "source": "/Users/alond/.gradle/caches/transforms-2/files-2.1/5e3bab36f48aec2a59f5570b581d885b/jetified-play-services-ads-20.5.0/res/values-am/values.xml",
+                    "source": "/Users/jenkins/.gradle/caches/transforms-2/files-2.1/254f7b5172fe1f935aa2a178d9a33879/core-1.6.0/res/values-am/values-am.xml",
+                    "from": {
+                        "startLines": "2",
+                        "startColumns": "4",
+                        "startOffsets": "55",
+                        "endColumns": "100",
+                        "endOffsets": "151"
+                    },
+                    "to": {
+                        "startLines": "34",
+                        "startColumns": "4",
+                        "startOffsets": "3518",
+                        "endColumns": "100",
+                        "endOffsets": "3614"
+                    }
+                },
+                {
+                    "source": "/Users/jenkins/.gradle/caches/transforms-2/files-2.1/5e3bab36f48aec2a59f5570b581d885b/jetified-play-services-ads-20.5.0/res/values-am/values.xml",
                     "from": {
                         "startLines": "4,5,6,7,8,9,10,11,12,13,14,15,16,17",
                         "startColumns": "0,0,0,0,0,0,0,0,0,0,0,0,0,0",
@@ -74,10 +74,10 @@
             ]
         },
         {
-            "outputFile": "/Users/alond/workspace/iS-Mediation-Android/Adapters/Google (AdMob and Ad Manager)/ISAdMobAdapter/build/intermediates/res/merged/release/values-am/values-am.xml",
+            "outputFile": "/private/var/lib/jenkins/workspace/Upload-To-Open-Source-Git-Android/Adapters/Google (AdMob and Ad Manager)/ISAdMobAdapter/build/intermediates/incremental/mergeReleaseResources/merged.dir/values-am/values-am.xml",
             "map": [
                 {
-                    "source": "/Users/alond/.gradle/caches/transforms-2/files-2.1/056c21e8e04aa1b429a8697dd7afac71/jetified-play-services-base-17.6.0/res/values-am/values.xml",
+                    "source": "/Users/jenkins/.gradle/caches/transforms-2/files-2.1/056c21e8e04aa1b429a8697dd7afac71/jetified-play-services-base-17.6.0/res/values-am/values.xml",
                     "from": {
                         "startLines": "4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20",
                         "startColumns": "0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0",
@@ -94,24 +94,7 @@
                     }
                 },
                 {
-                    "source": "/Users/alond/.gradle/caches/transforms-2/files-2.1/254f7b5172fe1f935aa2a178d9a33879/core-1.6.0/res/values-am/values-am.xml",
-                    "from": {
-                        "startLines": "2",
-                        "startColumns": "4",
-                        "startOffsets": "55",
-                        "endColumns": "100",
-                        "endOffsets": "151"
-                    },
-                    "to": {
-                        "startLines": "34",
-                        "startColumns": "4",
-                        "startOffsets": "3518",
-                        "endColumns": "100",
-                        "endOffsets": "3614"
-                    }
-                },
-                {
-                    "source": "/Users/alond/.gradle/caches/transforms-2/files-2.1/f36b7e6b6681ed218058216b77c2716e/jetified-play-services-basement-17.6.0/res/values-am/values.xml",
+                    "source": "/Users/jenkins/.gradle/caches/transforms-2/files-2.1/f36b7e6b6681ed218058216b77c2716e/jetified-play-services-basement-17.6.0/res/values-am/values.xml",
                     "from": {
                         "startLines": "4",
                         "startColumns": "0",
@@ -128,7 +111,24 @@
                     }
                 },
                 {
-                    "source": "/Users/alond/.gradle/caches/transforms-2/files-2.1/5e3bab36f48aec2a59f5570b581d885b/jetified-play-services-ads-20.5.0/res/values-am/values.xml",
+                    "source": "/Users/jenkins/.gradle/caches/transforms-2/files-2.1/254f7b5172fe1f935aa2a178d9a33879/core-1.6.0/res/values-am/values-am.xml",
+                    "from": {
+                        "startLines": "2",
+                        "startColumns": "4",
+                        "startOffsets": "55",
+                        "endColumns": "100",
+                        "endOffsets": "151"
+                    },
+                    "to": {
+                        "startLines": "34",
+                        "startColumns": "4",
+                        "startOffsets": "3518",
+                        "endColumns": "100",
+                        "endOffsets": "3614"
+                    }
+                },
+                {
+                    "source": "/Users/jenkins/.gradle/caches/transforms-2/files-2.1/5e3bab36f48aec2a59f5570b581d885b/jetified-play-services-ads-20.5.0/res/values-am/values.xml",
                     "from": {
                         "startLines": "4,5,6,7,8,9,10,11,12,13,14,15,16,17",
                         "startColumns": "0,0,0,0,0,0,0,0,0,0,0,0,0,0",

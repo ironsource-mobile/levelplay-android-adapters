@@ -12,6 +12,7 @@ import org.jetbrains.annotations.NotNull;
 
 import java.lang.ref.WeakReference;
 
+// AdMob rewarded video show listener
 public class AdMobRewardedVideoAdShowListener extends FullScreenContentCallback implements OnUserEarnedRewardListener {
 
     // data
@@ -25,6 +26,20 @@ public class AdMobRewardedVideoAdShowListener extends FullScreenContentCallback 
         mAdUnitId = adUnitId;
     }
 
+    // Called when fullscreen content is shown.
+    @Override
+    public void onAdShowedFullScreenContent() {
+        IronLog.ADAPTER_CALLBACK.verbose("adUnitId = " + mAdUnitId);
+
+        if (mListener == null) {
+            IronLog.INTERNAL.verbose("listener is null");
+            return;
+        }
+
+        mListener.onRewardedVideoAdOpened();
+    }
+
+    // Called when fullscreen content failed to show.
     @Override
     public void onAdFailedToShowFullScreenContent(@NotNull AdError adError) {
         IronLog.ADAPTER_CALLBACK.verbose("adUnitId = " + mAdUnitId);
@@ -50,42 +65,7 @@ public class AdMobRewardedVideoAdShowListener extends FullScreenContentCallback 
         mListener.onRewardedVideoAdShowFailed(new IronSourceError(errorCode, mAdapter.get().getProviderName() + "onRewardedAdFailedToShow " + mAdUnitId + " " + adapterError));
     }
 
-    @Override
-    public void onAdShowedFullScreenContent() {
-        IronLog.ADAPTER_CALLBACK.verbose("adUnitId = " + mAdUnitId);
-
-        if (mListener == null) {
-            IronLog.INTERNAL.verbose("listener is null");
-            return;
-        }
-
-        mListener.onRewardedVideoAdOpened();
-    }
-
-    @Override
-    public void onAdClicked() {
-        IronLog.ADAPTER_CALLBACK.verbose("adUnitId = " + mAdUnitId);
-
-        if (mListener == null) {
-            IronLog.INTERNAL.verbose("listener is null");
-            return;
-        }
-
-        mListener.onRewardedVideoAdClicked();
-    }
-
-    @Override
-    public void onAdDismissedFullScreenContent() {
-        IronLog.ADAPTER_CALLBACK.verbose("adUnitId = " + mAdUnitId);
-
-        if (mListener == null) {
-            IronLog.INTERNAL.verbose("listener is null");
-            return;
-        }
-
-        mListener.onRewardedVideoAdClosed();
-    }
-
+    // Called when impression is recorded for the ad
     @Override
     public void onAdImpression() {
         IronLog.ADAPTER_CALLBACK.verbose("adUnitId = " + mAdUnitId);
@@ -98,6 +78,20 @@ public class AdMobRewardedVideoAdShowListener extends FullScreenContentCallback 
         mListener.onRewardedVideoAdStarted();
     }
 
+    // Called when an ad was clicked
+    @Override
+    public void onAdClicked() {
+        IronLog.ADAPTER_CALLBACK.verbose("adUnitId = " + mAdUnitId);
+
+        if (mListener == null) {
+            IronLog.INTERNAL.verbose("listener is null");
+            return;
+        }
+
+        mListener.onRewardedVideoAdClicked();
+    }
+
+    // Called when a reward was earned
     @Override
     public void onUserEarnedReward(@NotNull RewardItem rewardItem) {
         IronLog.ADAPTER_CALLBACK.verbose("adUnitId = " + mAdUnitId);
@@ -109,4 +103,19 @@ public class AdMobRewardedVideoAdShowListener extends FullScreenContentCallback 
 
         mListener.onRewardedVideoAdRewarded();
     }
+
+    // Called when fullscreen content is dismissed.
+    @Override
+    public void onAdDismissedFullScreenContent() {
+        IronLog.ADAPTER_CALLBACK.verbose("adUnitId = " + mAdUnitId);
+
+        if (mListener == null) {
+            IronLog.INTERNAL.verbose("listener is null");
+            return;
+        }
+
+        mListener.onRewardedVideoAdClosed();
+    }
+
+
 }

@@ -10,6 +10,7 @@ import org.jetbrains.annotations.NotNull;
 
 import java.lang.ref.WeakReference;
 
+// AdMob interstitial show listener
 public class AdMobInterstitialAdShowListener extends FullScreenContentCallback {
     // data
     private String mAdUnitId;
@@ -22,6 +23,21 @@ public class AdMobInterstitialAdShowListener extends FullScreenContentCallback {
         mAdUnitId = adUnitId;
     }
 
+    // Called when fullscreen content is shown.
+    @Override
+    public void onAdShowedFullScreenContent() {
+        IronLog.ADAPTER_CALLBACK.verbose("adUnitId = " + mAdUnitId);
+
+        if (mListener == null) {
+            IronLog.INTERNAL.verbose("listener is null");
+            return;
+        }
+
+        mListener.onInterstitialAdOpened();
+    }
+
+
+    // Called when fullscreen content failed to show.
     @Override
     public void onAdFailedToShowFullScreenContent(@NotNull AdError adError) {
         IronLog.ADAPTER_CALLBACK.verbose("adUnitId = " + mAdUnitId);
@@ -46,8 +62,9 @@ public class AdMobInterstitialAdShowListener extends FullScreenContentCallback {
         mListener.onInterstitialAdShowFailed(new IronSourceError(errorCode, mAdapter.get().getProviderName() + "onInterstitialAdShowFailed " + mAdUnitId + " " + adapterError));
     }
 
+    // Called when impression is recorded for the ad
     @Override
-    public void onAdShowedFullScreenContent() {
+    public void onAdImpression() {
         IronLog.ADAPTER_CALLBACK.verbose("adUnitId = " + mAdUnitId);
 
         if (mListener == null) {
@@ -55,9 +72,10 @@ public class AdMobInterstitialAdShowListener extends FullScreenContentCallback {
             return;
         }
 
-        mListener.onInterstitialAdOpened();
+        mListener.onInterstitialAdShowSucceeded();
     }
 
+    // Called when an ad was clicked
     @Override
     public void onAdClicked() {
         IronLog.ADAPTER_CALLBACK.verbose("adUnitId = " + mAdUnitId);
@@ -70,6 +88,7 @@ public class AdMobInterstitialAdShowListener extends FullScreenContentCallback {
         mListener.onInterstitialAdClicked();
     }
 
+    // Called when fullscreen content is dismissed.
     @Override
     public void onAdDismissedFullScreenContent() {
         IronLog.ADAPTER_CALLBACK.verbose("adUnitId = " + mAdUnitId);
@@ -82,15 +101,5 @@ public class AdMobInterstitialAdShowListener extends FullScreenContentCallback {
         mListener.onInterstitialAdClosed();
     }
 
-    @Override
-    public void onAdImpression() {
-        IronLog.ADAPTER_CALLBACK.verbose("adUnitId = " + mAdUnitId);
 
-        if (mListener == null) {
-            IronLog.INTERNAL.verbose("listener is null");
-            return;
-        }
-
-        mListener.onInterstitialAdShowSucceeded();
-    }
 }

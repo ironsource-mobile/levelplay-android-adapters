@@ -11,6 +11,7 @@ import org.jetbrains.annotations.NotNull;
 
 import java.lang.ref.WeakReference;
 
+// AdMob rewarded video load listener
 public class AdMobRewardedVideoAdLoadListener extends RewardedAdLoadCallback {
 
     // data
@@ -24,6 +25,7 @@ public class AdMobRewardedVideoAdLoadListener extends RewardedAdLoadCallback {
         mListener = listener;
     }
 
+    //rewarded video ad was loaded
     @Override
     public void onAdLoaded(@NotNull RewardedAd rewardedAd) {
         IronLog.ADAPTER_CALLBACK.verbose("adUnitId = " + mAdUnitId);
@@ -38,7 +40,8 @@ public class AdMobRewardedVideoAdLoadListener extends RewardedAdLoadCallback {
             return;
         }
 
-        mAdapter.get().mAdIdToRewardedVideoAd.put(mAdUnitId, rewardedAd);
+        //add rewarded ad to maps
+        mAdapter.get().mAdUnitIdToRewardedVideoAd.put(mAdUnitId, rewardedAd);
         mAdapter.get().mRewardedVideoAdsAvailability.put(mAdUnitId, true);
 
         mListener.onRewardedVideoAvailabilityChanged(true);
@@ -46,6 +49,7 @@ public class AdMobRewardedVideoAdLoadListener extends RewardedAdLoadCallback {
 
     }
 
+    //rewarded video ad failed to load
     @Override
     public void onAdFailedToLoad(@NotNull LoadAdError loadAdError) {
         IronLog.ADAPTER_CALLBACK.verbose("adUnitId = " + mAdUnitId);
@@ -68,6 +72,7 @@ public class AdMobRewardedVideoAdLoadListener extends RewardedAdLoadCallback {
 
         IronLog.ADAPTER_CALLBACK.error("adapterError = " + adapterError);
 
+        //check if error is no fill error
         if (mAdapter.get().isNoFillError(errorCode)) {
             errorCode = IronSourceError.ERROR_RV_LOAD_NO_FILL;
             adapterError = "No Fill";
