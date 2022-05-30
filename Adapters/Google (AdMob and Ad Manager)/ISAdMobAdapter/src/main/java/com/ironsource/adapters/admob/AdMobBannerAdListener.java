@@ -85,19 +85,6 @@ public class AdMobBannerAdListener extends AdListener {
         mListener.onBannerAdLoadFailed(ironSourceErrorObject);
     }
 
-    //ad opened an overlay that covers the screen after a click
-    @Override
-    public void onAdOpened() {
-        IronLog.ADAPTER_CALLBACK.verbose("adUnitId = " + mAdUnitId);
-
-        if (mListener == null) {
-            IronLog.INTERNAL.verbose("listener is null");
-            return;
-        }
-
-        mListener.onBannerAdScreenPresented();
-    }
-
     //banner shown - removed adShown callback from here because sometimes, on reload, this callback is called before onAdLoaded
     @Override
     public void onAdImpression() {
@@ -114,6 +101,19 @@ public class AdMobBannerAdListener extends AdListener {
             return;
         }
         mListener.onBannerAdClicked();
+    }
+
+    //ad opened an overlay that covers the screen after a click
+    @Override
+    public void onAdOpened() {
+        IronLog.ADAPTER_CALLBACK.verbose("adUnitId = " + mAdUnitId);
+
+        if (mListener == null) {
+            IronLog.INTERNAL.verbose("listener is null");
+            return;
+        }
+
+        mListener.onBannerAdScreenPresented();
     }
 
     // the user is about to return to the app after clicking on an ad.

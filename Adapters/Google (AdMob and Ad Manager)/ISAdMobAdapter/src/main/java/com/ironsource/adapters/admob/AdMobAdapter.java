@@ -166,6 +166,10 @@ public class AdMobAdapter extends AbstractAdapter implements INetworkInitCallbac
     //get network sdk version
     @Override
     public String getCoreSDKVersion() {
+        return getAdapterSDKVersion();
+    }
+
+    public static String getAdapterSDKVersion() {
         return CORE_SDK_VERSION;
     }
     //endregion
@@ -552,6 +556,7 @@ public class AdMobAdapter extends AbstractAdapter implements INetworkInitCallbac
 
         if (banner == null) {
             IronLog.ADAPTER_API.error("banner is null");
+            listener.onBannerAdLoadFailed(ErrorBuilder.buildNoConfigurationAvailableError("banner is null"));
             return;
         }
 
@@ -592,23 +597,7 @@ public class AdMobAdapter extends AbstractAdapter implements INetworkInitCallbac
     @Override
     public void reloadBanner(final IronSourceBannerLayout banner, final JSONObject config,
                              final BannerSmashListener listener) {
-        final String adUnitId = config.optString(AD_UNIT_ID);
-        IronLog.ADAPTER_API.verbose("adUnitId = " + adUnitId);
-        postOnUIThread(new Runnable() {
-            @Override
-            public void run() {
-                if (mAdUnitIdToBannerAd.get(config.optString(AD_UNIT_ID)) != null) {
-                    AdRequest adRequest = createAdRequest();
-                    AdView banner = mAdUnitIdToBannerAd.get(config.optString(AD_UNIT_ID));
-                    if (banner != null) {
-                        banner.loadAd(adRequest);
-                    } else if (mAdUnitIdToBannerListener.containsKey(adUnitId)) {
-                        String msg = "reloadBanner missing banner " + adUnitId;
-                        listener.onBannerAdLoadFailed(ErrorBuilder.buildLoadFailedError(IronSourceConstants.BANNER_AD_UNIT, getProviderName(), msg));
-                    }
-                }
-            }
-        });
+        IronLog.INTERNAL.warning("Unsupported method");
     }
 
     // destroy banner ad and clear banner ad map
