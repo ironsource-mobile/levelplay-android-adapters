@@ -1,0 +1,73 @@
+apply plugin: 'com.android.library'
+
+ext {
+    adapterVersion = '4.3.12'
+}
+
+def getGitHash = { ->
+    def stdout = new ByteArrayOutputStream()
+    exec {
+        commandLine 'git', 'rev-parse', '--short', 'HEAD'
+        standardOutput = stdout
+    }
+    return stdout.toString().trim()
+}
+
+repositories {
+    maven {
+        url 'https://android-sdk.is.com/'
+    }
+}
+
+android {
+    compileSdkVersion 30
+    buildToolsVersion "30.0.3"
+
+    defaultConfig {
+        minSdkVersion 16
+        targetSdkVersion 30
+        versionCode 1
+        versionName adapterVersion
+        buildConfigField "String", "GitHash", "\"${getGitHash()}\""
+        buildConfigField("String","VERSION_NAME","\"${defaultConfig.versionName}\"")
+    }
+    buildTypes {
+        debug{
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+        }
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+        }
+    }
+
+    packagingOptions {
+        exclude 'META-INF/**'
+    }
+}
+
+ dependencies {
+    implementation 'com.ironsource.sdk:mediationsdk:7.2.2.1'
+    implementation 'com.adcolony:sdk:4.7.1'
+
+}
+
+task sourcesJar(type: Jar) {
+    archiveClassifier = 'sources'
+    from android.sourceSets.main.java.srcDirs
+    exclude 'META-INF.com.android.build.gradle.aar-metadata.properties'
+}
+
+task createAAR(type: Copy,group:'buildTasks') {
+
+    dependsOn (":${project.name}:assembleRelease")
+    from "build/outputs/aar"
+    into '../ReleaseCandidates/'
+    include '*.aar'
+    rename { String fileName ->
+        fileName.replace('release', adapterVersion)
+    }
+}
+
+
