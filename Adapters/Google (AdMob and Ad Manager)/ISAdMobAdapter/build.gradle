@@ -29,6 +29,7 @@ android {
         versionCode 1
         versionName adapterVersion
         buildConfigField "String", "GitHash", "\"${getGitHash()}\""
+        buildConfigField "String", "VERSION_NAME", "\"${defaultConfig.versionName}\""
     }
     buildTypes {
         debug{
