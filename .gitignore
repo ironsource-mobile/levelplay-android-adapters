@@ -29,3 +29,4 @@ hs_err_pid*
 *.iml
 *.idea
 *.log
+Adapters/Google (AdMob and Ad Manager)/ISAdMobAdapter/build/*

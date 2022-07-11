@@ -62,9 +62,6 @@ public class AdMobAdapter extends AbstractAdapter implements INetworkInitCallbac
     private static final String GitHash = BuildConfig.GitHash;
     private final String AD_UNIT_ID = "adUnitId";
 
-    //network version
-    private static final String CORE_SDK_VERSION = "20.6.0";
-
     // Init configuration flags
     private final String NETWORK_ONLY_INIT = "networkOnlyInit";
     private final String INIT_RESPONSE_REQUIRED = "initResponseRequired";
@@ -170,7 +167,7 @@ public class AdMobAdapter extends AbstractAdapter implements INetworkInitCallbac
     }
 
     public static String getAdapterSDKVersion() {
-        return CORE_SDK_VERSION;
+        return MobileAds.getVersion().toString();
     }
     //endregion
 
