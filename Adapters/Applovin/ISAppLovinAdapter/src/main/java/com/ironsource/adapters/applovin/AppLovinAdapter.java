@@ -147,7 +147,7 @@ class AppLovinAdapter extends AbstractAdapter implements INetworkInitCallbackLis
     public static String getAdapterSDKVersion() {
         return AppLovinSdk.VERSION;
     }
-        //endregion
+    //endregion
 
     //region Initializations Methods And Callbacks
     private void initSdk(final String sdkKey, String userId) {
@@ -157,7 +157,6 @@ class AppLovinAdapter extends AbstractAdapter implements INetworkInitCallbackLis
         }
 
         if (mWasInitCalled.compareAndSet(false, true)) {
-
             mInitState = InitState.INIT_STATE_IN_PROGRESS;
 
             // get sdk setting
@@ -255,8 +254,8 @@ class AppLovinAdapter extends AbstractAdapter implements INetworkInitCallbackLis
 
         // verify sdk key
         if (TextUtils.isEmpty(sdkKey)) {
-            IronLog.ADAPTER_API.error("sdkKey is empty");
-            listener.onRewardedVideoInitFailed(ErrorBuilder.buildInitFailedError("Missing params: " + SDK_KEY, IronSourceConstants.REWARDED_VIDEO_AD_UNIT));
+            IronLog.INTERNAL.error("error - missing param = " + SDK_KEY);
+            listener.onRewardedVideoInitFailed(ErrorBuilder.buildInitFailedError("Missing params - " + SDK_KEY, IronSourceConstants.REWARDED_VIDEO_AD_UNIT));
             return;
         }
 
@@ -270,8 +269,7 @@ class AppLovinAdapter extends AbstractAdapter implements INetworkInitCallbackLis
         // check AppLovin sdk init state
         switch (mInitState) {
             case INIT_STATE_NONE:
-            case INIT_STATE_IN_PROGRESS:
-            {
+            case INIT_STATE_IN_PROGRESS: {
                 postOnUIThread(new Runnable() {
                     @Override
                     public void run() {
@@ -294,6 +292,7 @@ class AppLovinAdapter extends AbstractAdapter implements INetworkInitCallbackLis
 
         // verify sdk key
         if (TextUtils.isEmpty(sdkKey)) {
+            IronLog.INTERNAL.error("error - missing param = " + SDK_KEY);
             listener.onRewardedVideoAvailabilityChanged(false);
             return;
         }
@@ -306,8 +305,8 @@ class AppLovinAdapter extends AbstractAdapter implements INetworkInitCallbackLis
         // check AppLovin sdk init state
         switch (mInitState) {
             case INIT_STATE_NONE:
-            case INIT_STATE_IN_PROGRESS:
-            {                postOnUIThread(new Runnable() {
+            case INIT_STATE_IN_PROGRESS: {
+                postOnUIThread(new Runnable() {
                     @Override
                     public void run() {
                         initSdk(sdkKey, userId);
@@ -400,8 +399,8 @@ class AppLovinAdapter extends AbstractAdapter implements INetworkInitCallbackLis
 
         // verify sdk key
         if (TextUtils.isEmpty(sdkKey)) {
-            IronLog.ADAPTER_API.error("sdkKey is empty");
-            listener.onInterstitialInitFailed(ErrorBuilder.buildInitFailedError("Missing params: " + SDK_KEY, IronSourceConstants.INTERSTITIAL_AD_UNIT));
+            IronLog.INTERNAL.error("error - missing param = " + SDK_KEY);
+            listener.onInterstitialInitFailed(ErrorBuilder.buildInitFailedError("Missing params - " + SDK_KEY, IronSourceConstants.INTERSTITIAL_AD_UNIT));
             return;
         }
 
@@ -497,7 +496,8 @@ class AppLovinAdapter extends AbstractAdapter implements INetworkInitCallbackLis
 
         // verify sdk key
         if (TextUtils.isEmpty(sdkKey)) {
-            listener.onBannerInitFailed(ErrorBuilder.buildInitFailedError("Missing params: " + SDK_KEY, IronSourceConstants.BANNER_AD_UNIT));
+            IronLog.INTERNAL.error("error - missing param = " + SDK_KEY);
+            listener.onBannerInitFailed(ErrorBuilder.buildInitFailedError("Missing params - " + SDK_KEY, IronSourceConstants.BANNER_AD_UNIT));
             return;
         }
 
@@ -509,8 +509,7 @@ class AppLovinAdapter extends AbstractAdapter implements INetworkInitCallbackLis
         //check AppLovin sdk init state
         switch (mInitState) {
             case INIT_STATE_NONE:
-            case INIT_STATE_IN_PROGRESS:
-            {
+            case INIT_STATE_IN_PROGRESS: {
                 postOnUIThread(new Runnable() {
                     @Override
                     public void run() {
@@ -604,21 +603,18 @@ class AppLovinAdapter extends AbstractAdapter implements INetworkInitCallbackLis
     @Override
     public void releaseMemory(IronSource.AD_UNIT adUnit, JSONObject config) {
         if (adUnit == IronSource.AD_UNIT.REWARDED_VIDEO) {
-            IronLog.INTERNAL.verbose("cleaning rewarded video memory");
             mZoneIdToAppLovinRewardedVideoListener.clear();
             mZoneIdToRewardedVideoAd.clear();
             mZoneIdToRewardedVideoSmashListener.clear();
             mRewardedVideoZoneIdsForInitCallbacks.clear();
 
         } else if (adUnit == IronSource.AD_UNIT.INTERSTITIAL) {
-            IronLog.INTERNAL.verbose("cleaning interstitial memory");
             mZoneIdToAppLovinInterstitialListener.clear();
             mZoneIdToInterstitialAdReadyStatus.clear();
             mZoneIdToInterstitialAd.clear();
             mZoneIdToInterstitialSmashListener.clear();
 
         } else if (adUnit == IronSource.AD_UNIT.BANNER) {
-            IronLog.INTERNAL.verbose("cleaning banner memory");
             postOnUIThread(new Runnable() {
                 @Override
                 public void run() {
@@ -653,6 +649,7 @@ class AppLovinAdapter extends AbstractAdapter implements INetworkInitCallbackLis
             return;
         }
 
+        // this is a list of 1 value
         String value = values.get(0);
         IronLog.ADAPTER_API.verbose("key = " + key + ", value = " + value);
 
@@ -672,7 +669,6 @@ class AppLovinAdapter extends AbstractAdapter implements INetworkInitCallbackLis
             AppLovinPrivacySettings.setIsAgeRestrictedUser(value, ContextProvider.getInstance().getApplicationContext());
         }
     }
-
 
     // This method checks if the Meta Data key is the age restriction key and the value is valid
     static public boolean isAgeRestrictionMetaData(String key, String value) {
@@ -776,7 +772,6 @@ class AppLovinAdapter extends AbstractAdapter implements INetworkInitCallbackLis
     }
 
     //endregion
-
 }
 
 
