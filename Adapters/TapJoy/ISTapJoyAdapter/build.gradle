@@ -35,6 +35,7 @@ android {
         buildConfigField "String", "GitHash", "\"${getGitHash()}\""
         buildConfigField("String","VERSION_NAME","\"${defaultConfig.versionName}\"")
     }
+    
     buildTypes {
         debug{
             minifyEnabled false
