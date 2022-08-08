@@ -59,7 +59,6 @@ class UnityAdsAdapter extends AbstractAdapter implements IUnityAdsInitialization
     private static final String VERSION = BuildConfig.VERSION_NAME;
     private static final String GitHash = BuildConfig.GitHash;
 
-
     // UnityAds keys
     private final String GAME_ID = "sourceId";
     private final String PLACEMENT_ID = "zoneId";
