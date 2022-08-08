@@ -12,7 +12,6 @@ import com.unity3d.ads.UnityAds;
 import java.lang.ref.WeakReference;
 
 final class UnityAdsRewardedVideoListener implements IUnityAdsLoadListener, IUnityAdsShowListener {
-
     // data
     private String mPlacementId;
     private RewardedVideoSmashListener mListener;

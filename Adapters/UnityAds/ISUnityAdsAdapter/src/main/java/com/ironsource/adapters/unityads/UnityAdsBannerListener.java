@@ -11,7 +11,6 @@ import com.unity3d.services.banners.BannerView;
 import java.lang.ref.WeakReference;
 
 final class UnityAdsBannerListener implements BannerView.IListener {
-
     // data
     private String mPlacementId;
     private BannerSmashListener mListener;

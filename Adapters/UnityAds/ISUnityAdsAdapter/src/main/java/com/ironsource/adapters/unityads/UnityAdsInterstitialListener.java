@@ -12,7 +12,6 @@ import com.unity3d.ads.UnityAds;
 import java.lang.ref.WeakReference;
 
 final class UnityAdsInterstitialListener implements IUnityAdsLoadListener, IUnityAdsShowListener {
-
     // data
     private String mPlacementId;
     private InterstitialSmashListener mListener;
