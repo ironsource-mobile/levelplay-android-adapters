@@ -15,7 +15,6 @@
 #-keepclassmembers class fqcn.of.javascript.interface.for.webview {
 #   public *;
 #}
-
 -dontwarn com.facebook.ads.internal.**
 -keeppackagenames com.facebook.*
 -keep public class com.facebook.ads.** {

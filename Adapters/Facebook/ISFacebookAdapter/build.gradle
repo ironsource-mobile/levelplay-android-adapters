@@ -14,10 +14,10 @@ def getGitHash = { ->
 }
 
 repositories {
+    google()
     maven {
         url 'https://android-sdk.is.com/'
     }
-    google()
 
 }
 
@@ -30,7 +30,6 @@ android {
         targetSdkVersion 30
         versionCode 1
         versionName adapterVersion
-        
         buildConfigField "String", "GitHash", "\"${getGitHash()}\""
         buildConfigField "String", "VERSION_NAME", "\"${defaultConfig.versionName}\""
     }

@@ -235,7 +235,6 @@ public class FacebookAdapter extends AbstractAdapter implements INetworkInitCall
             for (INetworkInitCallbackListener adapter : initCallbackListeners) {
                 adapter.onNetworkInitCallbackSuccess();
             }
-
         } else {
             mInitState = InitState.INIT_STATE_FAILED;
             for (INetworkInitCallbackListener adapter : initCallbackListeners) {

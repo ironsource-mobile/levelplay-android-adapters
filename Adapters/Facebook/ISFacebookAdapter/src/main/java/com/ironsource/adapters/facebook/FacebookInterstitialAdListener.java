@@ -100,7 +100,6 @@ public class FacebookInterstitialAdListener implements InterstitialAdExtendedLis
             IronLog.INTERNAL.verbose("listener is null");
             return;
         }
-
         mListener.onInterstitialAdClicked();
     }
 
