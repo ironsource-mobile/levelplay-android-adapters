@@ -42,9 +42,9 @@ final class AdColonyBannerAdListener extends AdColonyAdViewListener {
 
         mAdapter.get().mZoneIdToBannerAdView.put(mZoneId, bannerView);
         mListener.onBannerAdLoaded(bannerView, mBannerLayoutParams);
-        mListener.onBannerAdShown();
     }
 
+    @Override
     public void onRequestNotFilled(AdColonyZone zone) {
         IronLog.ADAPTER_CALLBACK.verbose("zoneId = " + mZoneId);
 
@@ -56,7 +56,20 @@ final class AdColonyBannerAdListener extends AdColonyAdViewListener {
         mListener.onBannerAdLoadFailed(ErrorBuilder.buildLoadFailedError("Request Not Filled"));
     }
 
+    @Override
+    public void onShow(AdColonyAdView ad) {
+        IronLog.ADAPTER_CALLBACK.verbose("zoneId = " + mZoneId);
+
+        if (mListener == null) {
+            IronLog.INTERNAL.verbose("listener is null");
+            return;
+        }
+
+        mListener.onBannerAdShown();
+    }
+
     // This callback is not called when showing all banner types and therefore cannot be used for the show callback
+    @Override
     public void onOpened(AdColonyAdView bannerView) {
         IronLog.ADAPTER_CALLBACK.verbose("zoneId = " + mZoneId);
     }
