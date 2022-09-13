@@ -1,7 +1,7 @@
 apply plugin: 'com.android.library'
 
 ext {
-    adapterVersion = '4.3.12'
+    adapterVersion = '4.3.13'
 }
 
 def getGitHash = { ->
@@ -48,8 +48,8 @@ android {
 }
 
  dependencies {
-    implementation 'com.ironsource.sdk:mediationsdk:7.2.2.1'
-    implementation 'com.adcolony:sdk:4.7.1'
+    implementation 'com.ironsource.sdk:mediationsdk:7.2.4.1'
+    implementation 'com.adcolony:sdk:4.8.0'
 
 }
 
