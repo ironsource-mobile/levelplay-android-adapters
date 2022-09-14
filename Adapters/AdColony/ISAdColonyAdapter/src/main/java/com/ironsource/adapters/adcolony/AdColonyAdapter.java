@@ -1,6 +1,6 @@
 package com.ironsource.adapters.adcolony;
 
-import android.app.Activity;
+import android.app.Activity; 
 import android.text.TextUtils;
 import android.view.Gravity;
 import android.widget.FrameLayout;

@@ -11,7 +11,7 @@ import java.lang.ref.WeakReference;
 
 final class AdColonyInterstitialAdListener extends AdColonyInterstitialListener {
 
-    // data
+    // data 
     private String mZoneId;
     private InterstitialSmashListener mListener;
     private WeakReference<AdColonyAdapter> mAdapter;
