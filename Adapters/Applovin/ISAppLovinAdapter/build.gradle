@@ -1,7 +1,7 @@
 apply plugin: 'com.android.library'
 
 ext {
-    adapterVersion = '4.3.33'
+    adapterVersion = '4.3.34'
 }
 
 def getGitHash = { ->
