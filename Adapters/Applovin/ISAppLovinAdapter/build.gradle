@@ -48,9 +48,8 @@ android {
 }
 
  dependencies {
-    implementation 'com.ironsource.sdk:mediationsdk:7.2.3.1'
-    implementation 'com.applovin:applovin-sdk:11.4.4'
-
+    implementation 'com.ironsource.sdk:mediationsdk:7.2.4.1'
+    implementation 'com.applovin:applovin-sdk:11.5.0'
 }
 
 task sourcesJar(type: Jar) {
