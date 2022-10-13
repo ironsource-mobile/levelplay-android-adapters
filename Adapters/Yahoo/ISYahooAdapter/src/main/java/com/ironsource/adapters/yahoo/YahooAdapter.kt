@@ -659,7 +659,11 @@ class YahooAdapter(providerName: String) : AbstractAdapter(providerName),
         }
 
         val ret: MutableMap<String, Any> = HashMap()
-        val bidderToken : String = YASAds.getBiddingToken(ContextProvider.getInstance().applicationContext)
+        var bidderToken : String = YASAds.getBiddingToken(ContextProvider.getInstance().applicationContext)
+
+        if (bidderToken.isNullOrEmpty()) {
+            bidderToken = ""
+        }
         IronLog.ADAPTER_API.verbose("token = $bidderToken")
         ret["token"] = bidderToken
         return ret
