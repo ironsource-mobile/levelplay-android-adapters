@@ -96,6 +96,7 @@ public class FacebookRewardedVideoAdListener implements RewardedVideoAdExtendedL
             IronLog.INTERNAL.verbose("listener is null");
             return;
         }
+
         mListener.onRewardedVideoAdClicked();
     }
 
