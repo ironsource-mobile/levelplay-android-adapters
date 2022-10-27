@@ -412,7 +412,7 @@ class ChartboostAdapter extends AbstractAdapter implements INetworkInitCallbackL
     public boolean isRewardedVideoAvailable(JSONObject config) {
         final String locationId = config.optString(AD_LOCATION);
         Rewarded rewardedVideoAd = mLocationIdToRewardedVideoAd.get(locationId);
-        return rewardedVideoAd.isCached();
+        return rewardedVideoAd != null && rewardedVideoAd.isCached();
     }
 
     //endregion
@@ -496,7 +496,7 @@ class ChartboostAdapter extends AbstractAdapter implements INetworkInitCallbackL
     public boolean isInterstitialReady(JSONObject config) {
         final String locationId = config.optString(AD_LOCATION);
         Interstitial interstitialAd = mLocationIdToInterstitialAd.get(locationId);
-        return interstitialAd.isCached();
+        return interstitialAd != null && interstitialAd.isCached();
     }
     //endregion
 
