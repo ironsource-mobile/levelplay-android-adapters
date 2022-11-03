@@ -103,11 +103,10 @@ class UnityAdsAdapter extends AbstractAdapter implements IUnityAdsInitialization
     private final String GAME_DESIGNATION = "mode";
     private final String MIXED_AUDIENCE = "mixed";
 
-    // Feature flag key for getting token asynchronically
-    private final String IS_ASYNC_TOKEN_ENABLED_KEY = "isAsyncTokenEnabled";
+    // UnityAds asynchronous token
     private static String asyncToken = null;
 
-    // Feature flag key to support the network's capability to load a Rewarded Video ad
+    // Feature flag key to disable the network's capability to load a Rewarded Video ad
     // while another Rewarded Video ad of that network is showing
     private final String LWS_SUPPORT_STATE = "isSupportedLWS";
 
@@ -189,7 +188,7 @@ class UnityAdsAdapter extends AbstractAdapter implements IUnityAdsInitialization
             UnityAds.initialize(ContextProvider.getInstance().getApplicationContext(), gameId, false, this);
 
             // trying to fetch async token for the first load
-            getAsyncToken(config);
+            getAsyncToken();
         }
     }
 
@@ -942,21 +941,16 @@ class UnityAdsAdapter extends AbstractAdapter implements IUnityAdsInitialization
         return loadWhileShowSupportState;
     }
 
-    public void getAsyncToken(JSONObject config) {
-        boolean isAsyncTokenEnabled = config.optBoolean(IS_ASYNC_TOKEN_ENABLED_KEY, false);
-
-        if (isAsyncTokenEnabled) {
-            IronLog.INTERNAL.verbose("Trying to get UnityAds async token");
-            UnityAds.getToken(new IUnityAdsTokenListener() {
-                @Override
-                public void onUnityAdsTokenReady(String token) {
-                    IronLog.ADAPTER_CALLBACK.verbose("async token returned");
-                    asyncToken = token;
-                }
-            });
-        }
+    public void getAsyncToken() {
+        IronLog.INTERNAL.verbose("");
+        UnityAds.getToken(new IUnityAdsTokenListener() {
+            @Override
+            public void onUnityAdsTokenReady(String token) {
+                IronLog.ADAPTER_CALLBACK.verbose("async token returned");
+                asyncToken = token;
+            }
+        });
     }
-
 
     //endregion
 }
