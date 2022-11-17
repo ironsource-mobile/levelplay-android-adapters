@@ -12,6 +12,7 @@ import com.unity3d.ads.UnityAds;
 import java.lang.ref.WeakReference;
 
 final class UnityAdsRewardedVideoListener implements IUnityAdsLoadListener, IUnityAdsShowListener {
+
     // data
     private String mPlacementId;
     private RewardedVideoSmashListener mListener;
@@ -56,7 +57,6 @@ final class UnityAdsRewardedVideoListener implements IUnityAdsLoadListener, IUni
      */
     @Override
     public void onUnityAdsFailedToLoad(String placementId, UnityAds.UnityAdsLoadError error, String message) {
-
         if (mListener == null) {
             IronLog.INTERNAL.verbose("listener is null");
             return;
@@ -71,18 +71,19 @@ final class UnityAdsRewardedVideoListener implements IUnityAdsLoadListener, IUni
         mListener.onRewardedVideoAvailabilityChanged(false);
 
         IronSourceError ironSourceError;
+
+        // For Rewarded Videos, when an adapter receives a failure reason from the network, it will pass it to the Mediation.
+        // This is done in addition to the load failure report of the adapter for further analysis
         if (error != null) {
             int errorCode = (error == UnityAds.UnityAdsLoadError.NO_FILL) ? IronSourceError.ERROR_RV_LOAD_NO_FILL : mAdapter.get().getUnityAdsLoadErrorCode(error);
             ironSourceError = new IronSourceError(errorCode, message);
             mListener.onRewardedVideoLoadFailed(ironSourceError);
 
         } else {
-            ironSourceError = ErrorBuilder.buildLoadFailedError(IronSourceConstants.REWARDED_VIDEO_AD_UNIT,mAdapter.get().getProviderName(), message);
+            ironSourceError = ErrorBuilder.buildLoadFailedError(IronSourceConstants.REWARDED_VIDEO_AD_UNIT, mAdapter.get().getProviderName(), message);
         }
 
         IronLog.ADAPTER_CALLBACK.error("placementId = " + mPlacementId + " ironSourceError = " + ironSourceError);
-
-
     }
     //endregion
 

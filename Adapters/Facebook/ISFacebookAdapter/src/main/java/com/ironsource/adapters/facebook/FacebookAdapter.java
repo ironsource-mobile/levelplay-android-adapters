@@ -1,7 +1,6 @@
 package com.ironsource.adapters.facebook;
 
 import static com.ironsource.mediationsdk.metadata.MetaData.MetaDataValueTypes.META_DATA_VALUE_BOOLEAN;
-import static com.ironsource.mediationsdk.utils.IronSourceUtils.getSDKVersion;
 
 import android.app.Activity;
 import android.text.TextUtils;
@@ -36,6 +35,8 @@ import com.ironsource.mediationsdk.sdk.RewardedVideoSmashListener;
 import com.ironsource.mediationsdk.AdapterUtils;
 import com.ironsource.mediationsdk.utils.ErrorBuilder;
 import com.ironsource.mediationsdk.utils.IronSourceConstants;
+import com.ironsource.mediationsdk.utils.IronSourceUtils;
+
 import org.json.JSONObject;
 
 import java.util.Arrays;
@@ -48,7 +49,6 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.atomic.AtomicBoolean;
-
 
 public class FacebookAdapter extends AbstractAdapter implements INetworkInitCallbackListener, AudienceNetworkAds.InitListener {
 
@@ -235,6 +235,7 @@ public class FacebookAdapter extends AbstractAdapter implements INetworkInitCall
             for (INetworkInitCallbackListener adapter : initCallbackListeners) {
                 adapter.onNetworkInitCallbackSuccess();
             }
+
         } else {
             mInitState = InitState.INIT_STATE_FAILED;
             for (INetworkInitCallbackListener adapter : initCallbackListeners) {
@@ -844,7 +845,7 @@ public class FacebookAdapter extends AbstractAdapter implements INetworkInitCall
     }
 
     private String getMediationServiceInfo() {
-        String mediationServiceInfo = String.format("%s_%s:%s", MEDIATION_NAME,getSDKVersion() , VERSION);
+        String mediationServiceInfo = String.format("%s_%s:%s", MEDIATION_NAME, IronSourceUtils.getSDKVersion(), VERSION);
         IronLog.INTERNAL.verbose("mediationServiceInfo = " + mediationServiceInfo);
         return mediationServiceInfo;
     }

@@ -1,8 +1,7 @@
 apply plugin: 'com.android.library'
-apply plugin: 'com.android.library'
-
+apply plugin: 'kotlin-android'
 ext {
-    adapterVersion = '4.3.10'
+    adapterVersion = '4.3.15'
 }
 
 def getGitHash = { ->
@@ -14,10 +13,15 @@ def getGitHash = { ->
     return stdout.toString().trim()
 }
 
+
 repositories {
     mavenCentral()
     maven {
         url 'https://android-sdk.is.com/'
+    }
+
+    maven { 
+        url 'https://artifact.bytedance.com/repository/pangle'
     }
 }
 
@@ -51,9 +55,9 @@ android {
 }
 
  dependencies {
-     implementation 'com.ironsource.sdk:mediationsdk:7.2.5'
-     implementation 'com.chartboost:chartboost-sdk:9.1.1'
-     implementation 'androidx.annotation:annotation:1.4.0'
+     implementation 'com.ironsource.sdk:mediationsdk:7.2.4.1'
+     implementation 'com.pangle.global:ads-sdk:4.7.0.6'
+     implementation 'com.google.android.gms:play-services-ads-identifier:17.0.0'
  }
 
 task sourcesJar(type: Jar) {

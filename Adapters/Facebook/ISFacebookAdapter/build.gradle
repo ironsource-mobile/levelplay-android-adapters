@@ -50,8 +50,8 @@ android {
 }
 
  dependencies {
-    implementation 'com.ironsource.sdk:mediationsdk:7.2.4'
-    implementation 'com.facebook.android:audience-network-sdk:6.11.0'
+    implementation 'com.ironsource.sdk:mediationsdk:7.2.4.1'
+    implementation 'com.facebook.android:audience-network-sdk:6.12.0'
 
 }
 
