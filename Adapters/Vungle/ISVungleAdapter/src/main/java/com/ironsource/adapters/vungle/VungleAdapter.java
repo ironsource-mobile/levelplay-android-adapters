@@ -57,7 +57,6 @@ class VungleAdapter extends AbstractAdapter {
     private VungleBannerAdapter bannerAdapter;
 
     private static String mAdOrientation = null;
-//    private ISBannerSize mCurrentBannerSize = null;
 
     //region Adapter Methods
     public static VungleAdapter startAdapter(String providerName) {
