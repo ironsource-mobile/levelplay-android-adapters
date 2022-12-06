@@ -4,8 +4,6 @@ import android.app.Activity;
 import android.view.Gravity;
 import android.widget.FrameLayout;
 
-import androidx.annotation.NonNull;
-
 import com.ironsource.environment.ContextProvider;
 import com.ironsource.mediationsdk.AdapterUtils;
 import com.ironsource.mediationsdk.ISBannerSize;
@@ -41,7 +39,7 @@ final class VungleBannerAdapter implements BannerAdListener {
     }
 
     void load() {
-        mBannerAd.load();
+        mBannerAd.load(null);
     }
 
     public void loadWithBid(String serverData) {
@@ -58,7 +56,7 @@ final class VungleBannerAdapter implements BannerAdListener {
     }
 
     @Override
-    public void adLoaded(@NonNull BaseAd baseAd) {
+    public void adLoaded(BaseAd baseAd) {
         IronLog.ADAPTER_CALLBACK.verbose("placementId = " + baseAd.getPlacementId());
 
         mAdLoaded = true;
@@ -90,12 +88,12 @@ final class VungleBannerAdapter implements BannerAdListener {
     }
 
     @Override
-    public void adStart(@NonNull BaseAd baseAd) {
+    public void adStart(BaseAd baseAd) {
         // no-op
     }
 
     @Override
-    public void adImpression(@NonNull BaseAd baseAd) {
+    public void adImpression(BaseAd baseAd) {
         IronLog.ADAPTER_CALLBACK.verbose("placementId = " + baseAd.getPlacementId());
 
         if (mListener == null) {
@@ -107,7 +105,7 @@ final class VungleBannerAdapter implements BannerAdListener {
     }
 
     @Override
-    public void adClick(@NonNull BaseAd baseAd) {
+    public void adClick(BaseAd baseAd) {
         IronLog.ADAPTER_CALLBACK.verbose("placementId = " + baseAd.getPlacementId());
 
         if (mListener == null) {
@@ -119,12 +117,12 @@ final class VungleBannerAdapter implements BannerAdListener {
     }
 
     @Override
-    public void adEnd(@NonNull BaseAd baseAd) {
+    public void adEnd(BaseAd baseAd) {
         // no-op
     }
 
     @Override
-    public void error(@NonNull BaseAd baseAd, @NonNull VungleException exception) {
+    public void error(BaseAd baseAd, VungleException exception) {
         if (mAdLoaded) {
             IronLog.ADAPTER_CALLBACK.verbose("placementId = " + baseAd.getPlacementId() + ", exception = " + exception);
         } else {
@@ -147,7 +145,7 @@ final class VungleBannerAdapter implements BannerAdListener {
     }
 
     @Override
-    public void onAdLeftApplication(@NonNull BaseAd baseAd) {
+    public void onAdLeftApplication(BaseAd baseAd) {
         IronLog.ADAPTER_CALLBACK.verbose("placementId = " + baseAd.getPlacementId());
 
         if (mListener == null) {

@@ -2,9 +2,6 @@ package com.ironsource.adapters.vungle;
 
 import android.text.TextUtils;
 
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
-
 import com.ironsource.environment.ContextProvider;
 import com.ironsource.mediationsdk.logger.IronLog;
 import com.ironsource.mediationsdk.logger.IronSourceError;
@@ -35,7 +32,7 @@ final class VungleRewardedAdapter implements RewardedAdListener {
     }
 
     void load() {
-        mRewardedAd.load();
+        mRewardedAd.load(null);
     }
 
     public void loadWithBid(String serverData) {
@@ -55,11 +52,11 @@ final class VungleRewardedAdapter implements RewardedAdListener {
         mRewardedAd = null;
     }
 
-    public void setIncentivizedFields(@Nullable final String userID,
-                                      @Nullable final String title,
-                                      final @Nullable String body,
-                                      final @Nullable String keepWatching,
-                                      final @Nullable String close) {
+    public void setIncentivizedFields(final String userID,
+                                      final String title,
+                                      final String body,
+                                      final String keepWatching,
+                                      final String close) {
         if (!TextUtils.isEmpty(userID)) {
             mRewardedAd.setUserId(userID);
         }
@@ -78,7 +75,7 @@ final class VungleRewardedAdapter implements RewardedAdListener {
     }
 
     @Override
-    public void adLoaded(@NonNull BaseAd baseAd) {
+    public void adLoaded(BaseAd baseAd) {
         IronLog.ADAPTER_CALLBACK.verbose("placementId = " + baseAd.getPlacementId());
 
         mAdLoaded = true;
@@ -92,7 +89,7 @@ final class VungleRewardedAdapter implements RewardedAdListener {
     }
 
     @Override
-    public void adStart(@NonNull BaseAd baseAd) {
+    public void adStart(BaseAd baseAd) {
         IronLog.ADAPTER_CALLBACK.verbose("placementId = " + baseAd.getPlacementId());
 
         if (mListener == null) {
@@ -104,7 +101,7 @@ final class VungleRewardedAdapter implements RewardedAdListener {
     }
 
     @Override
-    public void adImpression(@NonNull BaseAd baseAd) {
+    public void adImpression(BaseAd baseAd) {
         IronLog.ADAPTER_CALLBACK.verbose("placementId = " + baseAd.getPlacementId());
 
         if (mListener == null) {
@@ -116,7 +113,7 @@ final class VungleRewardedAdapter implements RewardedAdListener {
     }
 
     @Override
-    public void adRewarded(@NonNull BaseAd baseAd) {
+    public void adRewarded(BaseAd baseAd) {
         IronLog.ADAPTER_CALLBACK.verbose("placementId = " + baseAd.getPlacementId());
 
         if (mListener == null) {
@@ -128,7 +125,7 @@ final class VungleRewardedAdapter implements RewardedAdListener {
     }
 
     @Override
-    public void adClick(@NonNull BaseAd baseAd) {
+    public void adClick(BaseAd baseAd) {
         IronLog.ADAPTER_CALLBACK.verbose("placementId = " + baseAd.getPlacementId());
 
         if (mListener == null) {
@@ -140,7 +137,7 @@ final class VungleRewardedAdapter implements RewardedAdListener {
     }
 
     @Override
-    public void adEnd(@NonNull BaseAd baseAd) {
+    public void adEnd(BaseAd baseAd) {
         IronLog.ADAPTER_CALLBACK.verbose("placementId = " + baseAd.getPlacementId());
 
         if (mListener == null) {
@@ -153,7 +150,7 @@ final class VungleRewardedAdapter implements RewardedAdListener {
     }
 
     @Override
-    public void error(@NonNull BaseAd baseAd, @NonNull VungleException exception) {
+    public void error(BaseAd baseAd, VungleException exception) {
         if (mAdLoaded) {
             IronLog.ADAPTER_CALLBACK.verbose("placementId = " + baseAd.getPlacementId() + ", exception = " + exception);
 
@@ -184,7 +181,7 @@ final class VungleRewardedAdapter implements RewardedAdListener {
     }
 
     @Override
-    public void onAdLeftApplication(@NonNull BaseAd baseAd) {
+    public void onAdLeftApplication(BaseAd baseAd) {
         // no-op
     }
 

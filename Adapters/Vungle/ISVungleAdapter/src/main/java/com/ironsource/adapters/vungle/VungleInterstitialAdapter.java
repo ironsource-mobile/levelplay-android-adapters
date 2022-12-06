@@ -1,7 +1,5 @@
 package com.ironsource.adapters.vungle;
 
-import androidx.annotation.NonNull;
-
 import com.ironsource.environment.ContextProvider;
 import com.ironsource.mediationsdk.logger.IronLog;
 import com.ironsource.mediationsdk.logger.IronSourceError;
@@ -32,7 +30,7 @@ final class VungleInterstitialAdapter implements InterstitialAdListener {
     }
 
     void load() {
-        mInterstitialAd.load();
+        mInterstitialAd.load(null);
     }
 
     public void loadWithBid(String serverData) {
@@ -53,7 +51,7 @@ final class VungleInterstitialAdapter implements InterstitialAdListener {
     }
 
     @Override
-    public void adLoaded(@NonNull BaseAd baseAd) {
+    public void adLoaded(BaseAd baseAd) {
         IronLog.ADAPTER_CALLBACK.verbose("placementId = " + baseAd.getPlacementId());
 
         mAdLoaded = true;
@@ -67,7 +65,7 @@ final class VungleInterstitialAdapter implements InterstitialAdListener {
     }
 
     @Override
-    public void adStart(@NonNull BaseAd baseAd) {
+    public void adStart(BaseAd baseAd) {
         IronLog.ADAPTER_CALLBACK.verbose("placementId = " + baseAd.getPlacementId());
 
         if (mListener == null) {
@@ -79,7 +77,7 @@ final class VungleInterstitialAdapter implements InterstitialAdListener {
     }
 
     @Override
-    public void adImpression(@NonNull BaseAd baseAd) {
+    public void adImpression(BaseAd baseAd) {
         IronLog.ADAPTER_CALLBACK.verbose("placementId = " + baseAd.getPlacementId());
 
         if (mListener == null) {
@@ -91,7 +89,7 @@ final class VungleInterstitialAdapter implements InterstitialAdListener {
     }
 
     @Override
-    public void adClick(@NonNull BaseAd baseAd) {
+    public void adClick(BaseAd baseAd) {
         IronLog.ADAPTER_CALLBACK.verbose("placementId = " + baseAd.getPlacementId());
 
         if (mListener == null) {
@@ -103,7 +101,7 @@ final class VungleInterstitialAdapter implements InterstitialAdListener {
     }
 
     @Override
-    public void adEnd(@NonNull BaseAd baseAd) {
+    public void adEnd(BaseAd baseAd) {
         IronLog.ADAPTER_CALLBACK.verbose("placementId = " + baseAd.getPlacementId());
 
         if (mListener == null) {
@@ -115,7 +113,7 @@ final class VungleInterstitialAdapter implements InterstitialAdListener {
     }
 
     @Override
-    public void error(@NonNull BaseAd baseAd, @NonNull VungleException exception) {
+    public void error(BaseAd baseAd, VungleException exception) {
         if (mAdLoaded) {
             IronLog.ADAPTER_CALLBACK.verbose("placementId = " + baseAd.getPlacementId() + ", exception = " + exception);
 
@@ -146,7 +144,7 @@ final class VungleInterstitialAdapter implements InterstitialAdListener {
     }
 
     @Override
-    public void onAdLeftApplication(@NonNull BaseAd baseAd) {
+    public void onAdLeftApplication(BaseAd baseAd) {
         // no-op
     }
 
