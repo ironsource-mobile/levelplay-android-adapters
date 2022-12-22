@@ -4,16 +4,19 @@ import android.app.Activity;
 import android.os.Bundle;
 import android.text.TextUtils;
 
-
+import com.google.android.gms.ads.AdLoader;
 import com.google.android.gms.ads.MobileAds;
 import com.google.android.gms.ads.AdRequest;
 import com.google.android.gms.ads.AdSize;
 import com.google.android.gms.ads.AdView;
 import com.google.android.gms.ads.RequestConfiguration;
+import com.google.android.gms.ads.VideoOptions;
 import com.google.android.gms.ads.initialization.AdapterStatus;
 import com.google.android.gms.ads.initialization.InitializationStatus;
 import com.google.android.gms.ads.initialization.OnInitializationCompleteListener;
 import com.google.android.gms.ads.interstitial.InterstitialAd;
+import com.google.android.gms.ads.nativead.NativeAd;
+import com.google.android.gms.ads.nativead.NativeAdOptions;
 import com.google.android.gms.ads.rewarded.RewardedAd;
 import com.ironsource.environment.ContextProvider;
 import com.ironsource.mediationsdk.AbstractAdapter;
@@ -52,7 +55,6 @@ import static com.ironsource.mediationsdk.metadata.MetaData.MetaDataValueTypes.M
 
 public class AdMobAdapter extends AbstractAdapter implements INetworkInitCallbackListener {
 
-
     //AdMob requires a request agent name
     private final String IRONSOURCE_REQUEST_AGENT = "ironSource";
 
@@ -65,6 +67,7 @@ public class AdMobAdapter extends AbstractAdapter implements INetworkInitCallbac
     // Init configuration flags
     private final String NETWORK_ONLY_INIT = "networkOnlyInit";
     private final String INIT_RESPONSE_REQUIRED = "initResponseRequired";
+    private final String IS_NATIVE = "isNative";
 
     // shared variables between instances
     private static Boolean mConsent = null;
@@ -78,7 +81,6 @@ public class AdMobAdapter extends AbstractAdapter implements INetworkInitCallbac
     private static InitState mInitState = InitState.INIT_STATE_NONE;
     private static AtomicBoolean mWasInitCalled = new AtomicBoolean(false);
 
-
     // Rewarded video collections
     private ConcurrentHashMap<String, RewardedVideoSmashListener> mAdUnitIdToRewardedVideoListener;
     private CopyOnWriteArraySet<String> mRewardedVideoAdUnitIdsForInitCallbacks;
@@ -91,9 +93,9 @@ public class AdMobAdapter extends AbstractAdapter implements INetworkInitCallbac
     public ConcurrentHashMap<String, Boolean> mInterstitialAdsAvailability; //used to check if an ad is available
 
     // Banner maps
-    private ConcurrentHashMap<String, BannerSmashListener> mAdUnitIdToBannerListener;
+    public ConcurrentHashMap<String, BannerSmashListener> mAdUnitIdToBannerListener;
     private ConcurrentHashMap<String, AdView> mAdUnitIdToBannerAd;
-
+    public ConcurrentHashMap<String, NativeAd> mAdUnitIdToNativeBannerAd;
 
     //init state possible values
     private enum InitState {
@@ -141,6 +143,7 @@ public class AdMobAdapter extends AbstractAdapter implements INetworkInitCallbac
 
         // banner
         mAdUnitIdToBannerAd = new ConcurrentHashMap<>();
+        mAdUnitIdToNativeBannerAd = new ConcurrentHashMap<>();
         mAdUnitIdToBannerListener = new ConcurrentHashMap<>();
 
         // The network's capability to load a Rewarded Video ad while another Rewarded Video ad of that network is showing
@@ -559,36 +562,70 @@ public class AdMobAdapter extends AbstractAdapter implements INetworkInitCallbac
 
         final String adUnitId = config.optString(AD_UNIT_ID);
         IronLog.ADAPTER_API.verbose("adUnitId = " + adUnitId);
+
+        final boolean isNative = Boolean.parseBoolean(config.optString(IS_NATIVE));
+
         postOnUIThread(new Runnable() {
             @Override
             public void run() {
                 try {
-                    //get banner size
-                    final AdSize size = getAdSize(banner.getSize(), AdapterUtils.isLargeScreen(banner.getActivity()));
-                    if (size == null) {
-                        listener.onBannerAdLoadFailed(ErrorBuilder.unsupportedBannerSize("AdMob"));
-                        return;
-                    }
-
-                    AdView adView = new AdView(banner.getActivity());
-                    adView.setAdSize(size);
-                    adView.setAdUnitId(adUnitId);
-                    AdMobBannerAdListener adMobBannerAdListener = new AdMobBannerAdListener(AdMobAdapter.this, listener, adUnitId, adView);
-                    adView.setAdListener(adMobBannerAdListener);
-
-                    //add banner ad to map
-                    mAdUnitIdToBannerAd.put(adUnitId, adView);
-
                     AdRequest adRequest = createAdRequest();
-                    IronLog.ADAPTER_API.verbose("loadAd");
-                    adView.loadAd(adRequest);
 
+                    if (isNative) {
+                        loadNativeBanner(banner,listener,adUnitId,adRequest);
+                    } else {
+                        //get banner size
+                        final AdSize size = getAdSize(banner.getSize(), AdapterUtils.isLargeScreen(banner.getActivity()));
+                        if (size == null) {
+                            listener.onBannerAdLoadFailed(ErrorBuilder.unsupportedBannerSize("AdMob"));
+                            return;
+                        }
+
+                        AdView adView = new AdView(banner.getActivity());
+                        adView.setAdSize(size);
+                        adView.setAdUnitId(adUnitId);
+                        AdMobBannerAdListener adMobBannerAdListener = new AdMobBannerAdListener(AdMobAdapter.this, listener, adUnitId, adView);
+                        adView.setAdListener(adMobBannerAdListener);
+
+                        //add banner ad to map
+                        mAdUnitIdToBannerAd.put(adUnitId, adView);
+
+                        IronLog.ADAPTER_API.verbose("");
+                        adView.loadAd(adRequest);
+                    }
                 } catch (Exception e) {
                     IronSourceError error = ErrorBuilder.buildLoadFailedError("AdMobAdapter loadBanner exception " + e.getMessage());
                     listener.onBannerAdLoadFailed(error);
                 }
             }
         });
+    }
+
+    private void loadNativeBanner(final IronSourceBannerLayout banner,final BannerSmashListener listener,final String adUnitId, AdRequest adRequest) {
+
+        // verify size
+        if (!isNativeBannerSizeSupported(banner.getSize(), AdapterUtils.isLargeScreen(banner.getActivity()))) {
+            IronLog.INTERNAL.error("size not supported, size = " + banner.getSize().getDescription());
+            listener.onBannerAdLoadFailed(ErrorBuilder.unsupportedBannerSize(getProviderName()));
+            return;
+        }
+
+        NativeAdOptions.Builder optionsBuilder = new NativeAdOptions.Builder();
+        VideoOptions videoOptions = new VideoOptions.Builder()
+                .setStartMuted(true)
+                .build();
+        optionsBuilder.setVideoOptions(videoOptions);
+
+        AdMobNativeBannerAdListener adMobNativeBannerAdListener = new AdMobNativeBannerAdListener(AdMobAdapter.this,listener,adUnitId,banner.getSize());
+
+        AdLoader adLoader = new AdLoader.Builder(banner.getContext(), adUnitId)
+                .forNativeAd(adMobNativeBannerAdListener)
+                .withNativeAdOptions(optionsBuilder.build())
+                .withAdListener(adMobNativeBannerAdListener)
+                .build();
+
+        IronLog.ADAPTER_API.verbose("");
+        adLoader.loadAd(adRequest);
     }
 
     @Override
@@ -606,12 +643,22 @@ public class AdMobAdapter extends AbstractAdapter implements INetworkInitCallbac
                 try {
                     String adUnitId = config.optString(AD_UNIT_ID);
                     IronLog.ADAPTER_API.verbose("adUnitId = " + adUnitId);
+
+                    // Banner
                     if (mAdUnitIdToBannerAd.containsKey(adUnitId)) {
                         AdView ad = mAdUnitIdToBannerAd.get(adUnitId);
                         if (ad != null) {
                             ad.destroy();
                         }
                         mAdUnitIdToBannerAd.remove(adUnitId);
+                    }
+                    // Native Banner
+                    if (mAdUnitIdToNativeBannerAd.containsKey(adUnitId)) {
+                        NativeAd ad = mAdUnitIdToNativeBannerAd.get(adUnitId);
+                        if (ad != null) {
+                            ad.destroy();
+                        }
+                        mAdUnitIdToNativeBannerAd.remove(adUnitId);
                     }
 
                 } catch (Exception e) {
@@ -653,11 +700,18 @@ public class AdMobAdapter extends AbstractAdapter implements INetworkInitCallbac
             postOnUIThread(new Runnable() {
                 @Override
                 public void run() {
+
                     for (AdView adView : mAdUnitIdToBannerAd.values()) {
                         adView.destroy();
                     }
+
+                    for (NativeAd nativeAd : mAdUnitIdToNativeBannerAd.values()) {
+                        nativeAd.destroy();
+                    }
+
                     // clear banner maps
                     mAdUnitIdToBannerAd.clear();
+                    mAdUnitIdToNativeBannerAd.clear();
                     mAdUnitIdToBannerListener.clear();
                 }
             });
@@ -847,6 +901,20 @@ public class AdMobAdapter extends AbstractAdapter implements INetworkInitCallbac
             IronLog.INTERNAL.verbose("adaptive banners are not supported on Ironsource sdk versions earlier than 7.1.14");
         }
         return adSize;
+    }
+
+    private boolean isNativeBannerSizeSupported(ISBannerSize size, boolean isLargeScreen) {
+        switch (size.getDescription()) {
+            case "BANNER":
+            case "LARGE":
+            case "RECTANGLE":
+                return true;
+            //in this case banner size is returned
+            case "SMART":
+                return !isLargeScreen;
+        }
+
+        return false;
     }
 
     private InterstitialAd getInterstitialAd(String adUnitId) {

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <dimen name="ad_mob_default_margin">5dp</dimen>
+  <dimen name="ad_mob_text_size_small">12sp</dimen>
+  <dimen name="ad_mob_text_size_large">15sp</dimen>
+  <dimen name="ad_mob_ad_indicator_width">25dp</dimen>
+  <dimen name="ad_mob_ad_indicator_height">19dp</dimen>
+  <dimen name="ad_mob_ad_indicator_text_size">10sp</dimen>
+  <dimen name="ad_mob_small_cta_button_height">36dp</dimen>
+  <dimen name="ad_mob_medium_cta_button_height">40dp</dimen>
+  <dimen name="ad_mob_no_margin">0dp</dimen>
+</resources>
