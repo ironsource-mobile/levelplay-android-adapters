@@ -2,7 +2,7 @@ apply plugin: 'com.android.library'
 apply plugin: 'com.android.library'
 
 ext {
-    adapterVersion = '4.3.18'
+    adapterVersion = '4.3.19'
 }
 
 def getGitHash = { ->
@@ -51,8 +51,8 @@ android {
 }
 
  dependencies {
-    implementation 'com.ironsource.sdk:mediationsdk:7.2.3.1'
-    implementation 'com.vungle:publisher-sdk-android:6.12.0'
+    implementation 'com.ironsource.sdk:mediationsdk:7.2.7'
+    implementation 'com.vungle:publisher-sdk-android:6.12.1'
 
 }
 
