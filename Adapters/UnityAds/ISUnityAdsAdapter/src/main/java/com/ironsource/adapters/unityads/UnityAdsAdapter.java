@@ -813,8 +813,10 @@ class UnityAdsAdapter extends AbstractAdapter implements IUnityAdsInitialization
             bidderToken = UnityAds.getToken();
         } else if (!TextUtils.isEmpty(asyncToken)) {
             bidderToken = asyncToken;
+            // Fetching a fresh async token for the next load
+            getAsyncToken();
         } else {
-            IronLog.INTERNAL.verbose("returning null as token since init did not finish successfully/async token did not fetch");
+            IronLog.INTERNAL.verbose("returning null as token since init did not finish successfully and async token did not return");
             return null;
         }
 
