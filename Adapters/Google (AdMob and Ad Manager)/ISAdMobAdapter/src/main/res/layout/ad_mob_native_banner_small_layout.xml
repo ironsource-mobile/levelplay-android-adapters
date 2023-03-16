@@ -10,7 +10,7 @@
         android:layout_height="match_parent"
         android:layout_marginStart="@dimen/ad_mob_default_margin"
         android:layout_marginTop="@dimen/ad_mob_default_margin"
-        android:layout_marginEnd="@dimen/ad_mob_default_margin"
+        android:layout_marginEnd="@dimen/ad_mob_large_margin"
         android:layout_marginBottom="@dimen/ad_mob_default_margin"
         android:orientation="horizontal"
         tools:visibility="visible">
@@ -65,7 +65,7 @@
                         android:ellipsize="end"
                         android:maxLines="1"
                         android:textColor="#000000"
-                        android:textSize="@dimen/ad_mob_text_size_large"
+                        android:textSize="@dimen/ad_mob_text_size_small"
                         android:textStyle="bold" />
                 </LinearLayout>
 

@@ -1,4 +1,4 @@
-package com.ironsource.adapters.admob;
+package com.ironsource.adapters.admob.banner;
 
 import static android.view.View.GONE;
 import static android.view.View.VISIBLE;
@@ -9,13 +9,14 @@ import android.widget.TextView;
 import com.google.android.gms.ads.nativead.MediaView;
 import com.google.android.gms.ads.nativead.NativeAd;
 import com.google.android.gms.ads.nativead.NativeAdView;
+import com.ironsource.adapters.admob.R;
 
 public class AdMobNativeBannerViewBinder {
 
     private NativeAdView mAdView;
     private NativeAd mNativeAd;
 
-    public void bindView(NativeAd nativeAd, AdMobNativeBannerLayout nativeBannerLayout) {
+    public void bindView(NativeAd nativeAd, AdMobNativeBannerViewHandler nativeBannerLayout) {
 
         mAdView = nativeBannerLayout.getNativeAdView();
         mNativeAd = nativeAd;
@@ -23,7 +24,7 @@ public class AdMobNativeBannerViewBinder {
         mAdView.setNativeAd(nativeAd);
     }
 
-    private void populateView(AdMobNativeBannerLayout nativeBannerLayout) {
+    private void populateView(AdMobNativeBannerViewHandler nativeBannerLayout) {
         populateIconView();
         populateHeadlineView();
         populateAdvertiserView();

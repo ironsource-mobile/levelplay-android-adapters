@@ -1,4 +1,4 @@
-package com.ironsource.adapters.admob;
+package com.ironsource.adapters.admob.banner;
 
 import android.view.Gravity;
 import android.widget.FrameLayout;
@@ -6,23 +6,20 @@ import android.widget.FrameLayout;
 import com.google.android.gms.ads.AdListener;
 import com.google.android.gms.ads.AdView;
 import com.google.android.gms.ads.LoadAdError;
+import com.ironsource.adapters.admob.AdMobAdapter;
 import com.ironsource.mediationsdk.logger.IronLog;
 import com.ironsource.mediationsdk.logger.IronSourceError;
 import com.ironsource.mediationsdk.sdk.BannerSmashListener;
 import com.ironsource.mediationsdk.utils.ErrorBuilder;
 
-import java.lang.ref.WeakReference;
-
 // AdMob banner listener
 public class AdMobBannerAdListener extends AdListener {
     // data
-    private String mAdUnitId;
-    private WeakReference<AdMobAdapter> mAdapter;
     private BannerSmashListener mListener;
+    private String mAdUnitId;
     private AdView mAdView;
 
-    AdMobBannerAdListener(AdMobAdapter adapter, BannerSmashListener listener, String adUnitId, AdView adView) {
-        mAdapter = new WeakReference<>(adapter);
+    AdMobBannerAdListener(BannerSmashListener listener, String adUnitId, AdView adView) {
         mListener = listener;
         mAdUnitId = adUnitId;
         mAdView = adView;
@@ -46,8 +43,6 @@ public class AdMobBannerAdListener extends AdListener {
         FrameLayout.LayoutParams layoutParams = new FrameLayout.LayoutParams(FrameLayout.LayoutParams.WRAP_CONTENT, FrameLayout.LayoutParams.WRAP_CONTENT);
         layoutParams.gravity = Gravity.CENTER;
         mListener.onBannerAdLoaded(mAdView, layoutParams);
-        mListener.onBannerAdShown();
-
     }
 
     // ad request failed
@@ -62,18 +57,14 @@ public class AdMobBannerAdListener extends AdListener {
             return;
         }
 
-        if (mAdapter == null || mAdapter.get() == null) {
-            IronLog.INTERNAL.verbose("adapter is null");
-            return;
-        }
-
         if (loadAdError != null) {
             adapterError = loadAdError.getMessage() + "( " + loadAdError.getCode() + " ) ";
 
             if (loadAdError.getCause() != null) {
                 adapterError = adapterError + " Caused by - " + loadAdError.getCause();
             }
-            ironSourceErrorObject = mAdapter.get().isNoFillError(loadAdError.getCode()) ?
+
+            ironSourceErrorObject = AdMobAdapter.isNoFillError(loadAdError.getCode()) ?
                     new IronSourceError(IronSourceError.ERROR_BN_LOAD_NO_FILL, adapterError) :
                     ErrorBuilder.buildLoadFailedError(adapterError);
         } else {
@@ -85,21 +76,29 @@ public class AdMobBannerAdListener extends AdListener {
         mListener.onBannerAdLoadFailed(ironSourceErrorObject);
     }
 
-    //banner shown - removed adShown callback from here because sometimes, on reload, this callback is called before onAdLoaded
+    // Called when impression is recorded for the ad
     @Override
     public void onAdImpression() {
         IronLog.ADAPTER_CALLBACK.verbose("adUnitId = " + mAdUnitId);
-    }
 
+        if (mListener == null) {
+            IronLog.INTERNAL.verbose("listener is null");
+            return;
+        }
+
+        mListener.onBannerAdShown();
+    }
 
     // banner was clicked
     @Override
     public void onAdClicked() {
         IronLog.ADAPTER_CALLBACK.verbose("adUnitId = " + mAdUnitId);
+
         if (mListener == null) {
             IronLog.INTERNAL.verbose("listener is null");
             return;
         }
+
         mListener.onBannerAdClicked();
     }
 
@@ -120,11 +119,12 @@ public class AdMobBannerAdListener extends AdListener {
     @Override
     public void onAdClosed() {
         IronLog.ADAPTER_CALLBACK.verbose("adUnitId = " + mAdUnitId);
+
         if (mListener == null) {
             IronLog.INTERNAL.verbose("listener is null");
             return;
         }
+
         mListener.onBannerAdScreenDismissed();
     }
-
 }

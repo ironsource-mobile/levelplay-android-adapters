@@ -1,14 +1,16 @@
-package com.ironsource.adapters.admob;
+package com.ironsource.adapters.admob.banner;
 
-import android.app.Activity;
+import android.content.Context;
 import android.view.Gravity;
+import android.view.LayoutInflater;
 import android.widget.FrameLayout;
 
 import com.google.android.gms.ads.nativead.NativeAdView;
+import com.ironsource.adapters.admob.R;
 import com.ironsource.mediationsdk.AdapterUtils;
 import com.ironsource.mediationsdk.ISBannerSize;
 
-public class AdMobNativeBannerLayout {
+public class AdMobNativeBannerViewHandler {
 
     enum TemplateType {
 
@@ -30,27 +32,28 @@ public class AdMobNativeBannerLayout {
     private boolean mShouldHideVideoContent = true;
     private final NativeAdView mAdView;
 
-    public AdMobNativeBannerLayout(ISBannerSize bannerSize, Activity activity) {
+    public AdMobNativeBannerViewHandler(ISBannerSize bannerSize, Context context) {
 
         TemplateType templateType = TemplateType.SMALL;
 
         switch (bannerSize.getDescription()) {
             case "BANNER":
             case "SMART":
-                mLayoutParams = new FrameLayout.LayoutParams(AdapterUtils.dpToPixels(activity, 320), AdapterUtils.dpToPixels(activity, 50));
+                mLayoutParams = new FrameLayout.LayoutParams(AdapterUtils.dpToPixels(context, 320), AdapterUtils.dpToPixels(context, 50));
                 mShouldHideCallToAction = true;
                 break;
             case "LARGE":
-                mLayoutParams = new FrameLayout.LayoutParams(AdapterUtils.dpToPixels(activity, 320), AdapterUtils.dpToPixels(activity, 90));
+                mLayoutParams = new FrameLayout.LayoutParams(AdapterUtils.dpToPixels(context, 320), AdapterUtils.dpToPixels(context, 90));
                 break;
             case "RECTANGLE":
-                mLayoutParams = new FrameLayout.LayoutParams(AdapterUtils.dpToPixels(activity, 300), AdapterUtils.dpToPixels(activity, 250));
+                mLayoutParams = new FrameLayout.LayoutParams(AdapterUtils.dpToPixels(context, 300), AdapterUtils.dpToPixels(context, 250));
                 templateType = TemplateType.MEDIUM;
                 mShouldHideVideoContent = false;
                 break;
         }
         mLayoutParams.gravity = Gravity.CENTER;
-        mAdView = (NativeAdView) activity.getLayoutInflater().inflate(templateType.getTemplateVal(), null);
+        LayoutInflater inflater = (LayoutInflater) context.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+        mAdView = (NativeAdView) inflater.inflate(templateType.getTemplateVal(), null);
     }
 
     public FrameLayout.LayoutParams getLayoutParams() {

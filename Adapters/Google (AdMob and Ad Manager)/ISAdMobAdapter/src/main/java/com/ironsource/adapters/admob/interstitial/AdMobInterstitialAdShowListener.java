@@ -1,4 +1,4 @@
-package com.ironsource.adapters.admob;
+package com.ironsource.adapters.admob.interstitial;
 
 import com.google.android.gms.ads.AdError;
 import com.google.android.gms.ads.FullScreenContentCallback;
@@ -8,17 +8,13 @@ import com.ironsource.mediationsdk.sdk.InterstitialSmashListener;
 
 import org.jetbrains.annotations.NotNull;
 
-import java.lang.ref.WeakReference;
-
 // AdMob interstitial show listener
 public class AdMobInterstitialAdShowListener extends FullScreenContentCallback {
     // data
-    private String mAdUnitId;
-    private WeakReference<AdMobAdapter> mAdapter;
     private InterstitialSmashListener mListener;
+    private String mAdUnitId;
 
-    AdMobInterstitialAdShowListener(AdMobAdapter adapter, InterstitialSmashListener listener, String adUnitId) {
-        mAdapter = new WeakReference<>(adapter);
+    AdMobInterstitialAdShowListener(String adUnitId, InterstitialSmashListener listener) {
         mListener = listener;
         mAdUnitId = adUnitId;
     }
@@ -27,30 +23,18 @@ public class AdMobInterstitialAdShowListener extends FullScreenContentCallback {
     @Override
     public void onAdShowedFullScreenContent() {
         IronLog.ADAPTER_CALLBACK.verbose("adUnitId = " + mAdUnitId);
-
-        if (mListener == null) {
-            IronLog.INTERNAL.verbose("listener is null");
-            return;
-        }
-
-        mListener.onInterstitialAdOpened();
     }
-
 
     // Called when fullscreen content failed to show.
     @Override
     public void onAdFailedToShowFullScreenContent(@NotNull AdError adError) {
         IronLog.ADAPTER_CALLBACK.verbose("adUnitId = " + mAdUnitId);
-        int errorCode = adError.getCode();;
+        int errorCode = adError.getCode();
+
         String adapterError = adError.getMessage() + "( " + errorCode + " )";
 
         if (mListener == null) {
             IronLog.INTERNAL.verbose("listener is null");
-            return;
-        }
-
-        if (mAdapter == null || mAdapter.get() == null) {
-            IronLog.INTERNAL.verbose("adapter is null");
             return;
         }
 
@@ -59,7 +43,7 @@ public class AdMobInterstitialAdShowListener extends FullScreenContentCallback {
         }
 
         IronLog.ADAPTER_CALLBACK.error("adapterError = " + adapterError);
-        mListener.onInterstitialAdShowFailed(new IronSourceError(errorCode, mAdapter.get().getProviderName() + "onInterstitialAdShowFailed " + mAdUnitId + " " + adapterError));
+        mListener.onInterstitialAdShowFailed(new IronSourceError(errorCode, "onInterstitialAdShowFailed " + mAdUnitId + " " + adapterError));
     }
 
     // Called when impression is recorded for the ad
@@ -72,6 +56,7 @@ public class AdMobInterstitialAdShowListener extends FullScreenContentCallback {
             return;
         }
 
+        mListener.onInterstitialAdOpened();
         mListener.onInterstitialAdShowSucceeded();
     }
 
@@ -100,6 +85,4 @@ public class AdMobInterstitialAdShowListener extends FullScreenContentCallback {
 
         mListener.onInterstitialAdClosed();
     }
-
-
 }
