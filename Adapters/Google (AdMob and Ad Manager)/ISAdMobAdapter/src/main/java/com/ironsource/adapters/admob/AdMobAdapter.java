@@ -4,16 +4,22 @@ import android.app.Activity;
 import android.os.Bundle;
 import android.text.TextUtils;
 
-
+import com.google.android.gms.ads.AdFormat;
+import com.google.android.gms.ads.AdLoader;
 import com.google.android.gms.ads.MobileAds;
 import com.google.android.gms.ads.AdRequest;
 import com.google.android.gms.ads.AdSize;
 import com.google.android.gms.ads.AdView;
 import com.google.android.gms.ads.RequestConfiguration;
+import com.google.android.gms.ads.VideoOptions;
 import com.google.android.gms.ads.initialization.AdapterStatus;
 import com.google.android.gms.ads.initialization.InitializationStatus;
 import com.google.android.gms.ads.initialization.OnInitializationCompleteListener;
 import com.google.android.gms.ads.interstitial.InterstitialAd;
+import com.google.android.gms.ads.query.QueryInfo;
+import com.google.android.gms.ads.query.QueryInfoGenerationCallback;
+import com.google.android.gms.ads.nativead.NativeAd;
+import com.google.android.gms.ads.nativead.NativeAdOptions;
 import com.google.android.gms.ads.rewarded.RewardedAd;
 import com.ironsource.environment.ContextProvider;
 import com.ironsource.mediationsdk.AbstractAdapter;
@@ -29,6 +35,7 @@ import com.ironsource.mediationsdk.metadata.MetaDataUtils;
 import com.ironsource.mediationsdk.sdk.BannerSmashListener;
 import com.ironsource.mediationsdk.sdk.InterstitialSmashListener;
 import com.ironsource.mediationsdk.sdk.RewardedVideoSmashListener;
+import com.ironsource.mediationsdk.bidding.BiddingDataCallback;
 import com.ironsource.mediationsdk.AdapterUtils;
 import com.ironsource.mediationsdk.utils.ErrorBuilder;
 import com.ironsource.mediationsdk.utils.IronSourceConstants;
@@ -36,9 +43,11 @@ import com.ironsource.mediationsdk.utils.IronSourceConstants;
 import org.jetbrains.annotations.NotNull;
 import org.json.JSONObject;
 
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -49,22 +58,26 @@ import static com.google.android.gms.ads.RequestConfiguration.TAG_FOR_UNDER_AGE_
 import static com.google.android.gms.ads.mediation.MediationAdConfiguration.TAG_FOR_CHILD_DIRECTED_TREATMENT_TRUE;
 import static com.ironsource.mediationsdk.metadata.MetaData.MetaDataValueTypes.META_DATA_VALUE_BOOLEAN;
 
+import androidx.annotation.NonNull;
+
 
 public class AdMobAdapter extends AbstractAdapter implements INetworkInitCallbackListener {
 
-
     //AdMob requires a request agent name
-    private final String IRONSOURCE_REQUEST_AGENT = "ironSource";
+    private final String REQUEST_AGENT = "unity";
+    private final String PLATFORM_NAME = "unity";
 
     //adapter version
     private static final String VERSION = BuildConfig.VERSION_NAME;
 
     private static final String GitHash = BuildConfig.GitHash;
     private final String AD_UNIT_ID = "adUnitId";
+    private static final String EMPTY_STRING = "";
 
     // Init configuration flags
     private final String NETWORK_ONLY_INIT = "networkOnlyInit";
     private final String INIT_RESPONSE_REQUIRED = "initResponseRequired";
+    private final String IS_NATIVE = "isNative";
 
     // shared variables between instances
     private static Boolean mConsent = null;
@@ -78,11 +91,11 @@ public class AdMobAdapter extends AbstractAdapter implements INetworkInitCallbac
     private static InitState mInitState = InitState.INIT_STATE_NONE;
     private static AtomicBoolean mWasInitCalled = new AtomicBoolean(false);
 
-
     // Rewarded video collections
     private ConcurrentHashMap<String, RewardedVideoSmashListener> mAdUnitIdToRewardedVideoListener;
     private CopyOnWriteArraySet<String> mRewardedVideoAdUnitIdsForInitCallbacks;
     public ConcurrentHashMap<String, RewardedAd> mAdUnitIdToRewardedVideoAd;
+    public ConcurrentHashMap<String, JSONObject> mAdUnitIdToRewardedVideoAdData;
     public ConcurrentHashMap<String, Boolean> mRewardedVideoAdsAvailability; //used to check if an ad is available
 
     // Interstitial maps
@@ -91,9 +104,9 @@ public class AdMobAdapter extends AbstractAdapter implements INetworkInitCallbac
     public ConcurrentHashMap<String, Boolean> mInterstitialAdsAvailability; //used to check if an ad is available
 
     // Banner maps
-    private ConcurrentHashMap<String, BannerSmashListener> mAdUnitIdToBannerListener;
+    public ConcurrentHashMap<String, BannerSmashListener> mAdUnitIdToBannerListener;
     private ConcurrentHashMap<String, AdView> mAdUnitIdToBannerAd;
-
+    public ConcurrentHashMap<String, NativeAd> mAdUnitIdToNativeBannerAd;
 
     //init state possible values
     private enum InitState {
@@ -131,6 +144,7 @@ public class AdMobAdapter extends AbstractAdapter implements INetworkInitCallbac
         // rewarded video
         mAdUnitIdToRewardedVideoListener = new ConcurrentHashMap<>();
         mAdUnitIdToRewardedVideoAd = new ConcurrentHashMap<>();
+        mAdUnitIdToRewardedVideoAdData = new ConcurrentHashMap<>();
         mRewardedVideoAdsAvailability = new ConcurrentHashMap<>();
         mRewardedVideoAdUnitIdsForInitCallbacks = new CopyOnWriteArraySet<>();
 
@@ -141,6 +155,7 @@ public class AdMobAdapter extends AbstractAdapter implements INetworkInitCallbac
 
         // banner
         mAdUnitIdToBannerAd = new ConcurrentHashMap<>();
+        mAdUnitIdToNativeBannerAd = new ConcurrentHashMap<>();
         mAdUnitIdToBannerListener = new ConcurrentHashMap<>();
 
         // The network's capability to load a Rewarded Video ad while another Rewarded Video ad of that network is showing
@@ -174,54 +189,59 @@ public class AdMobAdapter extends AbstractAdapter implements INetworkInitCallbac
     //region Initializations methods and callbacks
     // All calls to MobileAds must be on the main thread --> run all calls to initSDK in a thread.
     private void initSDK(final JSONObject config) {
-        // add self to init delegates if init process didn't finish
-        if (mInitState == InitState.INIT_STATE_NONE || mInitState == InitState.INIT_STATE_IN_PROGRESS) {
-            initCallbackListeners.add(this);
-        }
-        //init sdk will only be called once
-        if (mWasInitCalled.compareAndSet(false, true)) {
-            mInitState = InitState.INIT_STATE_IN_PROGRESS;
+        postOnUIThread(new Runnable() {
+            @Override
+            public void run() {
+                // add self to init delegates if init process didn't finish
+                if (mInitState == InitState.INIT_STATE_NONE || mInitState == InitState.INIT_STATE_IN_PROGRESS) {
+                    initCallbackListeners.add(AdMobAdapter.this);
+                }
+                //init sdk will only be called once
+                if (mWasInitCalled.compareAndSet(false, true)) {
+                    mInitState = InitState.INIT_STATE_IN_PROGRESS;
 
-            IronLog.ADAPTER_API.verbose("");
-            boolean networkOnlyInit = config.optBoolean(NETWORK_ONLY_INIT, true);
+                    IronLog.ADAPTER_API.verbose("");
+                    boolean networkOnlyInit = config.optBoolean(NETWORK_ONLY_INIT, true);
 
-            if (networkOnlyInit) {
-                IronLog.ADAPTER_API.verbose("disableMediationAdapterInitialization");
-                // Limit the AdMob initialization to its network
-                MobileAds.disableMediationAdapterInitialization(ContextProvider.getInstance().getCurrentActiveActivity());
-            }
-
-
-            //check if we want to perform the init process with an init callback
-            boolean shouldWaitForInitCallback = config.optBoolean(INIT_RESPONSE_REQUIRED, false);
-
-            if (shouldWaitForInitCallback) {
-                IronLog.ADAPTER_API.verbose("init and wait for callback");
-
-                //init AdMob sdk with callback
-                MobileAds.initialize(ContextProvider.getInstance().getApplicationContext(), new OnInitializationCompleteListener() {
-                    @Override
-                    public void onInitializationComplete(@NotNull InitializationStatus initializationStatus) {
-                        AdapterStatus status = initializationStatus.getAdapterStatusMap().get("com.google.android.gms.ads.MobileAds");
-                        AdapterStatus.State state = status != null ? status.getInitializationState() : null;
-
-                        if (state == AdapterStatus.State.READY) {
-                            IronLog.ADAPTER_API.verbose("initializationStatus = READY");
-                            initializationSuccess();
-                        } else {
-                            IronLog.ADAPTER_API.verbose("initializationStatus = NOT READY");
-                            initializationFailure();
-                        }
+                    if (networkOnlyInit) {
+                        IronLog.ADAPTER_API.verbose("disableMediationAdapterInitialization");
+                        // Limit the AdMob initialization to its network
+                        MobileAds.disableMediationAdapterInitialization(ContextProvider.getInstance().getCurrentActiveActivity());
                     }
-                });
-            } else {
-                //init AdMob sdk without callback
-                IronLog.ADAPTER_API.verbose("init without callback");
-                MobileAds.initialize(ContextProvider.getInstance().getApplicationContext());
-                initializationSuccess();
-            }
-        }
 
+
+                    //check if we want to perform the init process with an init callback
+                    boolean shouldWaitForInitCallback = config.optBoolean(INIT_RESPONSE_REQUIRED, false);
+
+                    if (shouldWaitForInitCallback) {
+                        IronLog.ADAPTER_API.verbose("init and wait for callback");
+
+                        //init AdMob sdk with callback
+                        MobileAds.initialize(ContextProvider.getInstance().getApplicationContext(), new OnInitializationCompleteListener() {
+                            @Override
+                            public void onInitializationComplete(@NotNull InitializationStatus initializationStatus) {
+                                AdapterStatus status = initializationStatus.getAdapterStatusMap().get("com.google.android.gms.ads.MobileAds");
+                                AdapterStatus.State state = status != null ? status.getInitializationState() : null;
+
+                                if (state == AdapterStatus.State.READY) {
+                                    IronLog.ADAPTER_API.verbose("initializationStatus = READY");
+                                    initializationSuccess();
+                                } else {
+                                    IronLog.ADAPTER_API.verbose("initializationStatus = NOT READY");
+                                    initializationFailure();
+                                }
+                            }
+                        });
+                    } else {
+                        //init AdMob sdk without callback
+                        IronLog.ADAPTER_API.verbose("init without callback");
+                        MobileAds.initialize(ContextProvider.getInstance().getApplicationContext());
+                        initializationSuccess();
+                    }
+                }
+
+            }
+        });
     }
 
 
@@ -232,7 +252,8 @@ public class AdMobAdapter extends AbstractAdapter implements INetworkInitCallbac
             if (mRewardedVideoAdUnitIdsForInitCallbacks.contains(adUnitId)) {
                 listener.onRewardedVideoInitSuccess();
             } else {
-                loadRewardedVideoAdFromAdMob(adUnitId, listener);
+                JSONObject adData = mAdUnitIdToRewardedVideoAdData.get(adUnitId);
+                loadRewardedVideoAdFromAdMob(adUnitId, adData, listener, null);
             }
         }
 
@@ -311,26 +332,21 @@ public class AdMobAdapter extends AbstractAdapter implements INetworkInitCallbac
         mAdUnitIdToRewardedVideoListener.put(adUnitId, listener);
         //add to rewarded video init callback map
         mRewardedVideoAdUnitIdsForInitCallbacks.add(adUnitId);
-        postOnUIThread(new Runnable() {
-            @Override
-            public void run() {
-                // check AdMob sdk init state
-                if (mInitState == InitState.INIT_STATE_SUCCESS) {
-                    listener.onRewardedVideoInitSuccess();
-                } else if (mInitState == InitState.INIT_STATE_FAILED) {
-                    IronLog.INTERNAL.verbose("init failed - adUnitId = " + adUnitId);
-                    listener.onRewardedVideoInitFailed(ErrorBuilder.buildInitFailedError("AdMob sdk init failed", IronSourceConstants.REWARDED_VIDEO_AD_UNIT));
-                } else {
-                    initSDK(config);
-                }
-            }
-        });
 
+        // check AdMob sdk init state
+        if (mInitState == InitState.INIT_STATE_SUCCESS) {
+            listener.onRewardedVideoInitSuccess();
+        } else if (mInitState == InitState.INIT_STATE_FAILED) {
+            IronLog.INTERNAL.verbose("init failed - adUnitId = " + adUnitId);
+            listener.onRewardedVideoInitFailed(ErrorBuilder.buildInitFailedError("AdMob sdk init failed", IronSourceConstants.REWARDED_VIDEO_AD_UNIT));
+        } else {
+            initSDK(config);
+        }
     }
 
     // used for flows when the mediation doesn't need to get a callback for init
     @Override
-    public void initAndLoadRewardedVideo(String appKey, String userId, final JSONObject config, final RewardedVideoSmashListener listener) {
+    public void initAndLoadRewardedVideo(String appKey, String userId, final JSONObject config, final JSONObject adData, final RewardedVideoSmashListener listener) {
 
         final String adUnitId = config.optString(AD_UNIT_ID);
         IronLog.ADAPTER_API.verbose("adUnitId = " + adUnitId);
@@ -344,41 +360,48 @@ public class AdMobAdapter extends AbstractAdapter implements INetworkInitCallbac
         //add to rewarded video listener map
         mAdUnitIdToRewardedVideoListener.put(adUnitId, listener);
 
-        postOnUIThread(new Runnable() {
-            @Override
-            public void run() {
-                if (mInitState == InitState.INIT_STATE_SUCCESS) {
-                    IronLog.INTERNAL.verbose("loadVideo - adUnitId = " + adUnitId);
-                    loadRewardedVideoAdFromAdMob(adUnitId, listener);
-                } else if (mInitState == InitState.INIT_STATE_FAILED) {
-                    IronLog.INTERNAL.verbose("onRewardedVideoAvailabilityChanged(false) - adUnitId = " + adUnitId);
-                    listener.onRewardedVideoAvailabilityChanged(false);
-                } else {
-                    initSDK(config);
-                }
+        if (mInitState == InitState.INIT_STATE_SUCCESS) {
+            IronLog.INTERNAL.verbose("loadVideo - adUnitId = " + adUnitId);
+            loadRewardedVideoAdFromAdMob(adUnitId, adData, listener, null);
+        } else if (mInitState == InitState.INIT_STATE_FAILED) {
+            IronLog.INTERNAL.verbose("onRewardedVideoAvailabilityChanged(false) - adUnitId = " + adUnitId);
+            listener.onRewardedVideoAvailabilityChanged(false);
+        } else {
+            if (adData != null) {
+                mAdUnitIdToRewardedVideoAdData.put(adUnitId, adData);
             }
-        });
+
+            initSDK(config);
+        }
     }
 
     @Override
-    public void fetchRewardedVideoForAutomaticLoad(final JSONObject config, final RewardedVideoSmashListener listener) {
+    public void loadRewardedVideoForBidding(final JSONObject config, final JSONObject adData, final RewardedVideoSmashListener listener, final String serverData) {
         IronLog.ADAPTER_API.verbose("");
+        final String adUnitId = config.optString(AD_UNIT_ID);
+        loadRewardedVideoAdFromAdMob(adUnitId, adData, listener, serverData);
+    }
+
+    @Override
+    public void fetchRewardedVideoForAutomaticLoad(final JSONObject config, final JSONObject adData, final RewardedVideoSmashListener listener) {
+        IronLog.ADAPTER_API.verbose("");
+        final String adUnitId = config.optString(AD_UNIT_ID);
+        loadRewardedVideoAdFromAdMob(adUnitId, adData, listener, null);
+    }
+
+    private void loadRewardedVideoAdFromAdMob(final String adUnitId, final JSONObject adData, final RewardedVideoSmashListener listener, final String serverData) {
         postOnUIThread(new Runnable() {
             @Override
             public void run() {
-                loadRewardedVideoAdFromAdMob(config.optString(AD_UNIT_ID), listener);
+                IronLog.ADAPTER_API.verbose("adUnitId = " + adUnitId);
+
+                // set the rewarded video availability to false before attempting to load
+                mRewardedVideoAdsAvailability.put(adUnitId, false);
+                AdRequest adRequest = createAdRequest(adData, serverData);
+                AdMobRewardedVideoAdLoadListener adMobRewardedVideoAdLoadListener = new AdMobRewardedVideoAdLoadListener(AdMobAdapter.this, adUnitId, listener);
+                RewardedAd.load(ContextProvider.getInstance().getApplicationContext(), adUnitId, adRequest, adMobRewardedVideoAdLoadListener);
             }
         });
-    }
-
-    private void loadRewardedVideoAdFromAdMob(final String adUnitId, final RewardedVideoSmashListener listener) {
-        IronLog.ADAPTER_API.verbose("adUnitId = " + adUnitId);
-
-        // set the rewarded video availability to false before attempting to load
-        mRewardedVideoAdsAvailability.put(adUnitId, false);
-        AdRequest adRequest = createAdRequest();
-        AdMobRewardedVideoAdLoadListener adMobRewardedVideoAdLoadListener = new AdMobRewardedVideoAdLoadListener(AdMobAdapter.this, adUnitId, listener);
-        RewardedAd.load(ContextProvider.getInstance().getApplicationContext(), adUnitId, adRequest, adMobRewardedVideoAdLoadListener);
     }
 
     @Override
@@ -418,9 +441,21 @@ public class AdMobAdapter extends AbstractAdapter implements INetworkInitCallbac
         }
         return mRewardedVideoAdsAvailability.containsKey(adUnitId) && mRewardedVideoAdsAvailability.get(adUnitId);
     }
+
+    @Override
+    public void collectRewardedVideoBiddingData(JSONObject config, JSONObject adData, @NotNull final BiddingDataCallback biddingDataCallback) {
+        collectBiddingData(adData, biddingDataCallback, AdFormat.REWARDED);
+    }
     //endregion
 
     //region Interstitial API
+    @Override
+    public void initInterstitialForBidding(String appKey, String userId, final JSONObject config,
+                                           final InterstitialSmashListener listener) {
+        IronLog.ADAPTER_API.verbose("");
+        initInterstitial(appKey, userId, config, listener);
+    }
+
     @Override
     public void initInterstitial(String appKey, String userId, final JSONObject config,
                                  final InterstitialSmashListener listener) {
@@ -433,31 +468,37 @@ public class AdMobAdapter extends AbstractAdapter implements INetworkInitCallbac
         }
 
         IronLog.ADAPTER_API.verbose("adUnitId = " + adUnitId);
-        postOnUIThread(new Runnable() {
-            @Override
-            public void run() {
-                //add to interstitial listener map
-                mAdUnitIdToInterstitialListener.put(adUnitId, listener);
 
-                //check AdMob sdk init state
-                if (mInitState == InitState.INIT_STATE_SUCCESS) {
-                    IronLog.INTERNAL.verbose("onInterstitialInitSuccess - adUnitId = " + adUnitId);
-                    listener.onInterstitialInitSuccess();
-                } else if (mInitState == InitState.INIT_STATE_FAILED) {
-                    IronLog.INTERNAL.verbose("onInterstitialInitFailed - adUnitId = " + adUnitId);
-                    listener.onInterstitialInitFailed(ErrorBuilder.buildInitFailedError("AdMob sdk init failed", IronSourceConstants.INTERSTITIAL_AD_UNIT));
-                } else {
-                    initSDK(config);
-                }
-            }
-        });
+        //add to interstitial listener map
+        mAdUnitIdToInterstitialListener.put(adUnitId, listener);
+
+        //check AdMob sdk init state
+        if (mInitState == InitState.INIT_STATE_SUCCESS) {
+            IronLog.INTERNAL.verbose("onInterstitialInitSuccess - adUnitId = " + adUnitId);
+            listener.onInterstitialInitSuccess();
+        } else if (mInitState == InitState.INIT_STATE_FAILED) {
+            IronLog.INTERNAL.verbose("onInterstitialInitFailed - adUnitId = " + adUnitId);
+            listener.onInterstitialInitFailed(ErrorBuilder.buildInitFailedError("AdMob sdk init failed", IronSourceConstants.INTERSTITIAL_AD_UNIT));
+        } else {
+            initSDK(config);
+        }
     }
 
+    @Override
+    public void loadInterstitialForBidding(final JSONObject config, final JSONObject adData, final InterstitialSmashListener listener, final String serverData) {
+        IronLog.ADAPTER_API.verbose("");
+        loadInterstitialInternal(config, adData, listener, serverData);
+    }
 
     @Override
-    public void loadInterstitial(final JSONObject config,
+    public void loadInterstitial(final JSONObject config, final JSONObject adData,
                                  final InterstitialSmashListener listener) {
-        postOnUIThread(new Runnable() {
+        IronLog.ADAPTER_API.verbose("");
+        loadInterstitialInternal(config, adData, listener, null);
+    }
+
+    private void loadInterstitialInternal(final JSONObject config, final JSONObject adData, final InterstitialSmashListener listener, final String serverData) {
+            postOnUIThread(new Runnable() {
             @Override
             public void run() {
                 final String adUnitId = config.optString(AD_UNIT_ID);
@@ -465,7 +506,7 @@ public class AdMobAdapter extends AbstractAdapter implements INetworkInitCallbac
 
                 // set the interstitial ad availability to false before attempting to load
                 mInterstitialAdsAvailability.put(adUnitId, false);
-                AdRequest adRequest = createAdRequest();
+                AdRequest adRequest = createAdRequest(adData, serverData);
                 AdMobInterstitialAdLoadListener adMobInterstitialAdLoadListener = new AdMobInterstitialAdLoadListener(AdMobAdapter.this, adUnitId, listener);
                 InterstitialAd.load(ContextProvider.getInstance().getApplicationContext(), adUnitId, adRequest, adMobInterstitialAdLoadListener);
             }
@@ -513,13 +554,27 @@ public class AdMobAdapter extends AbstractAdapter implements INetworkInitCallbac
         return mInterstitialAdsAvailability.containsKey(adUnitId) && mInterstitialAdsAvailability.get(adUnitId);
     }
 
+    @Override
+    public void collectInterstitialBiddingData(JSONObject config, JSONObject adData, @NotNull BiddingDataCallback biddingDataCallback) {
+        collectBiddingData(adData, biddingDataCallback, AdFormat.INTERSTITIAL);
+    }
     //endregion
 
     //region Banner API
     @Override
+    public void initBannerForBidding(String appKey, String userId, JSONObject config, BannerSmashListener listener) {
+        IronLog.ADAPTER_API.verbose("");
+        initBannersInternal(config, listener);
+    }
+
+    @Override
     public void initBanners(String appKey, String userId, final JSONObject config,
                             final BannerSmashListener listener) {
+        IronLog.ADAPTER_API.verbose("");
+        initBannersInternal(config, listener);
+    }
 
+    private void initBannersInternal(final JSONObject config, final BannerSmashListener listener) {
         final String adUnitId = config.optString(AD_UNIT_ID);
         if (TextUtils.isEmpty(adUnitId)) {
             IronSourceError error = ErrorBuilder.buildInitFailedError("Missing params - " + AD_UNIT_ID, IronSourceConstants.BANNER_AD_UNIT);
@@ -528,29 +583,33 @@ public class AdMobAdapter extends AbstractAdapter implements INetworkInitCallbac
         }
         IronLog.ADAPTER_API.verbose("adUnitId = " + adUnitId);
 
-        postOnUIThread(new Runnable() {
-            @Override
-            public void run() {
-                //add banner to listener map
-                mAdUnitIdToBannerListener.put(adUnitId, listener);
+        //add banner to listener map
+        mAdUnitIdToBannerListener.put(adUnitId, listener);
 
-                if (mInitState == InitState.INIT_STATE_SUCCESS) {
-                    IronLog.INTERNAL.verbose("onBannerInitSuccess - adUnitId = " + adUnitId);
-                    listener.onBannerInitSuccess();
-                } else if (mInitState == InitState.INIT_STATE_FAILED) {
-                    IronLog.INTERNAL.verbose("onBannerInitFailed - adUnitId = " + adUnitId);
-                    listener.onBannerInitFailed(ErrorBuilder.buildInitFailedError("AdMob sdk init failed", IronSourceConstants.BANNER_AD_UNIT));
-                } else {
-                    initSDK(config);
-                }
-            }
-        });
+        if (mInitState == InitState.INIT_STATE_SUCCESS) {
+            IronLog.INTERNAL.verbose("onBannerInitSuccess - adUnitId = " + adUnitId);
+            listener.onBannerInitSuccess();
+        } else if (mInitState == InitState.INIT_STATE_FAILED) {
+            IronLog.INTERNAL.verbose("onBannerInitFailed - adUnitId = " + adUnitId);
+            listener.onBannerInitFailed(ErrorBuilder.buildInitFailedError("AdMob sdk init failed", IronSourceConstants.BANNER_AD_UNIT));
+        } else {
+            initSDK(config);
+        }
     }
 
     @Override
-    public void loadBanner(final IronSourceBannerLayout banner, final JSONObject config,
-                           final BannerSmashListener listener) {
+    public void loadBannerForBidding(final IronSourceBannerLayout banner, final JSONObject config, final JSONObject adData, final BannerSmashListener listener, final String serverData) {
+        IronLog.ADAPTER_API.verbose("");
+        loadBannerInternal(banner, config, adData, listener, serverData);
+    }
 
+    @Override
+    public void loadBanner(final IronSourceBannerLayout banner, final JSONObject config, final JSONObject adData, final BannerSmashListener listener) {
+        IronLog.ADAPTER_API.verbose("");
+        loadBannerInternal(banner, config, adData, listener, null);
+    }
+
+    private void loadBannerInternal(final IronSourceBannerLayout banner, JSONObject config, final JSONObject adData, final BannerSmashListener listener, final String serverData) {
         if (banner == null) {
             IronLog.ADAPTER_API.error("banner is null");
             listener.onBannerAdLoadFailed(ErrorBuilder.buildNoConfigurationAvailableError("banner is null"));
@@ -559,36 +618,70 @@ public class AdMobAdapter extends AbstractAdapter implements INetworkInitCallbac
 
         final String adUnitId = config.optString(AD_UNIT_ID);
         IronLog.ADAPTER_API.verbose("adUnitId = " + adUnitId);
+
+        final boolean isNative = Boolean.parseBoolean(config.optString(IS_NATIVE));
+
         postOnUIThread(new Runnable() {
             @Override
             public void run() {
                 try {
-                    //get banner size
-                    final AdSize size = getAdSize(banner.getSize(), AdapterUtils.isLargeScreen(banner.getActivity()));
-                    if (size == null) {
-                        listener.onBannerAdLoadFailed(ErrorBuilder.unsupportedBannerSize("AdMob"));
-                        return;
+                    AdRequest adRequest = createAdRequest(adData, serverData);
+
+                    if (isNative) {
+                        loadNativeBanner(banner, listener, adUnitId, adRequest);
+                    } else {
+                        //get banner size
+                        final AdSize size = getAdSize(banner.getSize(), AdapterUtils.isLargeScreen(banner.getActivity()));
+                        
+                        if (size == null) {
+                            listener.onBannerAdLoadFailed(ErrorBuilder.unsupportedBannerSize("AdMob"));
+                            return;
+                        }
+
+                        AdView adView = new AdView(banner.getActivity());
+                        adView.setAdSize(size);
+                        adView.setAdUnitId(adUnitId);
+                        AdMobBannerAdListener adMobBannerAdListener = new AdMobBannerAdListener(AdMobAdapter.this, listener, adUnitId, adView);
+                        adView.setAdListener(adMobBannerAdListener);
+                        
+                        //add banner ad to map
+                        mAdUnitIdToBannerAd.put(adUnitId, adView);
+
+                        IronLog.ADAPTER_API.verbose("loadAd");
+                        adView.loadAd(adRequest);
                     }
-
-                    AdView adView = new AdView(banner.getActivity());
-                    adView.setAdSize(size);
-                    adView.setAdUnitId(adUnitId);
-                    AdMobBannerAdListener adMobBannerAdListener = new AdMobBannerAdListener(AdMobAdapter.this, listener, adUnitId, adView);
-                    adView.setAdListener(adMobBannerAdListener);
-
-                    //add banner ad to map
-                    mAdUnitIdToBannerAd.put(adUnitId, adView);
-
-                    AdRequest adRequest = createAdRequest();
-                    IronLog.ADAPTER_API.verbose("loadAd");
-                    adView.loadAd(adRequest);
-
                 } catch (Exception e) {
                     IronSourceError error = ErrorBuilder.buildLoadFailedError("AdMobAdapter loadBanner exception " + e.getMessage());
                     listener.onBannerAdLoadFailed(error);
                 }
             }
         });
+    }
+
+    private void loadNativeBanner(final IronSourceBannerLayout banner, final BannerSmashListener listener, final String adUnitId, AdRequest adRequest) {
+        // verify size
+        if (!isNativeBannerSizeSupported(banner.getSize(), AdapterUtils.isLargeScreen(banner.getActivity()))) {
+            IronLog.INTERNAL.error("size not supported, size = " + banner.getSize().getDescription());
+            listener.onBannerAdLoadFailed(ErrorBuilder.unsupportedBannerSize(getProviderName()));
+            return;
+        }
+
+        NativeAdOptions.Builder optionsBuilder = new NativeAdOptions.Builder();
+        VideoOptions videoOptions = new VideoOptions.Builder()
+                .setStartMuted(true)
+                .build();
+        optionsBuilder.setVideoOptions(videoOptions);
+
+        AdMobNativeBannerAdListener adMobNativeBannerAdListener = new AdMobNativeBannerAdListener(AdMobAdapter.this, listener, adUnitId, banner.getSize());
+
+        AdLoader adLoader = new AdLoader.Builder(banner.getContext(), adUnitId)
+                .forNativeAd(adMobNativeBannerAdListener)
+                .withNativeAdOptions(optionsBuilder.build())
+                .withAdListener(adMobNativeBannerAdListener)
+                .build();
+
+        IronLog.ADAPTER_API.verbose("");
+        adLoader.loadAd(adRequest);
     }
 
     @Override
@@ -606,19 +699,38 @@ public class AdMobAdapter extends AbstractAdapter implements INetworkInitCallbac
                 try {
                     String adUnitId = config.optString(AD_UNIT_ID);
                     IronLog.ADAPTER_API.verbose("adUnitId = " + adUnitId);
+
+                    // Banner
                     if (mAdUnitIdToBannerAd.containsKey(adUnitId)) {
                         AdView ad = mAdUnitIdToBannerAd.get(adUnitId);
+                        
                         if (ad != null) {
                             ad.destroy();
                         }
+                        
                         mAdUnitIdToBannerAd.remove(adUnitId);
                     }
-
+                    
+                    // Native Banner
+                    if (mAdUnitIdToNativeBannerAd.containsKey(adUnitId)) {
+                        NativeAd ad = mAdUnitIdToNativeBannerAd.get(adUnitId);
+                        
+                        if (ad != null) {
+                            ad.destroy();
+                        }
+                        
+                        mAdUnitIdToNativeBannerAd.remove(adUnitId);
+                    }
                 } catch (Exception e) {
                     IronLog.ADAPTER_API.error("e = " + e);
                 }
             }
         });
+    }
+
+    @Override
+    public void collectBannerBiddingData(JSONObject config, JSONObject adData, @NotNull BiddingDataCallback biddingDataCallback) {
+        collectBiddingData(adData, biddingDataCallback, AdFormat.BANNER);
     }
     //endregion
 
@@ -632,9 +744,11 @@ public class AdMobAdapter extends AbstractAdapter implements INetworkInitCallbac
             for (RewardedAd rewardedVideoAd : mAdUnitIdToRewardedVideoAd.values()) {
                 rewardedVideoAd.setFullScreenContentCallback(null);
             }
+
             // clear rewarded maps
             mAdUnitIdToRewardedVideoAd.clear();
             mAdUnitIdToRewardedVideoListener.clear();
+            mAdUnitIdToRewardedVideoAdData.clear();
             mRewardedVideoAdsAvailability.clear();
             mRewardedVideoAdUnitIdsForInitCallbacks.clear();
 
@@ -643,6 +757,7 @@ public class AdMobAdapter extends AbstractAdapter implements INetworkInitCallbac
             for (InterstitialAd interstitialAd : mAdUnitIdToInterstitialAd.values()) {
                 interstitialAd.setFullScreenContentCallback(null);
             }
+
             // clear interstitial maps
             mAdUnitIdToInterstitialAd.clear();
             mAdUnitIdToInterstitialListener.clear();
@@ -656,8 +771,14 @@ public class AdMobAdapter extends AbstractAdapter implements INetworkInitCallbac
                     for (AdView adView : mAdUnitIdToBannerAd.values()) {
                         adView.destroy();
                     }
+
+                    for (NativeAd nativeAd : mAdUnitIdToNativeBannerAd.values()) {
+                        nativeAd.destroy();
+                    }
+
                     // clear banner maps
                     mAdUnitIdToBannerAd.clear();
+                    mAdUnitIdToNativeBannerAd.clear();
                     mAdUnitIdToBannerListener.clear();
                 }
             });
@@ -670,7 +791,6 @@ public class AdMobAdapter extends AbstractAdapter implements INetworkInitCallbac
         IronLog.ADAPTER_API.verbose("consent = " + consent);
         mConsent = consent;
     }
-
 
     protected void setMetaData(String key, List<String> values) {
         if (values.isEmpty()) {
@@ -767,41 +887,66 @@ public class AdMobAdapter extends AbstractAdapter implements INetworkInitCallbac
     //endregion
 
     // region Helpers
-    private AdRequest createAdRequest() {
+    private AdRequest createAdRequest(final JSONObject adData, final String serverData) {
+
         AdRequest.Builder builder = new AdRequest.Builder();
-        builder.setRequestAgent(IRONSOURCE_REQUEST_AGENT);
+        builder.setRequestAgent(REQUEST_AGENT);
+
+        if (serverData != null) {
+            // add server data to bidder instance
+            builder.setAdString(serverData);
+        }
+
+        Bundle extras = new Bundle();
+        extras.putString("platform_name", PLATFORM_NAME);
+
+        if (adData != null) {
+            String requestId = adData.optString("requestId", EMPTY_STRING);
+            boolean hybridMode = adData.optBoolean("isHybrid", false);
+
+            if (!requestId.isEmpty()) {
+                extras.putString("placement_req_id", requestId);
+                extras.putString("is_hybrid_setup", hybridMode? "true" : "false");
+                IronLog.INTERNAL.verbose("adData requestId = " + requestId + ", isHybrid = " + hybridMode);
+            }
+        }
+
         setRequestConfiguration();
 
         if (mConsent != null || mCCPAValue != null) {
-            Bundle extras = new Bundle();
             //handle consent for ad request
             if (mConsent != null && !mConsent) {
                 IronLog.ADAPTER_API.verbose("mConsent = " + mConsent);
                 extras.putString("npa", "1");
             }
+
             //handle CCPA for ad request
             if (mCCPAValue != null) {
                 IronLog.ADAPTER_API.verbose("mCCPAValue = " + mCCPAValue);
                 extras.putInt("rdp", mCCPAValue ? 1 : 0);
             }
-
-            builder.addNetworkExtrasBundle(com.google.ads.mediation.admob.AdMobAdapter.class, extras);
         }
+
+        builder.addNetworkExtrasBundle(com.google.ads.mediation.admob.AdMobAdapter.class, extras);
         return builder.build();
     }
 
     private void setRequestConfiguration() {
         final RequestConfiguration.Builder requestConfigurationBuilder = MobileAds.getRequestConfiguration().toBuilder();
         RequestConfiguration requestConfiguration = null;
+
         if (mCoppaValue != null) {
             requestConfiguration = requestConfigurationBuilder.setTagForChildDirectedTreatment(mCoppaValue).build();
         }
+
         if (mEuValue != null) {
             requestConfiguration = requestConfigurationBuilder.setTagForUnderAgeOfConsent(mEuValue).build();
         }
+
         if (!TextUtils.isEmpty(mRatingValue)) {
             requestConfiguration = requestConfigurationBuilder.setMaxAdContentRating(mRatingValue).build();
         }
+
         if (requestConfiguration != null) {
             MobileAds.setRequestConfiguration(requestConfiguration);
         }
@@ -846,7 +991,22 @@ public class AdMobAdapter extends AbstractAdapter implements INetworkInitCallbac
         } catch (NoSuchMethodError e) {
             IronLog.INTERNAL.verbose("adaptive banners are not supported on Ironsource sdk versions earlier than 7.1.14");
         }
+
         return adSize;
+    }
+
+    private boolean isNativeBannerSizeSupported(ISBannerSize size, boolean isLargeScreen) {
+        switch (size.getDescription()) {
+            case "BANNER":
+            case "LARGE":
+            case "RECTANGLE":
+                return true;
+            //in this case banner size is returned
+            case "SMART":
+                return !isLargeScreen;
+        }
+
+        return false;
     }
 
     private InterstitialAd getInterstitialAd(String adUnitId) {
@@ -860,6 +1020,60 @@ public class AdMobAdapter extends AbstractAdapter implements INetworkInitCallbac
     //check if the error was no fill error
     protected boolean isNoFillError(int errorCode) {
         return errorCode == AdRequest.ERROR_CODE_NO_FILL || errorCode == AdRequest.ERROR_CODE_MEDIATION_NO_FILL;
+    }
+
+    private void collectBiddingData(JSONObject adData, final BiddingDataCallback biddingDataCallback, AdFormat adFormat) {
+        if (mInitState == InitState.INIT_STATE_NONE) {
+            String error = "returning null as token since init hasn't started";
+            IronLog.INTERNAL.verbose(error);
+            biddingDataCallback.onFailure(error + " - AdMob");
+            return;
+        }
+
+        Bundle extras = new Bundle();
+        extras.putString("query_info_type", "requester_type_2");
+
+        if (adData != null) {
+            IronSourceBannerLayout bannerLayout = (IronSourceBannerLayout) adData.opt(IronSourceConstants.BANNER_LAYOUT);
+
+            if (bannerLayout != null) {
+                ISBannerSize size = bannerLayout.getSize();
+
+                if (size.isAdaptive()) {
+                    AdSize adSize = getAdSize(size, AdapterUtils.isLargeScreen(bannerLayout.getActivity()));
+                    extras.putInt("adaptive_banner_w", adSize.getWidth());
+                    extras.putInt("adaptive_banner_h", adSize.getHeight());
+                    IronLog.INTERNAL.verbose("adaptive banner width = " + adSize.getWidth() + ", height = " + adSize.getHeight());
+                }
+            }
+        }
+
+        AdRequest request =
+                new AdRequest.Builder()
+                        .setRequestAgent(REQUEST_AGENT)
+                        .addNetworkExtrasBundle(com.google.ads.mediation.admob.AdMobAdapter.class, extras)
+                        .build();
+        QueryInfo.generate(ContextProvider.getInstance().getApplicationContext(), adFormat, request,
+                new QueryInfoGenerationCallback() {
+                    // Called when query info generation succeeds
+                    @Override
+                    public void onSuccess(@NonNull final QueryInfo queryInfo) {
+                        String returnedToken = (!TextUtils.isEmpty(queryInfo.getQuery())) ? queryInfo.getQuery() : EMPTY_STRING;
+                        String sdkVersion = getCoreSDKVersion();
+                        IronLog.ADAPTER_API.verbose("token = " + returnedToken + ", sdkVersion = " + sdkVersion);
+                        Map<String, Object> biddingDataMap = new HashMap<>();
+                        biddingDataMap.put("token", returnedToken);
+                        biddingDataMap.put("sdkVersion", sdkVersion);
+                        biddingDataCallback.onSuccess(biddingDataMap);
+                    }
+
+                    // Called when query info generation fails
+                    @Override
+                    public void onFailure(@NonNull String error) {
+                        biddingDataCallback.onFailure("failed to receive token - AdMob " + error);
+                    }
+                });
+
     }
     //endregion
 

@@ -46,6 +46,9 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 class AppLovinAdapter extends AbstractAdapter implements INetworkInitCallbackListener {
 
+    // Mediation info
+    private final String MEDIATION_NAME = "IronSource";
+
     // Adapter version
     private static final String VERSION = BuildConfig.VERSION_NAME;
     private static final String GitHash = BuildConfig.GitHash;
@@ -169,6 +172,9 @@ class AppLovinAdapter extends AbstractAdapter implements INetworkInitCallbackLis
 
             // create AppLovin sdk instance
             mAppLovinSdk = AppLovinSdk.getInstance(sdkKey, appLovinSdkSettings, ContextProvider.getInstance().getCurrentActiveActivity());
+
+            // set ironSource as mediation
+            mAppLovinSdk.setMediationProvider(MEDIATION_NAME);
 
             // set user ID
             if (!TextUtils.isEmpty(userId)) {

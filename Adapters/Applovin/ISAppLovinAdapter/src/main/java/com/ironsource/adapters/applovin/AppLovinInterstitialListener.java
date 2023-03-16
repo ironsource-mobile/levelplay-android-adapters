@@ -92,7 +92,7 @@ public class AppLovinInterstitialListener implements AppLovinAdLoadListener, App
             IronLog.INTERNAL.verbose("listener is null");
             return;
         }
-
+        mListener.onInterstitialAdShowSucceeded();
         mListener.onInterstitialAdOpened();
     }
 
@@ -110,8 +110,6 @@ public class AppLovinInterstitialListener implements AppLovinAdLoadListener, App
             IronLog.INTERNAL.verbose("listener is null");
             return;
         }
-
-        mListener.onInterstitialAdShowSucceeded();
     }
 
     /**
