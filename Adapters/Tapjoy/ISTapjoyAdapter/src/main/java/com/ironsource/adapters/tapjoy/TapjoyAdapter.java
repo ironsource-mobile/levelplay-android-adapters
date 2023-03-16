@@ -1,6 +1,7 @@
 package com.ironsource.adapters.tapjoy;
 
 import android.app.Activity;
+import android.content.Context;
 import android.text.TextUtils;
 
 import com.ironsource.environment.ContextProvider;
@@ -56,8 +57,8 @@ public class TapjoyAdapter extends AbstractAdapter implements TJConnectListener,
     private final String META_DATA_TAPJOY_ADV_ID_OPT_OUT = "Tapjoy_optOutAdvertisingID";
 
     // Rewarded video maps
-    protected ConcurrentHashMap<String, TapjoyRewardedVideoAdListener> mRewardedVideoPlacementToTapjoyListener;
     protected ConcurrentHashMap<String, RewardedVideoSmashListener> mRewardedVideoPlacementToSmashListener;
+    protected ConcurrentHashMap<String, TapjoyRewardedVideoAdListener> mRewardedVideoPlacementToTapjoyListener;
     protected ConcurrentHashMap<String, TJPlacement> mRewardedVideoPlacementToAd;
     protected ConcurrentHashMap<String, Boolean> mRewardedVideoPlacementToIsReady;
     private CopyOnWriteArraySet<String> mRewardedVideoPlacementsForInitCallbacks;
@@ -95,7 +96,7 @@ public class TapjoyAdapter extends AbstractAdapter implements TJConnectListener,
 
     private TapjoyAdapter(String providerName) {
         super(providerName);
-        IronLog.INTERNAL.verbose("");
+        IronLog.INTERNAL.verbose();
 
         // Rewarded video
         mRewardedVideoPlacementToSmashListener = new ConcurrentHashMap<>();
@@ -114,10 +115,9 @@ public class TapjoyAdapter extends AbstractAdapter implements TJConnectListener,
         mLWSSupportState = LoadWhileShowSupportState.LOAD_WHILE_SHOW_BY_INSTANCE;
     }
 
-    // get the network and adapter integration data
-    public static IntegrationData getIntegrationData(Activity activity) {
-        IntegrationData ret = new IntegrationData("Tapjoy", VERSION);
-        return ret;
+    // Get the network and adapter integration data
+    public static IntegrationData getIntegrationData(Context context) {
+        return new IntegrationData("Tapjoy", VERSION);
     }
 
     @Override
@@ -165,7 +165,6 @@ public class TapjoyAdapter extends AbstractAdapter implements TJConnectListener,
 
             Tapjoy.connect(ContextProvider.getInstance().getApplicationContext(), sdkKey, connectFlags, this);
         }
-
     }
 
     @Override
@@ -202,6 +201,7 @@ public class TapjoyAdapter extends AbstractAdapter implements TJConnectListener,
 
         for (String placementName : mRewardedVideoPlacementToSmashListener.keySet()) {
             RewardedVideoSmashListener listener = mRewardedVideoPlacementToSmashListener.get(placementName);
+
             if (mRewardedVideoPlacementsForInitCallbacks.contains(placementName)) {
                 listener.onRewardedVideoInitSuccess();
             } else {
@@ -218,6 +218,7 @@ public class TapjoyAdapter extends AbstractAdapter implements TJConnectListener,
     public void onNetworkInitCallbackFailed(String error) {
         for (String placementName : mRewardedVideoPlacementToSmashListener.keySet()) {
             RewardedVideoSmashListener listener = mRewardedVideoPlacementToSmashListener.get(placementName);
+
             if (mRewardedVideoPlacementsForInitCallbacks.contains(placementName)) {
                 listener.onRewardedVideoInitFailed(ErrorBuilder.buildInitFailedError(error, IronSourceConstants.REWARDED_VIDEO_AD_UNIT));
             } else {
@@ -229,9 +230,6 @@ public class TapjoyAdapter extends AbstractAdapter implements TJConnectListener,
             listener.onInterstitialInitFailed(ErrorBuilder.buildInitFailedError(error, IronSourceConstants.INTERSTITIAL_AD_UNIT));
         }
     }
-
-    @Override
-    public void onNetworkInitCallbackLoadSuccess(String placement) { }
 
     //endregion
 
@@ -256,10 +254,7 @@ public class TapjoyAdapter extends AbstractAdapter implements TJConnectListener,
 
         IronLog.ADAPTER_API.verbose("sdkKey = " + sdkKey + " placementName = " + placementName);
 
-        TapjoyRewardedVideoAdListener rewardedVideoListener = new TapjoyRewardedVideoAdListener(TapjoyAdapter.this, listener, placementName);
-
         //add to rewarded video listener map
-        mRewardedVideoPlacementToTapjoyListener.put(placementName, rewardedVideoListener);
         mRewardedVideoPlacementToSmashListener.put(placementName, listener);
 
         //add to rewarded video init callback map
@@ -282,7 +277,7 @@ public class TapjoyAdapter extends AbstractAdapter implements TJConnectListener,
 
     @Override
     // used for flows when the mediation doesn't need to get a callback for init
-    public void initAndLoadRewardedVideo(String appKey, String userId, JSONObject config, RewardedVideoSmashListener listener) {
+    public void initAndLoadRewardedVideo(String appKey, String userId, JSONObject config, JSONObject adData, RewardedVideoSmashListener listener) {
         String sdkKey = config.optString(SDK_KEY);
         String placementName = config.optString(PLACEMENT_NAME);
 
@@ -300,12 +295,8 @@ public class TapjoyAdapter extends AbstractAdapter implements TJConnectListener,
 
         IronLog.ADAPTER_API.verbose("sdkKey = " + sdkKey + " placementName = " + placementName);
 
-        TapjoyRewardedVideoAdListener rewardedVideoListener = new TapjoyRewardedVideoAdListener(TapjoyAdapter.this, listener, placementName);
-
         //add to rewarded video listener map
-        mRewardedVideoPlacementToTapjoyListener.put(placementName, rewardedVideoListener);
         mRewardedVideoPlacementToSmashListener.put(placementName, listener);
-        mRewardedVideoPlacementToIsReady.put(placementName, false);
 
         switch (mInitState) {
             case INIT_STATE_NONE:
@@ -323,13 +314,13 @@ public class TapjoyAdapter extends AbstractAdapter implements TJConnectListener,
     }
 
     @Override
-    public void loadRewardedVideoForBidding(JSONObject config, final RewardedVideoSmashListener listener, final String serverData) {
+    public void loadRewardedVideoForBidding(JSONObject config, JSONObject adData, final String serverData, final RewardedVideoSmashListener listener) {
         final String placementName = config.optString(PLACEMENT_NAME);
         loadRewardedVideoInternal(placementName, serverData, listener);
     }
 
     @Override
-    public void fetchRewardedVideoForAutomaticLoad(final JSONObject config, final RewardedVideoSmashListener listener) {
+    public void loadRewardedVideo(final JSONObject config, JSONObject adData, final RewardedVideoSmashListener listener) {
         final String placementName = config.optString(PLACEMENT_NAME);
         loadRewardedVideoInternal(placementName, null, listener);
     }
@@ -337,16 +328,20 @@ public class TapjoyAdapter extends AbstractAdapter implements TJConnectListener,
     private void loadRewardedVideoInternal(final String placementName, final String serverData, final RewardedVideoSmashListener listener) {
         IronLog.ADAPTER_API.verbose("placementName = " + placementName);
 
+        mRewardedVideoPlacementToIsReady.put(placementName, false);
+
+        TapjoyRewardedVideoAdListener rewardedVideoAdListener = new TapjoyRewardedVideoAdListener(TapjoyAdapter.this, listener, placementName);
+        mRewardedVideoPlacementToTapjoyListener.put(placementName, rewardedVideoAdListener);
         TJPlacement placement;
-        TapjoyRewardedVideoAdListener rewardedVideoListener = mRewardedVideoPlacementToTapjoyListener.get(placementName);
+
         if (!TextUtils.isEmpty(serverData)) {
-            placement = getTJBiddingPlacement(placementName, serverData, rewardedVideoListener);
+            placement = getTJBiddingPlacement(placementName, serverData, rewardedVideoAdListener);
         } else {
-            placement = getTJPlacement(placementName, rewardedVideoListener);
+            placement = getTJPlacement(placementName, rewardedVideoAdListener);
         }
 
         if (placement != null) {
-            placement.setVideoListener(rewardedVideoListener);
+            placement.setVideoListener(rewardedVideoAdListener);
             mRewardedVideoPlacementToAd.put(placementName, placement);
             placement.requestContent();
         } else {
@@ -362,8 +357,6 @@ public class TapjoyAdapter extends AbstractAdapter implements TJConnectListener,
         postOnUIThread(new Runnable() {
             @Override
             public void run() {
-                //change rewarded video availability to false
-                listener.onRewardedVideoAvailabilityChanged(false);
 
                 if (isRewardedVideoAvailable(config)) {
                     TJPlacement placement = mRewardedVideoPlacementToAd.get(placementName);
@@ -386,7 +379,7 @@ public class TapjoyAdapter extends AbstractAdapter implements TJConnectListener,
     }
 
     @Override
-    public Map<String, Object> getRewardedVideoBiddingData(JSONObject config) {
+    public Map<String, Object> getRewardedVideoBiddingData(JSONObject config, JSONObject adData) {
         return getBiddingData();
     }
     //endregion
@@ -416,12 +409,8 @@ public class TapjoyAdapter extends AbstractAdapter implements TJConnectListener,
 
         IronLog.ADAPTER_API.verbose("sdkKey = " + sdkKey + " placementName = " + placementName);
 
-        TapjoyInterstitialAdListener interstitialListener = new TapjoyInterstitialAdListener(TapjoyAdapter.this, listener, placementName);
-
         //add to interstitial listener map
-        mInterstitialPlacementToTapjoyListener.put(placementName, interstitialListener);
         mInterstitialPlacementToSmashListener.put(placementName, listener);
-        mInterstitialPlacementToIsReady.put(placementName, false);
 
         switch (mInitState) {
             case INIT_STATE_NONE:
@@ -439,13 +428,13 @@ public class TapjoyAdapter extends AbstractAdapter implements TJConnectListener,
     }
 
     @Override
-    public void loadInterstitialForBidding(final JSONObject config, final InterstitialSmashListener listener, final String serverData) {
+    public void loadInterstitialForBidding(final JSONObject config, final JSONObject adData, final String serverData, final InterstitialSmashListener listener) {
         String placementName = config.optString(PLACEMENT_NAME);
         loadInterstitialInternal(placementName, serverData, listener);
     }
 
     @Override
-    public void loadInterstitial(final JSONObject config, final InterstitialSmashListener listener) {
+    public void loadInterstitial(final JSONObject config, final JSONObject adData, final InterstitialSmashListener listener) {
         String placementName = config.optString(PLACEMENT_NAME);
         loadInterstitialInternal(placementName, null, listener);
     }
@@ -453,16 +442,20 @@ public class TapjoyAdapter extends AbstractAdapter implements TJConnectListener,
     private void loadInterstitialInternal(final String placementName, final String serverData, final InterstitialSmashListener listener) {
         IronLog.ADAPTER_API.verbose("placementName = " + placementName);
 
+        mInterstitialPlacementToIsReady.put(placementName, false);
+
+        TapjoyInterstitialAdListener interstitialAdListener = new TapjoyInterstitialAdListener(TapjoyAdapter.this, listener, placementName);
+        mInterstitialPlacementToTapjoyListener.put(placementName, interstitialAdListener);
         TJPlacement placement;
-        TapjoyInterstitialAdListener interstitialListener = mInterstitialPlacementToTapjoyListener.get(placementName);
+
         if (!TextUtils.isEmpty(serverData)) {
-            placement = getTJBiddingPlacement(placementName, serverData, interstitialListener);
+            placement = getTJBiddingPlacement(placementName, serverData, interstitialAdListener);
         } else {
-            placement = getTJPlacement(placementName, interstitialListener);
+            placement = getTJPlacement(placementName, interstitialAdListener);
         }
 
         if (placement != null) {
-            placement.setVideoListener(interstitialListener);
+            placement.setVideoListener(interstitialAdListener);
             mInterstitialPlacementToAd.put(placementName, placement);
             placement.requestContent();
         } else {
@@ -498,7 +491,7 @@ public class TapjoyAdapter extends AbstractAdapter implements TJConnectListener,
     }
 
     @Override
-    public Map<String, Object> getInterstitialBiddingData(JSONObject config) {
+    public Map<String, Object> getInterstitialBiddingData(JSONObject config, JSONObject adData) {
         return getBiddingData();
     }
     //endregion
@@ -524,6 +517,7 @@ public class TapjoyAdapter extends AbstractAdapter implements TJConnectListener,
     //endregion
 
     //region legal
+    @Override
     protected void setConsent(boolean consent) {
         IronLog.ADAPTER_API.verbose("setUserConsent = " + consent);
         tjPrivacyPolicy.setUserConsent(consent ? "1" : "0");
@@ -545,9 +539,9 @@ public class TapjoyAdapter extends AbstractAdapter implements TJConnectListener,
         } else {
             String formattedValue = MetaDataUtils.formatValueForType(value, META_DATA_VALUE_BOOLEAN);
 
-            if (isValidCOPPAMetaData(key, formattedValue)) {
+            if (MetaDataUtils.isValidMetaData(key, META_DATA_TAPJOY_COPPA, formattedValue)) {
                 setCOPPAValue(MetaDataUtils.getMetaDataBooleanValue(formattedValue));
-            } else if (isAdvertisingIDOptOutMetaData(key, formattedValue)) {
+            } else if (MetaDataUtils.isValidMetaData(key, META_DATA_TAPJOY_ADV_ID_OPT_OUT, formattedValue)) {
                 setAdvIdOptOutValue(MetaDataUtils.getMetaDataBooleanValue(formattedValue));
             }
         }
@@ -560,7 +554,7 @@ public class TapjoyAdapter extends AbstractAdapter implements TJConnectListener,
     }
 
     private void setGDPRValue() {
-        IronLog.ADAPTER_API.verbose("");
+        IronLog.ADAPTER_API.verbose();
         tjPrivacyPolicy.setSubjectToGDPR(true);
     }
 
@@ -576,13 +570,6 @@ public class TapjoyAdapter extends AbstractAdapter implements TJConnectListener,
         }
     }
 
-    private boolean isValidCOPPAMetaData(String key, String value) {
-        return (key.equalsIgnoreCase(META_DATA_TAPJOY_COPPA)) && !TextUtils.isEmpty(value);
-    }
-
-    private boolean isAdvertisingIDOptOutMetaData(String key, String value) {
-        return (key.equalsIgnoreCase(META_DATA_TAPJOY_ADV_ID_OPT_OUT) && (value.length() > 0));
-    }
     //endregion
 
     // region Helpers
