@@ -18,7 +18,6 @@ final class VungleRewardedAdapter implements RewardedAdListener {
 
     private RewardedVideoSmashListener mListener;
     private RewardedAd mRewardedAd;
-    private boolean mAdLoaded;
 
     VungleRewardedAdapter(String placementId, AdConfig adConfig, RewardedVideoSmashListener listener) {
         this.mListener = listener;
@@ -75,10 +74,8 @@ final class VungleRewardedAdapter implements RewardedAdListener {
     }
 
     @Override
-    public void adLoaded(BaseAd baseAd) {
+    public void onAdLoaded(BaseAd baseAd) {
         IronLog.ADAPTER_CALLBACK.verbose("placementId = " + baseAd.getPlacementId());
-
-        mAdLoaded = true;
 
         if (mListener == null) {
             IronLog.INTERNAL.verbose("listener is null");
@@ -89,7 +86,7 @@ final class VungleRewardedAdapter implements RewardedAdListener {
     }
 
     @Override
-    public void adStart(BaseAd baseAd) {
+    public void onAdStart(BaseAd baseAd) {
         IronLog.ADAPTER_CALLBACK.verbose("placementId = " + baseAd.getPlacementId());
 
         if (mListener == null) {
@@ -101,7 +98,7 @@ final class VungleRewardedAdapter implements RewardedAdListener {
     }
 
     @Override
-    public void adImpression(BaseAd baseAd) {
+    public void onAdImpression(BaseAd baseAd) {
         IronLog.ADAPTER_CALLBACK.verbose("placementId = " + baseAd.getPlacementId());
 
         if (mListener == null) {
@@ -113,7 +110,7 @@ final class VungleRewardedAdapter implements RewardedAdListener {
     }
 
     @Override
-    public void adRewarded(BaseAd baseAd) {
+    public void onAdRewarded(BaseAd baseAd) {
         IronLog.ADAPTER_CALLBACK.verbose("placementId = " + baseAd.getPlacementId());
 
         if (mListener == null) {
@@ -125,7 +122,7 @@ final class VungleRewardedAdapter implements RewardedAdListener {
     }
 
     @Override
-    public void adClick(BaseAd baseAd) {
+    public void onAdClicked(BaseAd baseAd) {
         IronLog.ADAPTER_CALLBACK.verbose("placementId = " + baseAd.getPlacementId());
 
         if (mListener == null) {
@@ -137,7 +134,7 @@ final class VungleRewardedAdapter implements RewardedAdListener {
     }
 
     @Override
-    public void adEnd(BaseAd baseAd) {
+    public void onAdEnd(BaseAd baseAd) {
         IronLog.ADAPTER_CALLBACK.verbose("placementId = " + baseAd.getPlacementId());
 
         if (mListener == null) {
@@ -150,34 +147,35 @@ final class VungleRewardedAdapter implements RewardedAdListener {
     }
 
     @Override
-    public void error(BaseAd baseAd, VungleException exception) {
-        if (mAdLoaded) {
-            IronLog.ADAPTER_CALLBACK.verbose("placementId = " + baseAd.getPlacementId() + ", exception = " + exception);
+    public void onAdFailedToPlay(BaseAd baseAd, VungleException exception) {
+        IronLog.ADAPTER_CALLBACK.verbose("onAdFailedToPlay placementId = " + baseAd.getPlacementId() + ", exception = " + exception);
 
-            if (mListener == null) {
-                IronLog.INTERNAL.verbose("listener is null");
-                return;
-            }
-
-            mListener.onRewardedVideoAdShowFailed(ErrorBuilder.buildShowFailedError(IronSourceConstants.REWARDED_VIDEO_AD_UNIT, exception.getLocalizedMessage()));
-        } else {
-            IronLog.ADAPTER_CALLBACK.verbose("placementId = " + baseAd.getPlacementId() + ", exception = " + exception);
-
-            if (mListener == null) {
-                IronLog.INTERNAL.verbose("listener is null");
-                return;
-            }
-
-            IronSourceError error;
-            if (exception.getExceptionCode() == VungleException.NO_SERVE) {
-                error = new IronSourceError(IronSourceError.ERROR_RV_LOAD_NO_FILL, exception.getLocalizedMessage());
-            } else {
-                error = ErrorBuilder.buildLoadFailedError(exception.getLocalizedMessage());
-            }
-
-            mListener.onRewardedVideoAvailabilityChanged(false);
-            mListener.onRewardedVideoLoadFailed(error);
+        if (mListener == null) {
+            IronLog.INTERNAL.verbose("listener is null");
+            return;
         }
+
+        mListener.onRewardedVideoAdShowFailed(ErrorBuilder.buildShowFailedError(IronSourceConstants.REWARDED_VIDEO_AD_UNIT, exception.getLocalizedMessage()));
+    }
+
+    @Override
+    public void onAdFailedToLoad(BaseAd baseAd, VungleException exception) {
+        IronLog.ADAPTER_CALLBACK.verbose("onAdFailedToLoad placementId = " + baseAd.getPlacementId() + ", exception = " + exception);
+
+        if (mListener == null) {
+            IronLog.INTERNAL.verbose("listener is null");
+            return;
+        }
+
+        IronSourceError error;
+        if (exception.getExceptionCode() == VungleException.NO_SERVE) {
+            error = new IronSourceError(IronSourceError.ERROR_RV_LOAD_NO_FILL, exception.getLocalizedMessage());
+        } else {
+            error = ErrorBuilder.buildLoadFailedError(exception.getLocalizedMessage());
+        }
+
+        mListener.onRewardedVideoAvailabilityChanged(false);
+        mListener.onRewardedVideoLoadFailed(error);
     }
 
     @Override

@@ -16,7 +16,6 @@ final class VungleInterstitialAdapter implements InterstitialAdListener {
 
     private InterstitialSmashListener mListener;
     private InterstitialAd mInterstitialAd;
-    private boolean mAdLoaded;
 
     VungleInterstitialAdapter(String placementId, AdConfig adConfig, InterstitialSmashListener listener) {
         this.mListener = listener;
@@ -51,10 +50,8 @@ final class VungleInterstitialAdapter implements InterstitialAdListener {
     }
 
     @Override
-    public void adLoaded(BaseAd baseAd) {
+    public void onAdLoaded(BaseAd baseAd) {
         IronLog.ADAPTER_CALLBACK.verbose("placementId = " + baseAd.getPlacementId());
-
-        mAdLoaded = true;
 
         if (mListener == null) {
             IronLog.INTERNAL.verbose("listener is null");
@@ -65,7 +62,7 @@ final class VungleInterstitialAdapter implements InterstitialAdListener {
     }
 
     @Override
-    public void adStart(BaseAd baseAd) {
+    public void onAdStart(BaseAd baseAd) {
         IronLog.ADAPTER_CALLBACK.verbose("placementId = " + baseAd.getPlacementId());
 
         if (mListener == null) {
@@ -77,7 +74,7 @@ final class VungleInterstitialAdapter implements InterstitialAdListener {
     }
 
     @Override
-    public void adImpression(BaseAd baseAd) {
+    public void onAdImpression(BaseAd baseAd) {
         IronLog.ADAPTER_CALLBACK.verbose("placementId = " + baseAd.getPlacementId());
 
         if (mListener == null) {
@@ -89,7 +86,7 @@ final class VungleInterstitialAdapter implements InterstitialAdListener {
     }
 
     @Override
-    public void adClick(BaseAd baseAd) {
+    public void onAdClicked(BaseAd baseAd) {
         IronLog.ADAPTER_CALLBACK.verbose("placementId = " + baseAd.getPlacementId());
 
         if (mListener == null) {
@@ -101,7 +98,7 @@ final class VungleInterstitialAdapter implements InterstitialAdListener {
     }
 
     @Override
-    public void adEnd(BaseAd baseAd) {
+    public void onAdEnd(BaseAd baseAd) {
         IronLog.ADAPTER_CALLBACK.verbose("placementId = " + baseAd.getPlacementId());
 
         if (mListener == null) {
@@ -113,34 +110,35 @@ final class VungleInterstitialAdapter implements InterstitialAdListener {
     }
 
     @Override
-    public void error(BaseAd baseAd, VungleException exception) {
-        if (mAdLoaded) {
-            IronLog.ADAPTER_CALLBACK.verbose("placementId = " + baseAd.getPlacementId() + ", exception = " + exception);
+    public void onAdFailedToPlay(BaseAd baseAd, VungleException exception) {
+        IronLog.ADAPTER_CALLBACK.verbose("onAdFailedToPlay placementId = " + baseAd.getPlacementId() + ", exception = " + exception);
 
-            if (mListener == null) {
-                IronLog.INTERNAL.verbose("listener is null");
-                return;
-            }
-
-            String errorMessage = " reason = " + exception.getLocalizedMessage() + " errorCode = " + exception.getExceptionCode();
-            mListener.onInterstitialAdShowFailed(ErrorBuilder.buildShowFailedError(IronSourceConstants.INTERSTITIAL_AD_UNIT, errorMessage));
-        } else {
-            IronLog.ADAPTER_CALLBACK.verbose("placementId = " + baseAd.getPlacementId() + ", exception = " + exception);
-
-            if (mListener == null) {
-                IronLog.INTERNAL.verbose("listener is null");
-                return;
-            }
-
-            IronSourceError error;
-            if (exception.getExceptionCode() == VungleException.NO_SERVE) {
-                error = new IronSourceError(IronSourceError.ERROR_IS_LOAD_NO_FILL, exception.getLocalizedMessage());
-            } else {
-                error = ErrorBuilder.buildLoadFailedError(exception.getLocalizedMessage());
-            }
-
-            mListener.onInterstitialAdLoadFailed(error);
+        if (mListener == null) {
+            IronLog.INTERNAL.verbose("listener is null");
+            return;
         }
+
+        String errorMessage = " reason = " + exception.getLocalizedMessage() + " errorCode = " + exception.getExceptionCode();
+        mListener.onInterstitialAdShowFailed(ErrorBuilder.buildShowFailedError(IronSourceConstants.INTERSTITIAL_AD_UNIT, errorMessage));
+    }
+
+    @Override
+    public void onAdFailedToLoad(BaseAd baseAd, VungleException exception) {
+        IronLog.ADAPTER_CALLBACK.verbose("onAdFailedToLoad placementId = " + baseAd.getPlacementId() + ", exception = " + exception);
+
+        if (mListener == null) {
+            IronLog.INTERNAL.verbose("listener is null");
+            return;
+        }
+
+        IronSourceError error;
+        if (exception.getExceptionCode() == VungleException.NO_SERVE) {
+            error = new IronSourceError(IronSourceError.ERROR_IS_LOAD_NO_FILL, exception.getLocalizedMessage());
+        } else {
+            error = ErrorBuilder.buildLoadFailedError(exception.getLocalizedMessage());
+        }
+
+        mListener.onInterstitialAdLoadFailed(error);
     }
 
     @Override
