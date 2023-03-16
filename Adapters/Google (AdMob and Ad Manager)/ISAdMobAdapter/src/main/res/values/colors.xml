@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <color name="ad_mob_button_blue">#4285f4</color>
+  <color name="ad_mob_ad_badge_green">#3A6728</color>
+  <color name="ad_mob_outline">#E0E0E0</color>
+  <color name="ad_mob_white">#FFFFFF</color>
+</resources>
