@@ -11,10 +11,9 @@ import com.ironsource.mediationsdk.logger.IronLog;
 import com.ironsource.mediationsdk.logger.IronSourceError;
 import com.ironsource.mediationsdk.sdk.BannerSmashListener;
 import com.ironsource.mediationsdk.utils.ErrorBuilder;
-import com.vungle.ads.AdConfig;
-import com.vungle.ads.AdSize;
 import com.vungle.ads.BannerAd;
 import com.vungle.ads.BannerAdListener;
+import com.vungle.ads.BannerAdSize;
 import com.vungle.ads.BannerView;
 import com.vungle.ads.BaseAd;
 import com.vungle.ads.VungleException;
@@ -24,17 +23,12 @@ final class VungleBannerAdapter implements BannerAdListener {
     private BannerSmashListener mListener;
     private BannerAd mBannerAd;
     private ISBannerSize mISBannerSize;
-    private boolean mAdLoaded;
 
-    VungleBannerAdapter(String placementId, ISBannerSize size, AdConfig adConfig, BannerSmashListener listener) {
+    VungleBannerAdapter(String placementId, ISBannerSize size, BannerAdSize loBannerSize, BannerSmashListener listener) {
         this.mListener = listener;
         this.mISBannerSize = size;
 
-        if (adConfig == null) {
-            adConfig = new AdConfig();
-        }
-
-        mBannerAd = new BannerAd(ContextProvider.getInstance().getApplicationContext(), placementId, adConfig);
+        mBannerAd = new BannerAd(ContextProvider.getInstance().getApplicationContext(), placementId, loBannerSize);
         mBannerAd.setAdListener(this);
     }
 
@@ -56,10 +50,8 @@ final class VungleBannerAdapter implements BannerAdListener {
     }
 
     @Override
-    public void adLoaded(BaseAd baseAd) {
+    public void onAdLoaded(BaseAd baseAd) {
         IronLog.ADAPTER_CALLBACK.verbose("placementId = " + baseAd.getPlacementId());
-
-        mAdLoaded = true;
 
         if (mListener == null) {
             IronLog.INTERNAL.verbose("listener is null");
@@ -88,12 +80,12 @@ final class VungleBannerAdapter implements BannerAdListener {
     }
 
     @Override
-    public void adStart(BaseAd baseAd) {
+    public void onAdStart(BaseAd baseAd) {
         // no-op
     }
 
     @Override
-    public void adImpression(BaseAd baseAd) {
+    public void onAdImpression(BaseAd baseAd) {
         IronLog.ADAPTER_CALLBACK.verbose("placementId = " + baseAd.getPlacementId());
 
         if (mListener == null) {
@@ -105,7 +97,7 @@ final class VungleBannerAdapter implements BannerAdListener {
     }
 
     @Override
-    public void adClick(BaseAd baseAd) {
+    public void onAdClicked(BaseAd baseAd) {
         IronLog.ADAPTER_CALLBACK.verbose("placementId = " + baseAd.getPlacementId());
 
         if (mListener == null) {
@@ -117,31 +109,33 @@ final class VungleBannerAdapter implements BannerAdListener {
     }
 
     @Override
-    public void adEnd(BaseAd baseAd) {
+    public void onAdEnd(BaseAd baseAd) {
         // no-op
     }
 
     @Override
-    public void error(BaseAd baseAd, VungleException exception) {
-        if (mAdLoaded) {
-            IronLog.ADAPTER_CALLBACK.verbose("placementId = " + baseAd.getPlacementId() + ", exception = " + exception);
-        } else {
-            IronLog.ADAPTER_CALLBACK.verbose("placementId = " + baseAd.getPlacementId() + ", exception = " + exception);
+    public void onAdFailedToPlay(BaseAd baseAd, VungleException exception) {
+        IronLog.ADAPTER_CALLBACK.verbose("onAdFailedToPlay placementId = " + baseAd.getPlacementId() + ", exception = " + exception);
+        // no-op
+    }
 
-            if (mListener == null) {
-                IronLog.INTERNAL.verbose("listener is null");
-                return;
-            }
+    @Override
+    public void onAdFailedToLoad(BaseAd baseAd, VungleException exception) {
+        IronLog.ADAPTER_CALLBACK.verbose("onAdFailedToLoad placementId = " + baseAd.getPlacementId() + ", exception = " + exception);
 
-            IronSourceError error;
-            if (exception.getExceptionCode() == VungleException.NO_SERVE) {
-                error = new IronSourceError(IronSourceError.ERROR_BN_LOAD_NO_FILL, exception.getLocalizedMessage());
-            } else {
-                error = ErrorBuilder.buildLoadFailedError(exception.getLocalizedMessage());
-            }
-
-            mListener.onBannerAdLoadFailed(error);
+        if (mListener == null) {
+            IronLog.INTERNAL.verbose("listener is null");
+            return;
         }
+
+        IronSourceError error;
+        if (exception.getExceptionCode() == VungleException.NO_SERVE) {
+            error = new IronSourceError(IronSourceError.ERROR_BN_LOAD_NO_FILL, exception.getLocalizedMessage());
+        } else {
+            error = ErrorBuilder.buildLoadFailedError(exception.getLocalizedMessage());
+        }
+
+        mListener.onBannerAdLoadFailed(error);
     }
 
     @Override
@@ -156,15 +150,15 @@ final class VungleBannerAdapter implements BannerAdListener {
         mListener.onBannerAdLeftApplication();
     }
 
-    static AdSize getBannerSize(ISBannerSize size) {
+    static BannerAdSize getBannerSize(ISBannerSize size) {
         switch (size.getDescription()) {
             case "BANNER":
             case "LARGE":
-                return AdSize.BANNER;
+                return BannerAdSize.BANNER;
             case "RECTANGLE":
-                return AdSize.VUNGLE_MREC;
+                return BannerAdSize.VUNGLE_MREC;
             case "SMART":
-                return AdapterUtils.isLargeScreen(ContextProvider.getInstance().getCurrentActiveActivity()) ? AdSize.BANNER_LEADERBOARD : AdSize.BANNER;
+                return AdapterUtils.isLargeScreen(ContextProvider.getInstance().getCurrentActiveActivity()) ? BannerAdSize.BANNER_LEADERBOARD : BannerAdSize.BANNER;
         }
 
         return null;

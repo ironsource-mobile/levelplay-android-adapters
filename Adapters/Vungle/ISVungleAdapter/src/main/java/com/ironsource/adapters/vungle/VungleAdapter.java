@@ -21,7 +21,7 @@ import com.ironsource.mediationsdk.sdk.RewardedVideoSmashListener;
 import com.ironsource.mediationsdk.utils.ErrorBuilder;
 import com.ironsource.mediationsdk.utils.IronSourceConstants;
 import com.vungle.ads.AdConfig;
-import com.vungle.ads.AdSize;
+import com.vungle.ads.BannerAdSize;
 import com.vungle.ads.VungleAds;
 
 import org.json.JSONObject;
@@ -520,9 +520,9 @@ class VungleAdapter extends AbstractAdapter {
 
         // verify size
         ISBannerSize isBannerSize = banner.getSize();
-        AdSize bannerSize = getBannerSize(isBannerSize);
-        IronLog.ADAPTER_API.verbose("bannerSize = " + bannerSize);
-        if (bannerSize == null) {
+        BannerAdSize loBannerSize = getBannerSize(isBannerSize);
+        IronLog.ADAPTER_API.verbose("bannerSize = " + loBannerSize);
+        if (loBannerSize == null) {
             IronLog.ADAPTER_API.verbose("size not supported, size = " + isBannerSize.getDescription());
             listener.onBannerAdLoadFailed(ErrorBuilder.unsupportedBannerSize(getProviderName()));
             return;
@@ -537,9 +537,7 @@ class VungleAdapter extends AbstractAdapter {
                     public void onInitializeSuccess() {
                         // run on main thread
                         postOnUIThread(() -> {
-                            AdConfig adConfig = createAdConfig();
-                            adConfig.setAdSize(bannerSize);
-                            bannerAdapter = new VungleBannerAdapter(placementId, isBannerSize, adConfig, listener);
+                            bannerAdapter = new VungleBannerAdapter(placementId, isBannerSize, loBannerSize, listener);
                             bannerAdapter.loadWithBid(serverData);
                         });
                     }
@@ -572,9 +570,9 @@ class VungleAdapter extends AbstractAdapter {
 
         // verify size
         ISBannerSize isBannerSize = banner.getSize();
-        AdSize bannerSize = getBannerSize(isBannerSize);
-        IronLog.ADAPTER_API.verbose("bannerSize = " + bannerSize);
-        if (bannerSize == null) {
+        BannerAdSize loBannerSize = getBannerSize(isBannerSize);
+        IronLog.ADAPTER_API.verbose("bannerSize = " + loBannerSize);
+        if (loBannerSize == null) {
             IronLog.ADAPTER_API.verbose("size not supported, size = " + isBannerSize.getDescription());
             listener.onBannerAdLoadFailed(ErrorBuilder.unsupportedBannerSize(getProviderName()));
             return;
@@ -589,9 +587,7 @@ class VungleAdapter extends AbstractAdapter {
                     public void onInitializeSuccess() {
                         // run on main thread
                         postOnUIThread(() -> {
-                            AdConfig adConfig = createAdConfig();
-                            adConfig.setAdSize(bannerSize);
-                            bannerAdapter = new VungleBannerAdapter(placementId, isBannerSize, adConfig, listener);
+                            bannerAdapter = new VungleBannerAdapter(placementId, isBannerSize, loBannerSize, listener);
                             bannerAdapter.load();
                         });
                     }
@@ -680,7 +676,7 @@ class VungleAdapter extends AbstractAdapter {
 
     //region legal
     protected void setConsent(boolean consent) {
-        VungleConsent.updateConsentStatus(consent, CONSENT_MESSAGE_VERSION);
+        VungleConsent.setGDPRStatus(consent, CONSENT_MESSAGE_VERSION);
     }
 
     protected void setMetaData(String key, List<String> values) {

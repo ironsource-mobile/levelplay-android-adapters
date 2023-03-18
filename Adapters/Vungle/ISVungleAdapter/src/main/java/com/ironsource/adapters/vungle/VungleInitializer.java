@@ -4,11 +4,8 @@ import android.content.Context;
 
 import com.ironsource.mediationsdk.logger.IronLog;
 import com.vungle.ads.InitializationListener;
-import com.vungle.ads.Plugin;
-import com.vungle.ads.Plugin.WrapperFramework;
 import com.vungle.ads.VungleAds;
 import com.vungle.ads.VungleException;
-import com.vungle.ads.VungleSettings;
 
 import java.util.ArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -25,8 +22,8 @@ public class VungleInitializer implements InitializationListener {
 
     private VungleInitializer() {
         initListeners = new ArrayList<>();
-        Plugin.addWrapperInfo(
-                WrapperFramework.ironsource,
+        VungleAds.setIntegrationName(
+                VungleAds.WrapperFramework.ironsource,
                 com.ironsource.adapters.vungle.BuildConfig.VERSION_NAME.replace('.', '_'));
     }
 
@@ -47,7 +44,7 @@ public class VungleInitializer implements InitializationListener {
 
         IronLog.ADAPTER_API.verbose("appId = " + appId);
 
-        VungleAds.init(context, appId, this, new VungleSettings());
+        VungleAds.init(context, appId, this);
         initListeners.add(listener);
     }
 
