@@ -2,7 +2,7 @@ apply plugin: 'com.android.library'
 apply plugin: 'com.android.library'
 
 ext {
-    adapterVersion = '4.1.23'
+    adapterVersion = '4.1.24'
 }
 
 def getGitHash = { ->
@@ -53,8 +53,8 @@ android {
 }
 
  dependencies {
-    implementation 'com.ironsource.sdk:mediationsdk:7.2.6'
-    implementation 'com.tapjoy:tapjoy-android-sdk:12.11.1'
+    implementation 'com.ironsource.sdk:mediationsdk:7.3.0'
+     implementation 'com.tapjoy:tapjoy-android-sdk:12.11.1'
 
 }
 

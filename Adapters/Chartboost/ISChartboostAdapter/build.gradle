@@ -2,7 +2,7 @@ apply plugin: 'com.android.library'
 apply plugin: 'com.android.library'
 
 ext {
-    adapterVersion = '4.3.10'
+    adapterVersion = '4.3.11'
 }
 
 def getGitHash = { ->
@@ -51,9 +51,10 @@ android {
 }
 
  dependencies {
-     implementation 'com.ironsource.sdk:mediationsdk:7.2.5'
-     implementation 'com.chartboost:chartboost-sdk:9.1.1'
-     implementation 'androidx.annotation:annotation:1.4.0'
+     implementation 'com.ironsource.sdk:mediationsdk:7.3.0'
+     implementation 'com.chartboost:chartboost-sdk:9.2.0'
+     implementation "com.google.android.gms:play-services-base:17.6.0"
+     implementation "com.google.android.gms:play-services-ads-identifier:17.1.0"
  }
 
 task sourcesJar(type: Jar) {

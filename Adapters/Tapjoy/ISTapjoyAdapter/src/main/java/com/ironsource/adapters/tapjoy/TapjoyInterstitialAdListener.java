@@ -1,8 +1,6 @@
 package com.ironsource.adapters.tapjoy;
 
-import android.os.Handler;
-import android.os.Looper;
-
+import com.ironsource.mediationsdk.AbstractAdapter;
 import com.ironsource.mediationsdk.logger.IronLog;
 import com.ironsource.mediationsdk.logger.IronSourceError;
 import com.ironsource.mediationsdk.sdk.InterstitialSmashListener;
@@ -61,7 +59,7 @@ public class TapjoyInterstitialAdListener implements TJPlacementListener, TJPlac
         }
 
         // This just means the SDK has made contact with Tapjoy's servers. It does not necessarily mean that any content is available.
-        new Handler(Looper.getMainLooper()).post(new Runnable() {
+        TapjoyAdapter.postOnUIThread(new Runnable() {
             @Override
             public void run() {
                 if (!tjPlacement.isContentAvailable()) {

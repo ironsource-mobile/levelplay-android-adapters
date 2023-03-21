@@ -1,8 +1,9 @@
-package com.ironsource.adapters.admob;
+package com.ironsource.adapters.admob.rewardedvideo;
 
 import com.google.android.gms.ads.LoadAdError;
 import com.google.android.gms.ads.rewarded.RewardedAd;
 import com.google.android.gms.ads.rewarded.RewardedAdLoadCallback;
+import com.ironsource.adapters.admob.AdMobAdapter;
 import com.ironsource.mediationsdk.logger.IronLog;
 import com.ironsource.mediationsdk.logger.IronSourceError;
 import com.ironsource.mediationsdk.sdk.RewardedVideoSmashListener;
@@ -15,12 +16,12 @@ import java.lang.ref.WeakReference;
 public class AdMobRewardedVideoAdLoadListener extends RewardedAdLoadCallback {
 
     // data
-    private String mAdUnitId;
-    private WeakReference<AdMobAdapter> mAdapter;
+    private WeakReference<AdMobRewardedVideoAdapter> mRewardedVideoAdapter;
     private RewardedVideoSmashListener mListener;
+    private String mAdUnitId;
 
-    AdMobRewardedVideoAdLoadListener(AdMobAdapter adapter, String adUnitId, RewardedVideoSmashListener listener) {
-        mAdapter = new WeakReference<>(adapter);
+    AdMobRewardedVideoAdLoadListener(AdMobRewardedVideoAdapter adapter, String adUnitId, RewardedVideoSmashListener listener) {
+        mRewardedVideoAdapter = new WeakReference<>(adapter);
         mAdUnitId = adUnitId;
         mListener = listener;
     }
@@ -35,18 +36,13 @@ public class AdMobRewardedVideoAdLoadListener extends RewardedAdLoadCallback {
             return;
         }
 
-        if (mAdapter == null || mAdapter.get() == null) {
+        if (mRewardedVideoAdapter == null || mRewardedVideoAdapter.get() == null) {
             IronLog.INTERNAL.verbose("adapter is null");
             return;
         }
 
-        //add rewarded ad to maps
-        mAdapter.get().mAdUnitIdToRewardedVideoAd.put(mAdUnitId, rewardedAd);
-        mAdapter.get().mRewardedVideoAdsAvailability.put(mAdUnitId, true);
-
+        mRewardedVideoAdapter.get().onRewardedVideoAdLoaded(mAdUnitId, rewardedAd);
         mListener.onRewardedVideoAvailabilityChanged(true);
-
-
     }
 
     //rewarded video ad failed to load
@@ -59,11 +55,6 @@ public class AdMobRewardedVideoAdLoadListener extends RewardedAdLoadCallback {
             return;
         }
 
-        if (mAdapter == null || mAdapter.get() == null) {
-            IronLog.INTERNAL.verbose("adapter is null");
-            return;
-        }
-
         int errorCode;
         String adapterError;
 
@@ -73,7 +64,7 @@ public class AdMobRewardedVideoAdLoadListener extends RewardedAdLoadCallback {
         IronLog.ADAPTER_CALLBACK.error("adapterError = " + adapterError);
 
         //check if error is no fill error
-        if (mAdapter.get().isNoFillError(errorCode)) {
+        if (AdMobAdapter.isNoFillError(errorCode)) {
             errorCode = IronSourceError.ERROR_RV_LOAD_NO_FILL;
             adapterError = "No Fill";
         }
@@ -84,11 +75,8 @@ public class AdMobRewardedVideoAdLoadListener extends RewardedAdLoadCallback {
 
         IronLog.ADAPTER_CALLBACK.error("adapterError = " + adapterError);
 
-
         mListener.onRewardedVideoAvailabilityChanged(false);
         mListener.onRewardedVideoLoadFailed(new IronSourceError(errorCode, adapterError));
-
-
     }
 }
 

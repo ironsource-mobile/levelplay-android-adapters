@@ -1,6 +1,7 @@
 package com.ironsource.adapters.chartboost;
 
 import android.app.Activity;
+import android.content.Context;
 import android.text.TextUtils;
 import android.view.Gravity;
 import android.widget.FrameLayout;
@@ -24,6 +25,7 @@ import com.ironsource.mediationsdk.AdapterUtils;
 import com.ironsource.mediationsdk.INetworkInitCallbackListener;
 import com.ironsource.mediationsdk.ISBannerSize;
 import com.ironsource.mediationsdk.IntegrationData;
+import com.ironsource.mediationsdk.IronSource;
 import com.ironsource.mediationsdk.IronSourceBannerLayout;
 import com.ironsource.mediationsdk.LoadWhileShowSupportState;
 import com.ironsource.mediationsdk.logger.IronLog;
@@ -106,7 +108,7 @@ class ChartboostAdapter extends AbstractAdapter implements INetworkInitCallbackL
 
     private ChartboostAdapter(String providerName) {
         super(providerName);
-        IronLog.INTERNAL.verbose("");
+        IronLog.INTERNAL.verbose();
 
         // rewarded video
         mLocationIdToRewardedVideoListener = new ConcurrentHashMap<>();
@@ -129,10 +131,9 @@ class ChartboostAdapter extends AbstractAdapter implements INetworkInitCallbackL
         mLWSSupportState = LoadWhileShowSupportState.LOAD_WHILE_SHOW_BY_NETWORK;
     }
 
-    // get the network and adapter integration data
-    public static IntegrationData getIntegrationData(Activity activity) {
-        IntegrationData ret = new IntegrationData("Chartboost", VERSION);
-        return ret;
+    // Get the network and adapter integration data
+    public static IntegrationData getIntegrationData(Context context) {
+        return new IntegrationData("Chartboost", VERSION);
     }
 
     // get adapter version
@@ -198,7 +199,7 @@ class ChartboostAdapter extends AbstractAdapter implements INetworkInitCallbackL
     }
 
     private void initializationSuccess() {
-        IronLog.ADAPTER_CALLBACK.verbose("");
+        IronLog.ADAPTER_CALLBACK.verbose();
 
         mInitState = InitState.INIT_STATE_SUCCESS;
 
@@ -211,7 +212,7 @@ class ChartboostAdapter extends AbstractAdapter implements INetworkInitCallbackL
     }
 
     private void initializationFailure() {
-        IronLog.ADAPTER_CALLBACK.verbose("");
+        IronLog.ADAPTER_CALLBACK.verbose();
 
         mInitState = InitState.INIT_STATE_FAILED;
 
@@ -231,7 +232,7 @@ class ChartboostAdapter extends AbstractAdapter implements INetworkInitCallbackL
             if (mRewardedVideoLocationIdsForInitCallbacks.contains(locationId)) {
                 listener.onRewardedVideoInitSuccess();
             } else {
-                loadRewardedVideoInternal(locationId);
+                loadRewardedVideoInternal(locationId, listener);
             }
         }
 
@@ -269,9 +270,6 @@ class ChartboostAdapter extends AbstractAdapter implements INetworkInitCallbackL
         }
     }
 
-    @Override
-    public void onNetworkInitCallbackLoadSuccess(String placement) { }
-
     //endregion
 
     //region Rewarded Video API
@@ -303,10 +301,7 @@ class ChartboostAdapter extends AbstractAdapter implements INetworkInitCallbackL
 
         IronLog.ADAPTER_API.verbose("locationId = " + locationId);
 
-        ChartboostRewardedVideoAdListener rewardedVideoAdListener = new ChartboostRewardedVideoAdListener(listener, locationId);
-
         //add to rewarded video listener map
-        mLocationIdToRewardedVideoAdListener.put(locationId, rewardedVideoAdListener);
         mLocationIdToRewardedVideoListener.put(locationId, listener);
 
         //add to rewarded video init callback map
@@ -329,7 +324,7 @@ class ChartboostAdapter extends AbstractAdapter implements INetworkInitCallbackL
 
     @Override
     // used for flows when the mediation doesn't need to get a callback for init
-    public void initAndLoadRewardedVideo(String appKey, String userId, JSONObject config, RewardedVideoSmashListener listener) {
+    public void initAndLoadRewardedVideo(String appKey, String userId, JSONObject config, JSONObject adData, RewardedVideoSmashListener listener) {
         final String locationId = config.optString(AD_LOCATION);
         final String appId = config.optString(APP_ID);
         final String appSignature = config.optString(APP_SIGNATURE);
@@ -354,10 +349,7 @@ class ChartboostAdapter extends AbstractAdapter implements INetworkInitCallbackL
 
         IronLog.ADAPTER_API.verbose("locationId = " + locationId);
 
-        ChartboostRewardedVideoAdListener rewardedVideoAdListener = new ChartboostRewardedVideoAdListener(listener, locationId);
-
         //add to rewarded video listener map
-        mLocationIdToRewardedVideoAdListener.put(locationId, rewardedVideoAdListener);
         mLocationIdToRewardedVideoListener.put(locationId, listener);
 
         switch (mInitState) {
@@ -366,7 +358,7 @@ class ChartboostAdapter extends AbstractAdapter implements INetworkInitCallbackL
                 initSDK(appId, appSignature);
                 break;
             case INIT_STATE_SUCCESS:
-                loadRewardedVideoInternal(locationId);
+                loadRewardedVideoInternal(locationId, listener);
                 break;
             case INIT_STATE_FAILED:
                 IronLog.INTERNAL.verbose("init failed - locationId = " + locationId);
@@ -376,17 +368,18 @@ class ChartboostAdapter extends AbstractAdapter implements INetworkInitCallbackL
     }
 
     @Override
-    public void fetchRewardedVideoForAutomaticLoad(final JSONObject config, final RewardedVideoSmashListener listener) {
+    public void loadRewardedVideo(final JSONObject config, JSONObject adData, final RewardedVideoSmashListener listener) {
         final String locationId = config.optString(AD_LOCATION);
-        loadRewardedVideoInternal(locationId);
+        loadRewardedVideoInternal(locationId, listener);
     }
 
-    private void loadRewardedVideoInternal(final String locationId) {
+    private void loadRewardedVideoInternal(final String locationId, final RewardedVideoSmashListener listener) {
         IronLog.ADAPTER_API.verbose("locationId = " + locationId);
 
-        ChartboostRewardedVideoAdListener adListener = mLocationIdToRewardedVideoAdListener.get(locationId);
+        ChartboostRewardedVideoAdListener rewardedVideoAdListener = new ChartboostRewardedVideoAdListener(listener, locationId);
+        mLocationIdToRewardedVideoAdListener.put(locationId, rewardedVideoAdListener);
 
-        Rewarded rewardedVideoAd = new Rewarded(locationId, adListener, getMediation());
+        Rewarded rewardedVideoAd = new Rewarded(locationId, rewardedVideoAdListener, getMediation());
         mLocationIdToRewardedVideoAd.put(locationId, rewardedVideoAd);
 
         // load rewarded video
@@ -397,8 +390,6 @@ class ChartboostAdapter extends AbstractAdapter implements INetworkInitCallbackL
     public void showRewardedVideo(JSONObject config, RewardedVideoSmashListener listener) {
         final String locationId = config.optString(AD_LOCATION);
         IronLog.ADAPTER_API.verbose("locationId = " + locationId);
-
-        listener.onRewardedVideoAvailabilityChanged(false);
 
         if (isRewardedVideoAvailable(config)) {
             Rewarded rewardedVideoAd = mLocationIdToRewardedVideoAd.get(locationId);
@@ -444,10 +435,7 @@ class ChartboostAdapter extends AbstractAdapter implements INetworkInitCallbackL
 
         IronLog.ADAPTER_API.verbose("locationId = " + locationId);
 
-        ChartboostInterstitialAdListener interstitialAdListener = new ChartboostInterstitialAdListener(listener, locationId);
-
         //add to interstitial listener map
-        mLocationIdToInterstitialAdListener.put(locationId, interstitialAdListener);
         mLocationIdToInterstitialListener.put(locationId, listener);
 
         switch (mInitState) {
@@ -466,13 +454,14 @@ class ChartboostAdapter extends AbstractAdapter implements INetworkInitCallbackL
     }
 
     @Override
-    public void loadInterstitial(JSONObject config, InterstitialSmashListener listener) {
+    public void loadInterstitial(JSONObject config, JSONObject adData, InterstitialSmashListener listener) {
         final String locationId = config.optString(AD_LOCATION);
         IronLog.ADAPTER_API.verbose("locationId = " + locationId);
 
-        ChartboostInterstitialAdListener adListener = mLocationIdToInterstitialAdListener.get(locationId);
+        ChartboostInterstitialAdListener interstitialAdListener = new ChartboostInterstitialAdListener(listener, locationId);
+        mLocationIdToInterstitialAdListener.put(locationId, interstitialAdListener);
 
-        Interstitial interstitialAd = new Interstitial(locationId, adListener, getMediation());
+        Interstitial interstitialAd = new Interstitial(locationId, interstitialAdListener, getMediation());
         mLocationIdToInterstitialAd.put(locationId, interstitialAd);
 
         // load interstitial
@@ -546,7 +535,7 @@ class ChartboostAdapter extends AbstractAdapter implements INetworkInitCallbackL
     }
 
     @Override
-    public void loadBanner(final IronSourceBannerLayout banner, final JSONObject config, final BannerSmashListener listener) {
+    public void loadBanner(final JSONObject config, final JSONObject adData, final IronSourceBannerLayout banner, final BannerSmashListener listener) {
         final String locationId = config.optString(AD_LOCATION);
         IronLog.ADAPTER_API.verbose("locationId = " + locationId);
 
@@ -570,15 +559,10 @@ class ChartboostAdapter extends AbstractAdapter implements INetworkInitCallbackL
         mLocationIdToBannerLayout.put(locationId, banner);
 
         // get banner
-        Banner chartboostBanner = getChartboostBanner(banner, locationId);
+        Banner chartboostBanner = getChartboostBanner(banner, locationId, listener);
 
         // load banner
         chartboostBanner.cache();
-    }
-
-    @Override
-    public void reloadBanner(final IronSourceBannerLayout banner, final JSONObject config, BannerSmashListener listener) {
-        IronLog.INTERNAL.warning("Unsupported method");
     }
 
     @Override
@@ -603,20 +587,15 @@ class ChartboostAdapter extends AbstractAdapter implements INetworkInitCallbackL
         }
     }
 
-    // network does not support banner reload
-    // return true if banner view needs to be bound again on reload
-    @Override
-    public boolean shouldBindBannerViewOnReload() {
-        return true;
-    }
     //endregion
 
     //region legal
+    @Override
     protected void setConsent(boolean consent) {
         if (mWasInitCalled.get()) {
             IronLog.ADAPTER_API.verbose("consent = " + (consent ? "BEHAVIORAL" : "NON_BEHAVIORAL"));
             GDPR.GDPR_CONSENT chartboostConsent = consent ? GDPR.GDPR_CONSENT.BEHAVIORAL : GDPR.GDPR_CONSENT.NON_BEHAVIORAL;
-            Chartboost.addDataUseConsent(ContextProvider.getInstance().getCurrentActiveActivity(), new GDPR(chartboostConsent));
+            Chartboost.addDataUseConsent(ContextProvider.getInstance().getApplicationContext(), new GDPR(chartboostConsent));
         } else {
             mConsentCollectingUserData = consent;
         }
@@ -637,7 +616,7 @@ class ChartboostAdapter extends AbstractAdapter implements INetworkInitCallbackL
         } else {
             String formattedValue = MetaDataUtils.formatValueForType(value, META_DATA_VALUE_BOOLEAN);
 
-            if (isValidCOPPAMetaData(key, formattedValue)) {
+            if (MetaDataUtils.isValidMetaData(key, CHARTBOOST_COPPA_FLAG, formattedValue)) {
                 mCoppaUserData = MetaDataUtils.getMetaDataBooleanValue(formattedValue);
             }
         }
@@ -647,10 +626,6 @@ class ChartboostAdapter extends AbstractAdapter implements INetworkInitCallbackL
         IronLog.ADAPTER_API.verbose("value = " + (value ? "OPT_OUT_SALE" : "OPT_IN_SALE"));
         DataUseConsent dataUseConsent = new CCPA(value? CCPA.CCPA_CONSENT.OPT_OUT_SALE : CCPA.CCPA_CONSENT.OPT_IN_SALE);
         Chartboost.addDataUseConsent(ContextProvider.getInstance().getApplicationContext(), dataUseConsent);
-    }
-
-    private boolean isValidCOPPAMetaData(String key, String value) {
-        return (key.equalsIgnoreCase(CHARTBOOST_COPPA_FLAG) && !TextUtils.isEmpty(value));
     }
 
     private void setCOPPAValue(final boolean isUserCoppa) {
@@ -670,7 +645,7 @@ class ChartboostAdapter extends AbstractAdapter implements INetworkInitCallbackL
             case "RECTANGLE":
                 return Banner.BannerSize.MEDIUM;
             case "SMART":
-                return AdapterUtils.isLargeScreen(ContextProvider.getInstance().getCurrentActiveActivity()) ?Banner.BannerSize.LEADERBOARD : Banner.BannerSize.STANDARD;
+                return AdapterUtils.isLargeScreen(ContextProvider.getInstance().getApplicationContext()) ?Banner.BannerSize.LEADERBOARD : Banner.BannerSize.STANDARD;
             case "CUSTOM":
                 if (size.getHeight() >= 40 && size.getHeight() <= 60) {
                     return Banner.BannerSize.STANDARD;
@@ -682,26 +657,26 @@ class ChartboostAdapter extends AbstractAdapter implements INetworkInitCallbackL
 
     private FrameLayout.LayoutParams getBannerLayoutParams(ISBannerSize size) {
         FrameLayout.LayoutParams layoutParams = new FrameLayout.LayoutParams(0, 0);
-        Activity activity = ContextProvider.getInstance().getCurrentActiveActivity();
+        Context context = ContextProvider.getInstance().getApplicationContext();
 
         switch (size.getDescription()) {
             case "BANNER":
             case "LARGE":
-                layoutParams = new FrameLayout.LayoutParams(AdapterUtils.dpToPixels(activity, 320), AdapterUtils.dpToPixels(activity, 50));
+                layoutParams = new FrameLayout.LayoutParams(AdapterUtils.dpToPixels(context, 320), AdapterUtils.dpToPixels(context, 50));
                 break;
             case "RECTANGLE":
-                layoutParams = new FrameLayout.LayoutParams(AdapterUtils.dpToPixels(activity, 300), AdapterUtils.dpToPixels(activity, 250));
+                layoutParams = new FrameLayout.LayoutParams(AdapterUtils.dpToPixels(context, 300), AdapterUtils.dpToPixels(context, 250));
                 break;
             case "SMART":
-                if (AdapterUtils.isLargeScreen(activity)) {
-                    layoutParams = new FrameLayout.LayoutParams(AdapterUtils.dpToPixels(activity, 728), AdapterUtils.dpToPixels(activity, 90));
+                if (AdapterUtils.isLargeScreen(context)) {
+                    layoutParams = new FrameLayout.LayoutParams(AdapterUtils.dpToPixels(context, 728), AdapterUtils.dpToPixels(context, 90));
                 } else {
-                    layoutParams = new FrameLayout.LayoutParams(AdapterUtils.dpToPixels(activity, 320), AdapterUtils.dpToPixels(activity, 50));
+                    layoutParams = new FrameLayout.LayoutParams(AdapterUtils.dpToPixels(context, 320), AdapterUtils.dpToPixels(context, 50));
                 }
                 break;
             case "CUSTOM":
                 if (size.getHeight() >= 40 && size.getHeight() <= 60) {
-                    layoutParams = new FrameLayout.LayoutParams(AdapterUtils.dpToPixels(activity, 320), AdapterUtils.dpToPixels(activity, 50));
+                    layoutParams = new FrameLayout.LayoutParams(AdapterUtils.dpToPixels(context, 320), AdapterUtils.dpToPixels(context, 50));
                 }
                 break;
         }
@@ -712,7 +687,7 @@ class ChartboostAdapter extends AbstractAdapter implements INetworkInitCallbackL
         return layoutParams;
     }
 
-    private Banner getChartboostBanner(IronSourceBannerLayout banner, String locationId) {
+    private Banner getChartboostBanner(IronSourceBannerLayout banner, String locationId, BannerSmashListener listener) {
         // get banner from the map
         Banner chartboostBanner = mLocationIdToBannerAd.get(locationId);
 
@@ -723,7 +698,6 @@ class ChartboostAdapter extends AbstractAdapter implements INetworkInitCallbackL
             // get size
             Banner.BannerSize bannerSize = getBannerSize(banner.getSize());
 
-            BannerSmashListener listener = mLocationIdToBannerListener.get(locationId);
             FrameLayout.LayoutParams bannerLayoutParams = getBannerLayoutParams(banner.getSize());
 
             ChartboostBannerAdListener bannerAdListener = new ChartboostBannerAdListener(ChartboostAdapter.this, listener, locationId, bannerLayoutParams);
@@ -750,5 +724,31 @@ class ChartboostAdapter extends AbstractAdapter implements INetworkInitCallbackL
         return mMediationInfo;
     }
 
+    @Override
+    public void releaseMemory(IronSource.AD_UNIT adUnit, JSONObject config) {
+        IronLog.INTERNAL.verbose("adUnit = " + adUnit);
+
+        if (adUnit == IronSource.AD_UNIT.REWARDED_VIDEO) {
+            // release rewarded ads
+            mLocationIdToRewardedVideoListener.clear();
+            mLocationIdToRewardedVideoAdListener.clear();
+            mLocationIdToRewardedVideoAd.clear();
+            mRewardedVideoLocationIdsForInitCallbacks.clear();
+
+        } else if (adUnit == IronSource.AD_UNIT.INTERSTITIAL) {
+            // release interstitial ads
+            mLocationIdToInterstitialListener.clear();
+            mLocationIdToInterstitialAdListener.clear();
+            mLocationIdToInterstitialAd.clear();
+
+        } else if (adUnit == IronSource.AD_UNIT.BANNER) {
+
+            // release banner ads
+            mLocationIdToBannerListener.clear();
+            mLocationIdToBannerAdListener.clear();
+            mLocationIdToBannerLayout.clear();
+            mLocationIdToBannerAd.clear();
+        }
+    }
     //endregion
 }
