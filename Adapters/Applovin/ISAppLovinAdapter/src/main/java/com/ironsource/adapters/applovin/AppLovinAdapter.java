@@ -1,6 +1,7 @@
 package com.ironsource.adapters.applovin;
 
 import android.app.Activity;
+import android.content.Context;
 import android.text.TextUtils;
 import android.view.Gravity;
 import android.widget.FrameLayout;
@@ -12,6 +13,7 @@ import com.applovin.adview.AppLovinInterstitialAdDialog;
 import com.applovin.sdk.AppLovinAd;
 import com.applovin.sdk.AppLovinAdSize;
 import com.applovin.sdk.AppLovinErrorCodes;
+import com.applovin.sdk.AppLovinMediationProvider;
 import com.applovin.sdk.AppLovinPrivacySettings;
 import com.applovin.sdk.AppLovinSdk;
 import com.applovin.sdk.AppLovinSdkConfiguration;
@@ -45,9 +47,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 
 class AppLovinAdapter extends AbstractAdapter implements INetworkInitCallbackListener {
-
-    // Mediation info
-    private final String MEDIATION_NAME = "IronSource";
 
     // Adapter version
     private static final String VERSION = BuildConfig.VERSION_NAME;
@@ -106,7 +105,7 @@ class AppLovinAdapter extends AbstractAdapter implements INetworkInitCallbackLis
 
     private AppLovinAdapter(String providerName) {
         super(providerName);
-        IronLog.INTERNAL.verbose("");
+        IronLog.INTERNAL.verbose();
 
         // Rewarded video
         mZoneIdToAppLovinRewardedVideoListener = new ConcurrentHashMap<>();
@@ -132,7 +131,7 @@ class AppLovinAdapter extends AbstractAdapter implements INetworkInitCallbackLis
     }
 
     // Get the network and adapter integration data
-    public static IntegrationData getIntegrationData(Activity activity) {
+    public static IntegrationData getIntegrationData(Context context) {
         return new IntegrationData("AppLovin", VERSION);
     }
 
@@ -171,10 +170,10 @@ class AppLovinAdapter extends AbstractAdapter implements INetworkInitCallbackLis
             AppLovinSdkSettings appLovinSdkSettings = getAppLovinSDKSetting();
 
             // create AppLovin sdk instance
-            mAppLovinSdk = AppLovinSdk.getInstance(sdkKey, appLovinSdkSettings, ContextProvider.getInstance().getCurrentActiveActivity());
+            mAppLovinSdk = AppLovinSdk.getInstance(sdkKey, appLovinSdkSettings, ContextProvider.getInstance().getApplicationContext());
 
             // set ironSource as mediation
-            mAppLovinSdk.setMediationProvider(MEDIATION_NAME);
+            mAppLovinSdk.setMediationProvider(AppLovinMediationProvider.IRONSOURCE);
 
             // set user ID
             if (!TextUtils.isEmpty(userId)) {
@@ -195,7 +194,7 @@ class AppLovinAdapter extends AbstractAdapter implements INetworkInitCallbackLis
     }
 
     private void initializationSuccess() {
-        IronLog.ADAPTER_CALLBACK.verbose("");
+        IronLog.ADAPTER_CALLBACK.verbose();
 
         mInitState = InitState.INIT_STATE_SUCCESS;
 
@@ -248,9 +247,6 @@ class AppLovinAdapter extends AbstractAdapter implements INetworkInitCallbackLis
     @Override
     public void onNetworkInitCallbackFailed(String error) { }
 
-    @Override
-    public void onNetworkInitCallbackLoadSuccess(String zoneId) { }
-
     //endregion
 
     //region Rewarded Video API
@@ -299,7 +295,7 @@ class AppLovinAdapter extends AbstractAdapter implements INetworkInitCallbackLis
 
     // Used for flows when the mediation doesn't need to get a callback for init
     @Override
-    public void initAndLoadRewardedVideo(String appKey, final String userId, JSONObject config, final RewardedVideoSmashListener listener) {
+    public void initAndLoadRewardedVideo(String appKey, final String userId, JSONObject config, JSONObject adData, final RewardedVideoSmashListener listener) {
         final String zoneId = getZoneId(config);
         final String sdkKey = config.optString(SDK_KEY);
 
@@ -338,7 +334,7 @@ class AppLovinAdapter extends AbstractAdapter implements INetworkInitCallbackLis
     }
 
     @Override
-    public void fetchRewardedVideoForAutomaticLoad(final JSONObject config, final RewardedVideoSmashListener listener) {
+    public void loadRewardedVideo(final JSONObject config, JSONObject adData, final RewardedVideoSmashListener listener) {
         final String zoneId = getZoneId(config);
         loadRewardedVideoInternal(zoneId, listener);
     }
@@ -371,8 +367,6 @@ class AppLovinAdapter extends AbstractAdapter implements INetworkInitCallbackLis
     public void showRewardedVideo(JSONObject config, RewardedVideoSmashListener listener) {
         String zoneId = getZoneId(config);
         IronLog.ADAPTER_API.verbose("zoneId = " + zoneId);
-
-        listener.onRewardedVideoAvailabilityChanged(false);
 
         // check ad availability
         if (isRewardedVideoAvailable(config)) {
@@ -442,7 +436,7 @@ class AppLovinAdapter extends AbstractAdapter implements INetworkInitCallbackLis
     }
 
     @Override
-    public void loadInterstitial(JSONObject config, final InterstitialSmashListener listener) {
+    public void loadInterstitial(JSONObject config, JSONObject adData, final InterstitialSmashListener listener) {
         final String zoneId = getZoneId(config);
         IronLog.ADAPTER_API.verbose("zoneId = " + zoneId);
 
@@ -531,7 +525,7 @@ class AppLovinAdapter extends AbstractAdapter implements INetworkInitCallbackLis
     }
 
     @Override
-    public void loadBanner(final IronSourceBannerLayout banner, final JSONObject config, final BannerSmashListener listener) {
+    public void loadBanner(final JSONObject config, final JSONObject adData, final IronSourceBannerLayout banner, final BannerSmashListener listener) {
         final String zoneId = getZoneId(config);
         IronLog.ADAPTER_API.verbose("zoneId = " + zoneId);
 
@@ -542,7 +536,7 @@ class AppLovinAdapter extends AbstractAdapter implements INetworkInitCallbackLis
         }
 
         // get size
-        final AppLovinAdSize bannerSize = calculateBannerSize(banner.getSize(), AdapterUtils.isLargeScreen(banner.getActivity()));
+        final AppLovinAdSize bannerSize = calculateBannerSize(banner.getSize(), AdapterUtils.isLargeScreen(ContextProvider.getInstance().getApplicationContext()));
 
         // verify if size is null
         if (bannerSize == null) {
@@ -557,7 +551,7 @@ class AppLovinAdapter extends AbstractAdapter implements INetworkInitCallbackLis
                 try {
                     // create ad view
                     FrameLayout.LayoutParams layoutParams = getBannerLayoutParams(banner.getSize());
-                    AppLovinAdView adView = new AppLovinAdView(mAppLovinSdk, bannerSize, banner.getActivity());
+                    AppLovinAdView adView = new AppLovinAdView(mAppLovinSdk, bannerSize, ContextProvider.getInstance().getApplicationContext());
 
                     // create banner listener
                     AppLovinBannerListener applovinListener = new AppLovinBannerListener(AppLovinAdapter.this, listener, zoneId, layoutParams);
@@ -581,11 +575,6 @@ class AppLovinAdapter extends AbstractAdapter implements INetworkInitCallbackLis
                 }
             }
         });
-    }
-
-    @Override
-    public void reloadBanner(final IronSourceBannerLayout banner, final JSONObject config, final BannerSmashListener listener) {
-        IronLog.INTERNAL.warning("Unsupported method");
     }
 
     @Override
@@ -649,11 +638,11 @@ class AppLovinAdapter extends AbstractAdapter implements INetworkInitCallbackLis
     //endregion
 
     //region Legal
-
+    @Override
     protected void setConsent(boolean consent) {
         if (mWasInitCalled.get()) {
             IronLog.ADAPTER_API.verbose("consent = " + consent);
-            AppLovinPrivacySettings.setHasUserConsent(consent, ContextProvider.getInstance().getCurrentActiveActivity());
+            AppLovinPrivacySettings.setHasUserConsent(consent, ContextProvider.getInstance().getApplicationContext());
         } else {
             mConsentCollectingUserData = consent;
         }
@@ -674,7 +663,7 @@ class AppLovinAdapter extends AbstractAdapter implements INetworkInitCallbackLis
         } else {
             String formattedValue = MetaDataUtils.formatValueForType(value, MetaData.MetaDataValueTypes.META_DATA_VALUE_BOOLEAN);
 
-            if (isAgeRestrictionMetaData(key, formattedValue)) {
+            if (MetaDataUtils.isValidMetaData(key, META_DATA_APPLOVIN_AGE_RESTRICTION_KEY, formattedValue)) {
                 mAgeRestrictionData = MetaDataUtils.getMetaDataBooleanValue(formattedValue);
             }
         }
@@ -685,11 +674,6 @@ class AppLovinAdapter extends AbstractAdapter implements INetworkInitCallbackLis
             IronLog.ADAPTER_API.verbose("value = " + value);
             AppLovinPrivacySettings.setIsAgeRestrictedUser(value, ContextProvider.getInstance().getApplicationContext());
         }
-    }
-
-    // This method checks if the Meta Data key is the age restriction key and the value is valid
-    static public boolean isAgeRestrictionMetaData(String key, String value) {
-        return (key.equalsIgnoreCase(META_DATA_APPLOVIN_AGE_RESTRICTION_KEY) && value.length() > 0);
     }
 
     private void setCCPAValue(final boolean value) {
@@ -728,26 +712,26 @@ class AppLovinAdapter extends AbstractAdapter implements INetworkInitCallbackLis
 
     private FrameLayout.LayoutParams getBannerLayoutParams(ISBannerSize size) {
         FrameLayout.LayoutParams layoutParams = new FrameLayout.LayoutParams(0, 0);
-        Activity activity = ContextProvider.getInstance().getCurrentActiveActivity();
+        Context context = ContextProvider.getInstance().getApplicationContext();
 
         switch (size.getDescription()) {
             case "BANNER":
             case "LARGE":
-                layoutParams = new FrameLayout.LayoutParams(AdapterUtils.dpToPixels(activity, 320), AdapterUtils.dpToPixels(activity, 50));
+                layoutParams = new FrameLayout.LayoutParams(AdapterUtils.dpToPixels(context, 320), AdapterUtils.dpToPixels(context, 50));
                 break;
             case "RECTANGLE":
-                layoutParams = new FrameLayout.LayoutParams(AdapterUtils.dpToPixels(activity, 300), AdapterUtils.dpToPixels(activity, 250));
+                layoutParams = new FrameLayout.LayoutParams(AdapterUtils.dpToPixels(context, 300), AdapterUtils.dpToPixels(context, 250));
                 break;
             case "SMART":
-                if (AdapterUtils.isLargeScreen(activity)) {
-                    layoutParams = new FrameLayout.LayoutParams(AdapterUtils.dpToPixels(activity, 728), AdapterUtils.dpToPixels(activity, 90));
+                if (AdapterUtils.isLargeScreen(context)) {
+                    layoutParams = new FrameLayout.LayoutParams(AdapterUtils.dpToPixels(context, 728), AdapterUtils.dpToPixels(context, 90));
                 } else {
-                    layoutParams = new FrameLayout.LayoutParams(AdapterUtils.dpToPixels(activity, 320), AdapterUtils.dpToPixels(activity, 50));
+                    layoutParams = new FrameLayout.LayoutParams(AdapterUtils.dpToPixels(context, 320), AdapterUtils.dpToPixels(context, 50));
                 }
                 break;
             case "CUSTOM":
                 if (size.getHeight() >= 40 && size.getHeight() <= 60) {
-                    layoutParams = new FrameLayout.LayoutParams(AdapterUtils.dpToPixels(activity, 320), AdapterUtils.dpToPixels(activity, 50));
+                    layoutParams = new FrameLayout.LayoutParams(AdapterUtils.dpToPixels(context, 320), AdapterUtils.dpToPixels(context, 50));
                 }
                 break;
         }
