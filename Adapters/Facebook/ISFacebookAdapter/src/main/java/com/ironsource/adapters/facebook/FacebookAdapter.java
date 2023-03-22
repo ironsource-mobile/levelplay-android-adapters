@@ -2,7 +2,7 @@ package com.ironsource.adapters.facebook;
 
 import static com.ironsource.mediationsdk.metadata.MetaData.MetaDataValueTypes.META_DATA_VALUE_BOOLEAN;
 
-import android.app.Activity;
+import android.content.Context;
 import android.text.TextUtils;
 import android.view.Gravity;
 import android.widget.FrameLayout;
@@ -19,6 +19,7 @@ import com.facebook.ads.RewardedVideoAd;
 import com.facebook.ads.RewardedVideoAd.RewardedVideoAdLoadConfigBuilder;
 import com.facebook.ads.BidderTokenProvider;
 import com.ironsource.environment.ContextProvider;
+import com.ironsource.environment.StringUtils;
 import com.ironsource.mediationsdk.AbstractAdapter;
 import com.ironsource.mediationsdk.INetworkInitCallbackListener;
 import com.ironsource.mediationsdk.ISBannerSize;
@@ -110,7 +111,7 @@ public class FacebookAdapter extends AbstractAdapter implements INetworkInitCall
 
     private FacebookAdapter(String providerName) {
         super(providerName);
-        IronLog.INTERNAL.verbose("");
+        IronLog.INTERNAL.verbose();
 
         // Rewarded video
         mRewardedVideoPlacementIdToSmashListener = new ConcurrentHashMap<>();
@@ -136,7 +137,7 @@ public class FacebookAdapter extends AbstractAdapter implements INetworkInitCall
     }
 
     // Get the network and adapter integration data
-    public static IntegrationData getIntegrationData(Activity activity) {
+    public static IntegrationData getIntegrationData(Context context) {
         return new IntegrationData(META_NETWORK_NAME, VERSION);
     }
 
@@ -180,10 +181,12 @@ public class FacebookAdapter extends AbstractAdapter implements INetworkInitCall
     public void onNetworkInitCallbackSuccess() {
         // rewarded video listeners
         for (String placementId : mRewardedVideoPlacementIdToSmashListener.keySet()) {
+            RewardedVideoSmashListener listener = mRewardedVideoPlacementIdToSmashListener.get(placementId);
+
             if (mRewardedVideoPlacementIdsForInitCallbacks.contains(placementId)) {
-                mRewardedVideoPlacementIdToSmashListener.get(placementId).onRewardedVideoInitSuccess();
+                listener.onRewardedVideoInitSuccess();
             } else {
-                loadRewardedVideoInternal(placementId, null);
+                loadRewardedVideoInternal(placementId, null, listener);
             }
         }
 
@@ -218,11 +221,6 @@ public class FacebookAdapter extends AbstractAdapter implements INetworkInitCall
         for (BannerSmashListener listener : mBannerPlacementIdToSmashListener.values()) {
             listener.onBannerInitFailed(ErrorBuilder.buildInitFailedError(error, IronSourceConstants.BANNER_AD_UNIT));
         }
-    }
-
-    @Override
-    public void onNetworkInitCallbackLoadSuccess(String placementId) {
-
     }
 
     @Override
@@ -268,9 +266,7 @@ public class FacebookAdapter extends AbstractAdapter implements INetworkInitCall
 
         IronLog.ADAPTER_API.verbose("placementId = " + placementId);
 
-        FacebookRewardedVideoAdListener rewardedVideoAdListener = new FacebookRewardedVideoAdListener(FacebookAdapter.this, listener, placementId);
         // add to rewarded video listener map
-        mRewardedVideoPlacementIdToFacebookAdListener.put(placementId, rewardedVideoAdListener);
         mRewardedVideoPlacementIdToSmashListener.put(placementId, listener);
 
         // add placementId to init callback map
@@ -294,7 +290,7 @@ public class FacebookAdapter extends AbstractAdapter implements INetworkInitCall
 
     // used for flows when the mediation doesn't need to get a callback for init
     @Override
-    public void initAndLoadRewardedVideo(String appKey, String userId, JSONObject config, RewardedVideoSmashListener listener) {
+    public void initAndLoadRewardedVideo(String appKey, String userId, JSONObject config, JSONObject adData, RewardedVideoSmashListener listener) {
         final String placementId = config.optString(PLACEMENT_ID);
         final String allPlacementIds = config.optString(ALL_PLACEMENT_IDS);
 
@@ -312,10 +308,7 @@ public class FacebookAdapter extends AbstractAdapter implements INetworkInitCall
 
         IronLog.ADAPTER_API.verbose("placementId = " + placementId);
 
-
-        FacebookRewardedVideoAdListener rewardedVideoAdListener = new FacebookRewardedVideoAdListener(FacebookAdapter.this, listener, placementId);
         //add to rewarded video listener map
-        mRewardedVideoPlacementIdToFacebookAdListener.put(placementId, rewardedVideoAdListener);
         mRewardedVideoPlacementIdToSmashListener.put(placementId, listener);
 
 
@@ -325,7 +318,7 @@ public class FacebookAdapter extends AbstractAdapter implements INetworkInitCall
                 initSDK(allPlacementIds);
                 break;
             case INIT_STATE_SUCCESS:
-                loadRewardedVideoInternal(placementId, null);
+                loadRewardedVideoInternal(placementId, null, listener);
                 break;
             case INIT_STATE_FAILED:
                 IronLog.INTERNAL.verbose("init failed - placementId = " + placementId);
@@ -336,24 +329,25 @@ public class FacebookAdapter extends AbstractAdapter implements INetworkInitCall
     }
 
     @Override
-    public void loadRewardedVideoForBidding(JSONObject config, final RewardedVideoSmashListener listener, final String serverData) {
+    public void loadRewardedVideoForBidding(JSONObject config, JSONObject adData, final String serverData, final RewardedVideoSmashListener listener) {
         final String placementId = config.optString(PLACEMENT_ID);
         IronLog.ADAPTER_API.verbose("placementId = " + placementId);
-        loadRewardedVideoInternal(placementId, serverData);
+        loadRewardedVideoInternal(placementId, serverData, listener);
     }
 
     @Override
-    public void fetchRewardedVideoForAutomaticLoad(final JSONObject config, final RewardedVideoSmashListener listener) {
+    public void loadRewardedVideo(final JSONObject config, JSONObject adData, final RewardedVideoSmashListener listener) {
         final String placementId = config.optString(PLACEMENT_ID);
         IronLog.ADAPTER_API.verbose("placementId = " + placementId);
-        loadRewardedVideoInternal(placementId, null);
+        loadRewardedVideoInternal(placementId, null, listener);
     }
 
-    private void loadRewardedVideoInternal(final String placementId, final String serverData) {
+    private void loadRewardedVideoInternal(final String placementId, final String serverData, final RewardedVideoSmashListener listener) {
         IronLog.ADAPTER_API.verbose("placementId = " + placementId);
 
         mRewardedVideoAdsAvailability.put(placementId, false);
         mRewardedVideoPlacementIdShowCalled.put(placementId, false);
+
         postOnUIThread(new Runnable() {
             @Override
             public void run() {
@@ -365,8 +359,12 @@ public class FacebookAdapter extends AbstractAdapter implements INetworkInitCall
                     }
 
                     RewardedVideoAd rewardedVideoAd = new RewardedVideoAd(ContextProvider.getInstance().getApplicationContext(), placementId);
+
+                    FacebookRewardedVideoAdListener rewardedVideoAdListener = new FacebookRewardedVideoAdListener(FacebookAdapter.this, listener, placementId);
+                    mRewardedVideoPlacementIdToFacebookAdListener.put(placementId, rewardedVideoAdListener);
+
                     RewardedVideoAdLoadConfigBuilder configBuilder = rewardedVideoAd.buildLoadAdConfig();
-                    configBuilder.withAdListener(mRewardedVideoPlacementIdToFacebookAdListener.get(placementId));
+                    configBuilder.withAdListener(rewardedVideoAdListener);
 
                     if (!TextUtils.isEmpty(serverData)) {
                         // add server data to rewarded video bidder instance
@@ -400,7 +398,6 @@ public class FacebookAdapter extends AbstractAdapter implements INetworkInitCall
                 try {
                     // change rewarded video availability to false
                     mRewardedVideoAdsAvailability.put(placementId, false);
-                    listener.onRewardedVideoAvailabilityChanged(false);
                     RewardedVideoAd rewardedVideoAd = mRewardedVideoPlacementIdToAd.get(placementId);
                     // make sure the ad is loaded and has not expired
                     if (rewardedVideoAd != null && rewardedVideoAd.isAdLoaded() && !rewardedVideoAd.isAdInvalidated()) {
@@ -424,7 +421,7 @@ public class FacebookAdapter extends AbstractAdapter implements INetworkInitCall
     }
 
     @Override
-    public Map<String, Object> getRewardedVideoBiddingData(JSONObject config) {
+    public Map<String, Object> getRewardedVideoBiddingData(JSONObject config, JSONObject adData) {
         return getBiddingData();
     }
 
@@ -434,7 +431,7 @@ public class FacebookAdapter extends AbstractAdapter implements INetworkInitCall
 
     @Override
     public void initInterstitialForBidding(String appKey, String userId, JSONObject config, InterstitialSmashListener listener) {
-        IronLog.ADAPTER_API.verbose("");
+        IronLog.ADAPTER_API.verbose();
         initInterstitial(appKey, userId, config, listener);
     }
 
@@ -457,9 +454,7 @@ public class FacebookAdapter extends AbstractAdapter implements INetworkInitCall
         }
         IronLog.ADAPTER_API.verbose("placementId = " + placementId);
 
-        FacebookInterstitialAdListener interstitialAdListener = new FacebookInterstitialAdListener(FacebookAdapter.this, listener, placementId);
         // add to interstitial listener map
-        mInterstitialPlacementIdToFacebookAdListener.put(placementId, interstitialAdListener);
         mInterstitialPlacementIdToSmashListener.put(placementId, listener);
 
         switch (mInitState) {
@@ -479,18 +474,18 @@ public class FacebookAdapter extends AbstractAdapter implements INetworkInitCall
 
     // load interstitial for bidding
     @Override
-    public void loadInterstitialForBidding(final JSONObject config, final InterstitialSmashListener listener, final String serverData) {
-        IronLog.ADAPTER_API.verbose("");
-        loadInterstitialInternal(listener, config, serverData);
+    public void loadInterstitialForBidding(final JSONObject config, final JSONObject adData, final String serverData, final InterstitialSmashListener listener) {
+        IronLog.ADAPTER_API.verbose();
+        loadInterstitialInternal(config, serverData, listener);
     }
 
     @Override
-    public void loadInterstitial(final JSONObject config, final InterstitialSmashListener listener) {
-        IronLog.ADAPTER_API.verbose("");
-        loadInterstitialInternal(listener, config, null);
+    public void loadInterstitial(final JSONObject config, final JSONObject adData, final InterstitialSmashListener listener) {
+        IronLog.ADAPTER_API.verbose();
+        loadInterstitialInternal(config, null, listener);
     }
 
-    private void loadInterstitialInternal(final InterstitialSmashListener listener, JSONObject config, final String serverData) {
+    private void loadInterstitialInternal(final JSONObject config, final String serverData, final InterstitialSmashListener listener) {
         final String placementId = config.optString(PLACEMENT_ID);
 
         mInterstitialPlacementIdShowCalled.put(placementId, false);
@@ -508,9 +503,12 @@ public class FacebookAdapter extends AbstractAdapter implements INetworkInitCall
 
                     InterstitialAd interstitialAd = new InterstitialAd(ContextProvider.getInstance().getApplicationContext(), placementId);
 
+                    FacebookInterstitialAdListener interstitialAdListener = new FacebookInterstitialAdListener(FacebookAdapter.this, listener, placementId);
+                    mInterstitialPlacementIdToFacebookAdListener.put(placementId, interstitialAdListener);
+
                     InterstitialAdLoadConfigBuilder configBuilder = interstitialAd.buildLoadAdConfig();
                     configBuilder.withCacheFlags(mInterstitialFacebookCacheFlags);
-                    configBuilder.withAdListener(mInterstitialPlacementIdToFacebookAdListener.get(placementId));
+                    configBuilder.withAdListener(interstitialAdListener);
 
                     if (!TextUtils.isEmpty(serverData)) {
                         // add server data to Interstitial bidder instance
@@ -561,7 +559,7 @@ public class FacebookAdapter extends AbstractAdapter implements INetworkInitCall
     }
 
     @Override
-    public Map<String, Object> getInterstitialBiddingData(JSONObject config) {
+    public Map<String, Object> getInterstitialBiddingData(JSONObject config, JSONObject adData) {
         return getBiddingData();
     }
     //endregion
@@ -570,13 +568,13 @@ public class FacebookAdapter extends AbstractAdapter implements INetworkInitCall
 
     @Override
     public void initBannerForBidding(String appKey, String userId, JSONObject config, BannerSmashListener listener) {
-        IronLog.ADAPTER_API.verbose("");
+        IronLog.ADAPTER_API.verbose();
         initBannersInternal(config, listener);
     }
 
     @Override
     public void initBanners(String appKey, String userId, JSONObject config, BannerSmashListener listener) {
-        IronLog.ADAPTER_API.verbose("");
+        IronLog.ADAPTER_API.verbose();
         initBannersInternal(config, listener);
     }
 
@@ -617,14 +615,14 @@ public class FacebookAdapter extends AbstractAdapter implements INetworkInitCall
     }
 
     @Override
-    public void loadBannerForBidding(final IronSourceBannerLayout banner, final JSONObject config, final BannerSmashListener listener, final String serverData) {
-        IronLog.ADAPTER_API.verbose("");
+    public void loadBannerForBidding(final JSONObject config, final JSONObject adData, final String serverData, final IronSourceBannerLayout banner, final BannerSmashListener listener) {
+        IronLog.ADAPTER_API.verbose();
         loadBannerInternal(banner, config, listener, serverData);
     }
 
     @Override
-    public void loadBanner(final IronSourceBannerLayout banner, final JSONObject config, final BannerSmashListener listener) {
-        IronLog.ADAPTER_API.verbose("");
+    public void loadBanner(final JSONObject config, final JSONObject adData, final IronSourceBannerLayout banner, final BannerSmashListener listener) {
+        IronLog.ADAPTER_API.verbose();
         loadBannerInternal(banner, config, listener, null);
     }
 
@@ -641,7 +639,8 @@ public class FacebookAdapter extends AbstractAdapter implements INetworkInitCall
         IronLog.ADAPTER_API.verbose("placementId = " + placementId);
 
         // check size
-        final AdSize adSize = calculateBannerSize(banner.getSize(), banner.getActivity());
+        final AdSize adSize = calculateBannerSize(banner.getSize(), ContextProvider.getInstance().getApplicationContext());
+
         if (adSize == null) {
             IronLog.INTERNAL.error("loadBanner - size not supported, size = " + banner.getSize().getDescription());
             listener.onBannerAdLoadFailed(ErrorBuilder.unsupportedBannerSize(getProviderName()));
@@ -652,13 +651,14 @@ public class FacebookAdapter extends AbstractAdapter implements INetworkInitCall
             @Override
             public void run() {
                 try {
-                    AdView adView = new AdView(banner.getActivity(), placementId, adSize);
-                    FrameLayout.LayoutParams layoutParams = calcLayoutParams(banner.getSize(), banner.getActivity());
+                    AdView adView = new AdView(ContextProvider.getInstance().getApplicationContext(), placementId, adSize);
+                    FrameLayout.LayoutParams layoutParams = calcLayoutParams(banner.getSize(), ContextProvider.getInstance().getApplicationContext());
 
                     // create banner
                     FacebookBannerAdListener bannerAdListener = new FacebookBannerAdListener(FacebookAdapter.this, listener, placementId, layoutParams);
                     AdView.AdViewLoadConfigBuilder configBuilder = adView.buildLoadAdConfig();
                     configBuilder.withAdListener(bannerAdListener);
+
                     if (serverData != null) {
                         // add server data to banner bidder instance
                         configBuilder.withBid(serverData);
@@ -672,11 +672,6 @@ public class FacebookAdapter extends AbstractAdapter implements INetworkInitCall
                 }
             }
         });
-    }
-
-    @Override
-    public void reloadBanner(final IronSourceBannerLayout banner, final JSONObject config, final BannerSmashListener listener) {
-        IronLog.INTERNAL.warning("Unsupported method");
     }
 
     @Override
@@ -699,7 +694,7 @@ public class FacebookAdapter extends AbstractAdapter implements INetworkInitCall
         });
     }
 
-    public Map<String, Object> getBannerBiddingData(JSONObject config) {
+    public Map<String, Object> getBannerBiddingData(JSONObject config, JSONObject adData) {
         return getBiddingData();
     }
 
@@ -750,7 +745,7 @@ public class FacebookAdapter extends AbstractAdapter implements INetworkInitCall
             return;
         }
 
-        switch (key.toLowerCase(Locale.ENGLISH)) {
+        switch (StringUtils.toLowerCase(key)) {
             case FACEBOOK_INTERSTITIAL_CACHE_FLAG:
             case META_INTERSTITIAL_CACHE_FLAG:
                 IronLog.ADAPTER_API.verbose("key = " + key + ", values = " + values);
@@ -783,11 +778,11 @@ public class FacebookAdapter extends AbstractAdapter implements INetworkInitCall
 
     private CacheFlag getFacebookCacheFlag(String value) {
         IronLog.ADAPTER_API.verbose("value = " + value);
-        return CacheFlag.valueOf(value.toUpperCase(Locale.ENGLISH));
+        return CacheFlag.valueOf(StringUtils.toUpperCase(value));
     }
 
     private EnumSet<CacheFlag> getFacebookAllCacheFlags() {
-        IronLog.ADAPTER_API.verbose("");
+        IronLog.ADAPTER_API.verbose();
         return EnumSet.allOf(CacheFlag.class);
     }
 
@@ -803,7 +798,7 @@ public class FacebookAdapter extends AbstractAdapter implements INetworkInitCall
     //endregion
 
     //region Helpers
-    private AdSize calculateBannerSize(ISBannerSize size, Activity activity) {
+    private AdSize calculateBannerSize(ISBannerSize size, Context context) {
         switch (size.getDescription()) {
             case "BANNER":
                 return AdSize.BANNER_HEIGHT_50;
@@ -815,7 +810,7 @@ public class FacebookAdapter extends AbstractAdapter implements INetworkInitCall
                 return AdSize.RECTANGLE_HEIGHT_250;
 
             case "SMART":
-                return AdapterUtils.isLargeScreen(activity) ? AdSize.BANNER_HEIGHT_90 : AdSize.BANNER_HEIGHT_50;
+                return AdapterUtils.isLargeScreen(context) ? AdSize.BANNER_HEIGHT_90 : AdSize.BANNER_HEIGHT_50;
 
             case "CUSTOM":
                 if (size.getHeight() == 50) {
@@ -830,15 +825,15 @@ public class FacebookAdapter extends AbstractAdapter implements INetworkInitCall
         return null;
     }
 
-    protected FrameLayout.LayoutParams calcLayoutParams(ISBannerSize size, Activity activity) {
+    protected FrameLayout.LayoutParams calcLayoutParams(ISBannerSize size, Context context) {
         int widthDp = 320;
         if (size.getDescription().equals("RECTANGLE")) {
             widthDp = 300;
-        } else if (size.getDescription().equals("SMART") && AdapterUtils.isLargeScreen(activity)) {
+        } else if (size.getDescription().equals("SMART") && AdapterUtils.isLargeScreen(context)) {
             widthDp = 728;
         }
 
-        int widthPixel = AdapterUtils.dpToPixels(activity, widthDp);
+        int widthPixel = AdapterUtils.dpToPixels(context, widthDp);
         FrameLayout.LayoutParams layoutParams = new FrameLayout.LayoutParams(widthPixel, FrameLayout.LayoutParams.WRAP_CONTENT);
         layoutParams.gravity = Gravity.CENTER;
         return layoutParams;

@@ -1,7 +1,7 @@
 apply plugin: 'com.android.library'
 
 ext {
-    adapterVersion = '4.3.37'
+    adapterVersion = '4.3.39'
 }
 
 def getGitHash = { ->
@@ -50,7 +50,7 @@ android {
 }
 
  dependencies {
-    implementation 'com.ironsource.sdk:mediationsdk:7.2.4.1'
+    implementation 'com.ironsource.sdk:mediationsdk:7.3.0'
     implementation 'com.facebook.android:audience-network-sdk:6.12.0'
 
 }
