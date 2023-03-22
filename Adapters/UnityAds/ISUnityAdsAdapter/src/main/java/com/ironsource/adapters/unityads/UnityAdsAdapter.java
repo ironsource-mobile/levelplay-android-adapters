@@ -1,6 +1,7 @@
 package com.ironsource.adapters.unityads;
 
 import android.app.Activity;
+import android.content.Context;
 import android.text.TextUtils;
 import android.view.Gravity;
 import android.widget.FrameLayout;
@@ -44,7 +45,6 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.atomic.AtomicBoolean;
-
 
 import static com.ironsource.mediationsdk.metadata.MetaData.MetaDataValueTypes.META_DATA_VALUE_BOOLEAN;
 
@@ -119,7 +119,7 @@ class UnityAdsAdapter extends AbstractAdapter implements IUnityAdsInitialization
 
     private UnityAdsAdapter(String providerName) {
         super(providerName);
-        IronLog.INTERNAL.verbose("");
+        IronLog.INTERNAL.verbose();
 
         // Rewarded video
         mPlacementIdToRewardedVideoSmashListener = new ConcurrentHashMap<>();
@@ -141,7 +141,7 @@ class UnityAdsAdapter extends AbstractAdapter implements IUnityAdsInitialization
     }
 
     // get the network and adapter integration data
-    public static IntegrationData getIntegrationData(Activity activity) {
+    public static IntegrationData getIntegrationData(Context context) {
         return new IntegrationData("UnityAds", VERSION);
     }
 
@@ -171,11 +171,11 @@ class UnityAdsAdapter extends AbstractAdapter implements IUnityAdsInitialization
         }
         //Init SDK should be called only once
         if (mWasInitCalled.compareAndSet(false, true)) {
-            IronLog.ADAPTER_API.verbose("");
+            IronLog.ADAPTER_API.verbose();
             mInitState = InitState.INIT_STATE_IN_PROGRESS;
 
             synchronized (mUnityAdsStorageLock) {
-                MediationMetaData mediationMetaData = new MediationMetaData(ContextProvider.getInstance().getCurrentActiveActivity());
+                MediationMetaData mediationMetaData = new MediationMetaData(ContextProvider.getInstance().getApplicationContext());
                 mediationMetaData.setName(MEDIATION_NAME);
                 // mediation version
                 mediationMetaData.setVersion(IronSourceUtils.getSDKVersion());
@@ -194,14 +194,16 @@ class UnityAdsAdapter extends AbstractAdapter implements IUnityAdsInitialization
 
     @Override
     public void onNetworkInitCallbackSuccess() {
-        IronLog.ADAPTER_CALLBACK.verbose("");
+        IronLog.ADAPTER_CALLBACK.verbose();
 
         // rewarded video listeners
         for (String placementId : mPlacementIdToRewardedVideoSmashListener.keySet()) {
+            RewardedVideoSmashListener listener = mPlacementIdToRewardedVideoSmashListener.get(placementId);
+
             if (mRewardedVideoPlacementIdsForInitCallbacks.contains(placementId)) {
-                mPlacementIdToRewardedVideoSmashListener.get(placementId).onRewardedVideoInitSuccess();
+                listener.onRewardedVideoInitSuccess();
             } else {
-                loadRewardedVideoInternal(placementId, null);
+                loadRewardedVideoInternal(placementId, null, listener);
             }
         }
 
@@ -218,14 +220,16 @@ class UnityAdsAdapter extends AbstractAdapter implements IUnityAdsInitialization
 
     @Override
     public void onNetworkInitCallbackFailed(String error) {
-        IronLog.ADAPTER_CALLBACK.verbose("");
+        IronLog.ADAPTER_CALLBACK.verbose();
 
         // rewarded video listeners
         for (String placementId : mPlacementIdToRewardedVideoSmashListener.keySet()) {
+            RewardedVideoSmashListener listener = mPlacementIdToRewardedVideoSmashListener.get(placementId);
+
             if (mRewardedVideoPlacementIdsForInitCallbacks.contains(placementId)) {
-                mPlacementIdToRewardedVideoSmashListener.get(placementId).onRewardedVideoInitFailed(ErrorBuilder.buildInitFailedError(error, IronSourceConstants.REWARDED_VIDEO_AD_UNIT));
+                listener.onRewardedVideoInitFailed(ErrorBuilder.buildInitFailedError(error, IronSourceConstants.REWARDED_VIDEO_AD_UNIT));
             } else {
-                mPlacementIdToRewardedVideoSmashListener.get(placementId).onRewardedVideoAvailabilityChanged(false);
+                listener.onRewardedVideoAvailabilityChanged(false);
             }
         }
 
@@ -241,13 +245,8 @@ class UnityAdsAdapter extends AbstractAdapter implements IUnityAdsInitialization
     }
 
     @Override
-    public void onNetworkInitCallbackLoadSuccess(String placement) {
-    }
-
-
-    @Override
     public void onInitializationComplete() {
-        IronLog.ADAPTER_CALLBACK.verbose("");
+        IronLog.ADAPTER_CALLBACK.verbose();
         mInitState = InitState.INIT_STATE_SUCCESS;
 
         for (INetworkInitCallbackListener adapter : initCallbackListeners) {
@@ -259,7 +258,7 @@ class UnityAdsAdapter extends AbstractAdapter implements IUnityAdsInitialization
 
     @Override
     public void onInitializationFailed(UnityAds.UnityAdsInitializationError error, String message) {
-        IronLog.ADAPTER_CALLBACK.verbose("");
+        IronLog.ADAPTER_CALLBACK.verbose();
         mInitState = InitState.INIT_STATE_FAILED;
         String initError = getUnityAdsInitializationErrorCode(error) + message;
 
@@ -304,9 +303,6 @@ class UnityAdsAdapter extends AbstractAdapter implements IUnityAdsInitialization
 
         IronLog.ADAPTER_API.verbose("gameId = " + gameId + ", placementId = " + placementId);
 
-        UnityAdsRewardedVideoListener rewardedVideoListener = new UnityAdsRewardedVideoListener(UnityAdsAdapter.this, listener, placementId);
-        mPlacementIdToRewardedVideoListener.put(placementId, rewardedVideoListener);
-
         // add to rewarded video listener map
         mPlacementIdToRewardedVideoSmashListener.put(placementId, listener);
 
@@ -330,7 +326,7 @@ class UnityAdsAdapter extends AbstractAdapter implements IUnityAdsInitialization
 
     // used for flows when the mediation doesn't need to get a callback for init
     @Override
-    public void initAndLoadRewardedVideo(String appKey, String userId, JSONObject config, RewardedVideoSmashListener listener) {
+    public void initAndLoadRewardedVideo(String appKey, String userId, JSONObject config, JSONObject adData, RewardedVideoSmashListener listener) {
         String gameId = config.optString(GAME_ID);
         String placementId = config.optString(PLACEMENT_ID);
 
@@ -358,9 +354,6 @@ class UnityAdsAdapter extends AbstractAdapter implements IUnityAdsInitialization
 
         IronLog.ADAPTER_API.verbose("gameId = " + gameId + ", placementId = " + placementId);
 
-        UnityAdsRewardedVideoListener rewardedVideoListener = new UnityAdsRewardedVideoListener(UnityAdsAdapter.this, listener, placementId);
-        mPlacementIdToRewardedVideoListener.put(placementId, rewardedVideoListener);
-
         //add to rewarded video listener map
         mPlacementIdToRewardedVideoSmashListener.put(placementId, listener);
 
@@ -370,7 +363,7 @@ class UnityAdsAdapter extends AbstractAdapter implements IUnityAdsInitialization
                 initSDK(gameId, config);
                 break;
             case INIT_STATE_SUCCESS:
-                loadRewardedVideoInternal(placementId, null);
+                loadRewardedVideoInternal(placementId, null, listener);
                 break;
             case INIT_STATE_FAILED:
                 listener.onRewardedVideoAvailabilityChanged(false);
@@ -379,40 +372,40 @@ class UnityAdsAdapter extends AbstractAdapter implements IUnityAdsInitialization
     }
 
     @Override
-    public void loadRewardedVideoForBidding(JSONObject config, RewardedVideoSmashListener listener, String serverData) {
+    public void loadRewardedVideoForBidding(JSONObject config, JSONObject adData, String serverData, RewardedVideoSmashListener listener) {
         String placementId = config.optString(PLACEMENT_ID);
         IronLog.ADAPTER_API.verbose("placementId = " + placementId);
-        loadRewardedVideoInternal(placementId, serverData);
+        loadRewardedVideoInternal(placementId, serverData, listener);
     }
 
     @Override
-    public void fetchRewardedVideoForAutomaticLoad(final JSONObject config, RewardedVideoSmashListener listener) {
+    public void loadRewardedVideo(final JSONObject config, JSONObject adData, RewardedVideoSmashListener listener) {
         String placementId = config.optString(PLACEMENT_ID);
         IronLog.ADAPTER_API.verbose("placementId = " + placementId);
-        loadRewardedVideoInternal(placementId, null);
+        loadRewardedVideoInternal(placementId, null, listener);
     }
 
-    private void loadRewardedVideoInternal(String placementId, String serverData) {
+    private void loadRewardedVideoInternal(String placementId, String serverData, RewardedVideoSmashListener listener) {
         IronLog.ADAPTER_API.verbose("placementId = " + placementId);
 
         mRewardedVideoAdsAvailability.put(placementId, false);
-        UnityAdsRewardedVideoListener listener = mPlacementIdToRewardedVideoListener.get(placementId);
+        UnityAdsRewardedVideoListener rewardedVideoAdListener = new UnityAdsRewardedVideoListener(UnityAdsAdapter.this, listener, placementId);
+        mPlacementIdToRewardedVideoListener.put(placementId, rewardedVideoAdListener);
+
+        UnityAdsLoadOptions loadOptions = new UnityAdsLoadOptions();
+
+        // objectId is used to identify a loaded ad and to show it
+        String mObjectId = UUID.randomUUID().toString();
+        loadOptions.setObjectId(mObjectId);
+
         if (!TextUtils.isEmpty(serverData)) {
-            // load rewarded video for bidding instance
-            UnityAdsLoadOptions loadOptions = null;
-            // mObjectId is string that is used to identify loaded ad and to show that ad
-            String mObjectId = UUID.randomUUID().toString();
-            loadOptions = new UnityAdsLoadOptions();
+            // add adMarkup for bidder instances
             loadOptions.setAdMarkup(serverData);
-            loadOptions.setObjectId(mObjectId);
-
-            mRewardedVideoPlacementIdToLoadedAdObjectId.put(placementId, mObjectId);
-
-            UnityAds.load(placementId, loadOptions, listener);
-        } else {
-            // load rewarded video for non bidding instance
-            UnityAds.load(placementId, listener);
         }
+
+        mRewardedVideoPlacementIdToLoadedAdObjectId.put(placementId, mObjectId);
+
+        UnityAds.load(placementId, loadOptions, rewardedVideoAdListener);
 
     }
 
@@ -421,31 +414,24 @@ class UnityAdsAdapter extends AbstractAdapter implements IUnityAdsInitialization
         String placementId = config.optString(PLACEMENT_ID);
         IronLog.ADAPTER_API.verbose("placementId = " + placementId);
 
-        // change rewarded video availability to false
-        listener.onRewardedVideoAvailabilityChanged(false);
-
         if (isRewardedVideoAvailable(config)) {
             mRewardedVideoAdsAvailability.put(placementId, false);
-            Activity currentActiveActivity = ContextProvider.getInstance().getCurrentActiveActivity();
+
             if (!TextUtils.isEmpty(getDynamicUserId())) {
                 synchronized (mUnityAdsStorageLock) {
-                    PlayerMetaData playerMetaData = new PlayerMetaData(currentActiveActivity);
+                    PlayerMetaData playerMetaData = new PlayerMetaData(ContextProvider.getInstance().getApplicationContext());
                     playerMetaData.setServerId(getDynamicUserId());
                     playerMetaData.commit();
                 }
             }
 
-            UnityAdsRewardedVideoListener unityAdsRewardedVideoListener = mPlacementIdToRewardedVideoListener.get(placementId);
-            if (mRewardedVideoPlacementIdToLoadedAdObjectId.containsKey(placementId)) {
-                // show rewarded video for bidding instance
-                String objectId = mRewardedVideoPlacementIdToLoadedAdObjectId.get(placementId);
-                UnityAdsShowOptions showOptions = new UnityAdsShowOptions();
-                showOptions.setObjectId(objectId);
-                UnityAds.show(currentActiveActivity, placementId, showOptions, unityAdsRewardedVideoListener);
-            } else {
-                // show rewarded video for non bidding instance
-                UnityAds.show(currentActiveActivity, placementId, unityAdsRewardedVideoListener);
-            }
+            UnityAdsRewardedVideoListener rewardedVideoAdListener = mPlacementIdToRewardedVideoListener.get(placementId);
+
+            String objectId = mRewardedVideoPlacementIdToLoadedAdObjectId.get(placementId);
+            UnityAdsShowOptions showOptions = new UnityAdsShowOptions();
+            showOptions.setObjectId(objectId);
+
+            UnityAds.show(ContextProvider.getInstance().getCurrentActiveActivity(), placementId, showOptions, rewardedVideoAdListener);
         } else {
             listener.onRewardedVideoAdShowFailed(ErrorBuilder.buildNoAdsToShowError(IronSourceConstants.REWARDED_VIDEO_AD_UNIT));
         }
@@ -468,7 +454,7 @@ class UnityAdsAdapter extends AbstractAdapter implements IUnityAdsInitialization
 
 
     @Override
-    public Map<String, Object> getRewardedVideoBiddingData(JSONObject config) {
+    public Map<String, Object> getRewardedVideoBiddingData(JSONObject config, JSONObject adData) {
         return getBiddingData();
     }
 
@@ -478,7 +464,7 @@ class UnityAdsAdapter extends AbstractAdapter implements IUnityAdsInitialization
 
     @Override
     public void initInterstitialForBidding(String appKey, String userId, JSONObject config, InterstitialSmashListener listener) {
-        IronLog.ADAPTER_API.verbose("");
+        IronLog.ADAPTER_API.verbose();
         initInterstitial(appKey, userId, config, listener);
     }
 
@@ -511,9 +497,6 @@ class UnityAdsAdapter extends AbstractAdapter implements IUnityAdsInitialization
 
         IronLog.ADAPTER_API.verbose("gameId = " + gameId + ", placementId = " + placementId);
 
-        UnityAdsInterstitialListener interstitialListener = new UnityAdsInterstitialListener(UnityAdsAdapter.this, listener, placementId);
-        mPlacementIdToInterstitialListener.put(placementId, interstitialListener);
-
         //add to interstitial listener map
         mPlacementIdToInterstitialSmashListener.put(placementId, listener);
 
@@ -532,14 +515,14 @@ class UnityAdsAdapter extends AbstractAdapter implements IUnityAdsInitialization
     }
 
     @Override
-    public void loadInterstitialForBidding(JSONObject config, InterstitialSmashListener listener, String serverData) {
+    public void loadInterstitialForBidding(JSONObject config, JSONObject adData, String serverData, InterstitialSmashListener listener) {
         String placementId = config.optString(PLACEMENT_ID);
         IronLog.ADAPTER_API.verbose("placementId = " + placementId);
         loadInterstitialInternal(config, listener, serverData, placementId);
     }
 
     @Override
-    public void loadInterstitial(JSONObject config, InterstitialSmashListener listener) {
+    public void loadInterstitial(JSONObject config, JSONObject adData, InterstitialSmashListener listener) {
         String placementId = config.optString(PLACEMENT_ID);
         IronLog.ADAPTER_API.verbose("placementId = " + placementId);
         loadInterstitialInternal(config, listener, null, placementId);
@@ -550,20 +533,23 @@ class UnityAdsAdapter extends AbstractAdapter implements IUnityAdsInitialization
 
         mInterstitialAdsAvailability.put(placementId, false);
 
-        UnityAdsInterstitialListener unityAdsInterstitialListener = mPlacementIdToInterstitialListener.get(placementId);
+        UnityAdsInterstitialListener interstitialAdListener = new UnityAdsInterstitialListener(UnityAdsAdapter.this, listener, placementId);
+        mPlacementIdToInterstitialListener.put(placementId, interstitialAdListener);
+
+        UnityAdsLoadOptions loadOptions = new UnityAdsLoadOptions();
+
+        // objectId is used to identify a loaded ad and to show it
+        String mObjectId = UUID.randomUUID().toString();
+        loadOptions.setObjectId(mObjectId);
+
         if (!TextUtils.isEmpty(serverData)) {
-            // load interstitial for bidding instance
-            UnityAdsLoadOptions loadOptions = new UnityAdsLoadOptions();
-            // mObjectId is string that is used to identify loaded ad and to show that ad
-            String mObjectId = UUID.randomUUID().toString();
+            // add adMarkup for bidder instances
             loadOptions.setAdMarkup(serverData);
-            loadOptions.setObjectId(mObjectId);
-            mInterstitialPlacementIdToLoadedAdObjectId.put(placementId, mObjectId);
-            UnityAds.load(placementId, loadOptions, unityAdsInterstitialListener);
-        } else {
-            // load interstitial for non bidding instance
-            UnityAds.load(placementId, unityAdsInterstitialListener);
         }
+
+        mInterstitialPlacementIdToLoadedAdObjectId.put(placementId, mObjectId);
+
+        UnityAds.load(placementId, loadOptions, interstitialAdListener);
     }
 
     @Override
@@ -576,17 +562,13 @@ class UnityAdsAdapter extends AbstractAdapter implements IUnityAdsInitialization
 
             Activity currentActiveActivity = ContextProvider.getInstance().getCurrentActiveActivity();
             UnityAdsInterstitialListener unityAdsInterstitialListener = mPlacementIdToInterstitialListener.get(placementId);
-            if (mInterstitialPlacementIdToLoadedAdObjectId.containsKey(placementId)) {
-                String mObjectId = mInterstitialPlacementIdToLoadedAdObjectId.get(placementId);
-                UnityAdsShowOptions showOptions = new UnityAdsShowOptions();
-                showOptions.setObjectId(mObjectId);
 
-                // show interstitial for bidding instance
-                UnityAds.show(currentActiveActivity, placementId, showOptions, unityAdsInterstitialListener);
-            } else {
-                // show interstitial for non bidding instance
-                UnityAds.show(currentActiveActivity, placementId, unityAdsInterstitialListener);
-            }
+            String mObjectId = mInterstitialPlacementIdToLoadedAdObjectId.get(placementId);
+            UnityAdsShowOptions showOptions = new UnityAdsShowOptions();
+            showOptions.setObjectId(mObjectId);
+
+            UnityAds.show(currentActiveActivity, placementId, showOptions, unityAdsInterstitialListener);
+
         } else {
             listener.onInterstitialAdShowFailed(ErrorBuilder.buildNoAdsToShowError(IronSourceConstants.INTERSTITIAL_AD_UNIT));
         }
@@ -606,7 +588,7 @@ class UnityAdsAdapter extends AbstractAdapter implements IUnityAdsInitialization
     }
 
     @Override
-    public Map<String, Object> getInterstitialBiddingData(JSONObject config) {
+    public Map<String, Object> getInterstitialBiddingData(JSONObject config, JSONObject adData) {
         return getBiddingData();
     }
     //endregion
@@ -641,9 +623,6 @@ class UnityAdsAdapter extends AbstractAdapter implements IUnityAdsInitialization
 
         IronLog.ADAPTER_API.verbose("gameId = " + gameId + ", placementId = " + placementId);
 
-        UnityAdsBannerListener bannerListener = new UnityAdsBannerListener(UnityAdsAdapter.this, listener, placementId);
-        mPlacementIdToBannerListener.put(placementId, bannerListener);
-
         //add to banner listener map
         mPlacementIdToBannerSmashListener.put(placementId, listener);
 
@@ -662,7 +641,7 @@ class UnityAdsAdapter extends AbstractAdapter implements IUnityAdsInitialization
     }
 
     @Override
-    public void loadBanner(final IronSourceBannerLayout banner, final JSONObject config, final BannerSmashListener listener) {
+    public void loadBanner(final JSONObject config, final JSONObject adData, final IronSourceBannerLayout banner, final BannerSmashListener listener) {
         String placementId = config.optString(PLACEMENT_ID);
 
         // check banner
@@ -682,15 +661,10 @@ class UnityAdsAdapter extends AbstractAdapter implements IUnityAdsInitialization
         IronLog.ADAPTER_API.verbose("placementId = " + placementId);
 
         // create banner
-        BannerView bannerView = getBannerView(banner, placementId);
+        BannerView bannerView = getBannerView(banner, placementId, listener);
 
         // load
         bannerView.load();
-    }
-
-    @Override
-    public void reloadBanner(final IronSourceBannerLayout banner, final JSONObject config, BannerSmashListener listener) {
-        IronLog.INTERNAL.warning("Unsupported method");
     }
 
     @Override
@@ -703,12 +677,6 @@ class UnityAdsAdapter extends AbstractAdapter implements IUnityAdsInitialization
         }
     }
 
-    //network does not support banner reload
-    //return true if banner view needs to be bound again on reload
-    @Override
-    public boolean shouldBindBannerViewOnReload() {
-        return true;
-    }
     //endregion
 
     // region memory handling
@@ -741,7 +709,7 @@ class UnityAdsAdapter extends AbstractAdapter implements IUnityAdsInitialization
     //endregion
 
     //region legal
-
+    @Override
     protected void setConsent(boolean consent) {
         IronLog.ADAPTER_API.verbose("setConsent = " + consent);
         setUnityAdsMetaData(CONSENT_GDPR, consent);
@@ -762,7 +730,7 @@ class UnityAdsAdapter extends AbstractAdapter implements IUnityAdsInitialization
         } else {
             String formattedValue = MetaDataUtils.formatValueForType(value, META_DATA_VALUE_BOOLEAN);
 
-            if (isValidCOPPAMetaData(key, formattedValue)) {
+            if (MetaDataUtils.isValidMetaData(key, UNITYADS_METADATA_COPPA_KEY, formattedValue)) {
                 setCOPPAValue(MetaDataUtils.getMetaDataBooleanValue(formattedValue));
             }
         }
@@ -772,7 +740,7 @@ class UnityAdsAdapter extends AbstractAdapter implements IUnityAdsInitialization
         IronLog.INTERNAL.verbose("key = " + key + "value = " + value);
 
         synchronized (mUnityAdsStorageLock) {
-            MetaData metaData = new MetaData(ContextProvider.getInstance().getCurrentActiveActivity());
+            MetaData metaData = new MetaData(ContextProvider.getInstance().getApplicationContext());
             metaData.set(key, value);
 
             // in case of COPPA we need to set an additional key
@@ -799,9 +767,6 @@ class UnityAdsAdapter extends AbstractAdapter implements IUnityAdsInitialization
         setUnityAdsMetaData(CONSENT_CCPA, optIn);
     }
 
-    private boolean isValidCOPPAMetaData(String key, String value) {
-        return (key.toLowerCase().equals(UNITYADS_METADATA_COPPA_KEY) && !TextUtils.isEmpty(value));
-    }
     //endregion
 
     //region Banner Helpers
@@ -851,22 +816,25 @@ class UnityAdsAdapter extends AbstractAdapter implements IUnityAdsInitialization
         return null;
     }
 
-    private BannerView getBannerView(IronSourceBannerLayout banner, String placementId) {
+    private BannerView getBannerView(IronSourceBannerLayout banner, String placementId, final BannerSmashListener listener) {
         // Remove previously created banner view
         if (mPlacementIdToBannerAd.get(placementId) != null) {
             mPlacementIdToBannerAd.get(placementId).destroy();
             mPlacementIdToBannerAd.remove(placementId);
         }
 
-        Activity currentActiveActivity = ContextProvider.getInstance().getCurrentActiveActivity();
         // get size
-        UnityBannerSize unityBannerSize = getBannerSize(banner.getSize(), AdapterUtils.isLargeScreen(currentActiveActivity));
+        UnityBannerSize unityBannerSize = getBannerSize(banner.getSize(),
+                AdapterUtils.isLargeScreen(ContextProvider.getInstance().getApplicationContext()));
 
         // create banner
-        BannerView bannerView = new BannerView(currentActiveActivity, placementId, unityBannerSize);
+        BannerView bannerView = new BannerView(ContextProvider.getInstance().getCurrentActiveActivity(),
+                placementId, unityBannerSize);
 
         // add listener
-        bannerView.setListener(mPlacementIdToBannerListener.get(placementId));
+        UnityAdsBannerListener bannerAdListener = new UnityAdsBannerListener(UnityAdsAdapter.this, listener, placementId);
+        mPlacementIdToBannerListener.put(placementId, bannerAdListener);
+        bannerView.setListener(bannerAdListener);
 
         // add to map
         mPlacementIdToBannerAd.put(placementId, bannerView);
@@ -875,7 +843,7 @@ class UnityAdsAdapter extends AbstractAdapter implements IUnityAdsInitialization
     }
 
     protected FrameLayout.LayoutParams createLayoutParams(UnityBannerSize size) {
-        int widthPixel = AdapterUtils.dpToPixels(ContextProvider.getInstance().getCurrentActiveActivity(), size.getWidth());
+        int widthPixel = AdapterUtils.dpToPixels(ContextProvider.getInstance().getApplicationContext(), size.getWidth());
         FrameLayout.LayoutParams layoutParams = new FrameLayout.LayoutParams(widthPixel, FrameLayout.LayoutParams.WRAP_CONTENT, Gravity.CENTER);
         return layoutParams;
     }
@@ -944,7 +912,7 @@ class UnityAdsAdapter extends AbstractAdapter implements IUnityAdsInitialization
     }
 
     public void getAsyncToken() {
-        IronLog.INTERNAL.verbose("");
+        IronLog.INTERNAL.verbose();
         UnityAds.getToken(new IUnityAdsTokenListener() {
             @Override
             public void onUnityAdsTokenReady(String token) {
