@@ -3,6 +3,7 @@ package com.ironsource.adapters.vungle;
 import static com.ironsource.mediationsdk.metadata.MetaData.MetaDataValueTypes.META_DATA_VALUE_BOOLEAN;
 
 import android.app.Activity;
+import android.content.Context;
 import android.text.TextUtils;
 import android.view.Gravity;
 import android.widget.FrameLayout;
@@ -107,7 +108,7 @@ class VungleAdapter extends AbstractAdapter implements INetworkInitCallbackListe
 
     private VungleAdapter(String providerName) {
         super(providerName);
-        IronLog.INTERNAL.verbose("");
+        IronLog.INTERNAL.verbose();
 
         // Rewarded video
         mPlacementIdToRewardedVideoSmashListener = new ConcurrentHashMap<>();
@@ -125,10 +126,8 @@ class VungleAdapter extends AbstractAdapter implements INetworkInitCallbackListe
     }
 
     // Get the network and adapter integration data
-    public static IntegrationData getIntegrationData(Activity activity) {
-        IntegrationData ret = new IntegrationData("Vungle", VERSION);
-        ret.validateWriteExternalStorage = true;
-        return ret;
+    public static IntegrationData getIntegrationData(Context context) {
+        return new IntegrationData("Vungle", VERSION);
     }
 
     @Override
@@ -258,9 +257,6 @@ class VungleAdapter extends AbstractAdapter implements INetworkInitCallbackListe
         }
     }
 
-    @Override
-    public void onNetworkInitCallbackLoadSuccess(String placementId) {
-    }
     //endregion
 
     //region Rewarded Video API
@@ -306,7 +302,7 @@ class VungleAdapter extends AbstractAdapter implements INetworkInitCallbackListe
 
     @Override
     // used for flows when the mediation doesn't need to get a callback for init
-    public void initAndLoadRewardedVideo(String appKey, String userId, JSONObject config, RewardedVideoSmashListener listener) {
+    public void initAndLoadRewardedVideo(String appKey, String userId, JSONObject config, JSONObject adData, RewardedVideoSmashListener listener) {
         String placementId = config.optString(PLACEMENT_ID);
         String appId = config.optString(APP_ID);
 
@@ -349,22 +345,19 @@ class VungleAdapter extends AbstractAdapter implements INetworkInitCallbackListe
     }
 
     @Override
-    public void loadRewardedVideoForBidding(JSONObject config, final RewardedVideoSmashListener listener, String serverData) {
+    public void loadRewardedVideoForBidding(JSONObject config, JSONObject adData, String serverData, final RewardedVideoSmashListener listener) {
         String placementId = config.optString(PLACEMENT_ID);
         mPlacementIdToRewardedVideoServerData.put(placementId, serverData);
         loadRewardedVideoInternal(placementId, listener, serverData);
     }
 
     @Override
-    public void fetchRewardedVideoForAutomaticLoad(final JSONObject config, final RewardedVideoSmashListener listener) {
+    public void loadRewardedVideo(final JSONObject config, JSONObject adData, final RewardedVideoSmashListener listener) {
         String placementId = config.optString(PLACEMENT_ID);
         
         if (isRewardedVideoAdAvailableInternal(placementId)) {
             IronLog.ADAPTER_API.verbose("ad already cached for placement Id " + placementId);
-
-            RewardedVideoSmashListener smashListener = mPlacementIdToRewardedVideoSmashListener.get(placementId);
-            smashListener.onRewardedVideoAvailabilityChanged(true);
-
+            listener.onRewardedVideoAvailabilityChanged(true);
         } else {
             loadRewardedVideoInternal(placementId, listener, null);
         }
@@ -372,6 +365,9 @@ class VungleAdapter extends AbstractAdapter implements INetworkInitCallbackListe
 
     private void loadRewardedVideoInternal(String placementId, RewardedVideoSmashListener listener, String serverData) {
         IronLog.ADAPTER_API.verbose("placementId = " + placementId);
+
+        // added to rewarded video listener map as it is required for the availability check
+        mPlacementIdToRewardedVideoSmashListener.put(placementId, listener);
 
         // create Vungle load listener
         VungleRewardedVideoLoadListener vungleLoadListener = new VungleRewardedVideoLoadListener(listener);
@@ -389,9 +385,6 @@ class VungleAdapter extends AbstractAdapter implements INetworkInitCallbackListe
     public void showRewardedVideo(JSONObject config, final RewardedVideoSmashListener listener) {
         String placementId = config.optString(PLACEMENT_ID);
         IronLog.ADAPTER_API.verbose("placementId = " + placementId);
-
-        // change rewarded video availability to false
-        listener.onRewardedVideoAvailabilityChanged(false);
 
         // if we can play
         if (isRewardedVideoAdAvailableInternal(placementId)) {
@@ -434,7 +427,7 @@ class VungleAdapter extends AbstractAdapter implements INetworkInitCallbackListe
     }
 
     @Override
-    public Map<String, Object> getRewardedVideoBiddingData(JSONObject config) {
+    public Map<String, Object> getRewardedVideoBiddingData(JSONObject config, JSONObject adData) {
         return getBiddingData();
     }
 
@@ -486,20 +479,23 @@ class VungleAdapter extends AbstractAdapter implements INetworkInitCallbackListe
     }
 
     @Override
-    public void loadInterstitialForBidding(JSONObject config, InterstitialSmashListener listener, String serverData) {
+    public void loadInterstitialForBidding(JSONObject config, JSONObject adData, String serverData, InterstitialSmashListener listener) {
         final String placementId = config.optString(PLACEMENT_ID);
         mPlacementIdToInterstitialServerData.put(placementId, serverData);
         loadInterstitialInternal(placementId, listener, serverData);
     }
 
     @Override
-    public void loadInterstitial(JSONObject config, final InterstitialSmashListener listener) {
+    public void loadInterstitial(JSONObject config, JSONObject adData, final InterstitialSmashListener listener) {
         String placementId = config.optString(PLACEMENT_ID);
         loadInterstitialInternal(placementId, listener, null);
     }
 
     private void loadInterstitialInternal(final String placementId, final InterstitialSmashListener listener, String serverData) {
         IronLog.ADAPTER_API.verbose("placementId = " + placementId);
+
+        // added to interstitial listener map as it is required for the availability check
+        mPlacementIdToInterstitialSmashListener.put(placementId, listener);
 
         VungleInterstitialLoadListener vungleLoadListener = new VungleInterstitialLoadListener(listener);
 
@@ -552,7 +548,7 @@ class VungleAdapter extends AbstractAdapter implements INetworkInitCallbackListe
     }
 
     @Override
-    public Map<String, Object> getInterstitialBiddingData(JSONObject config) {
+    public Map<String, Object> getInterstitialBiddingData(JSONObject config, JSONObject adData) {
         return getBiddingData();
     }
 
@@ -604,14 +600,14 @@ class VungleAdapter extends AbstractAdapter implements INetworkInitCallbackListe
     }
 
     @Override
-    public void loadBannerForBidding(IronSourceBannerLayout banner, JSONObject config, BannerSmashListener listener, String serverData) {
+    public void loadBannerForBidding(JSONObject config, JSONObject adData, String serverData, IronSourceBannerLayout banner, BannerSmashListener listener) {
         final String placementId = config.optString(PLACEMENT_ID);
         mPlacementIdToBannerServerData.put(placementId, serverData);
         loadBannerInternal(placementId, banner, listener, serverData);
     }
 
     @Override
-    public void loadBanner(final IronSourceBannerLayout banner, JSONObject config, final BannerSmashListener listener) {
+    public void loadBanner(JSONObject config, JSONObject adData, final IronSourceBannerLayout banner, final BannerSmashListener listener) {
         String placementId = config.optString(PLACEMENT_ID);
         loadBannerInternal(placementId, banner, listener, null);
     }
@@ -628,6 +624,9 @@ class VungleAdapter extends AbstractAdapter implements INetworkInitCallbackListe
         
         // save banner size
         mCurrentBannerSize = banner.getSize();
+
+        //add to banner listener map
+        mPlacementIdToBannerSmashListener.put(placementId, listener);
 
         // run on main thread
         postOnUIThread(new Runnable() {
@@ -651,11 +650,6 @@ class VungleAdapter extends AbstractAdapter implements INetworkInitCallbackListe
                 }
             }
         });
-    }
-
-    @Override
-    public void reloadBanner(final IronSourceBannerLayout banner, final JSONObject config, final BannerSmashListener listener) {
-        IronLog.INTERNAL.warning("Unsupported method");
     }
 
     @Override
@@ -690,14 +684,7 @@ class VungleAdapter extends AbstractAdapter implements INetworkInitCallbackListe
     }
 
     @Override
-    //network does not support banner reload
-    //return true if banner view needs to be bound again on reload
-    public boolean shouldBindBannerViewOnReload() {
-        return true;
-    }
-
-    @Override
-    public Map<String, Object> getBannerBiddingData(JSONObject config) {
+    public Map<String, Object> getBannerBiddingData(JSONObject config, JSONObject adData) {
         return getBiddingData();
     }
 
@@ -746,6 +733,7 @@ class VungleAdapter extends AbstractAdapter implements INetworkInitCallbackListe
     //endregion
 
     //region legal
+    @Override
     protected void setConsent(boolean consent) {
         IronLog.ADAPTER_API.verbose("consent = " + consent);
 
@@ -767,12 +755,12 @@ class VungleAdapter extends AbstractAdapter implements INetworkInitCallbackListe
 
         if (MetaDataUtils.isValidCCPAMetaData(key, value)) {
             setCCPAValue(MetaDataUtils.getMetaDataBooleanValue(value));
-        } else if (key.equalsIgnoreCase(ORIENTATION_FLAG)) {
+        } else if (MetaDataUtils.isValidMetaData(key, ORIENTATION_FLAG, value)) {
             mAdOrientation = value;
         } else {
             String formattedValue = MetaDataUtils.formatValueForType(value, META_DATA_VALUE_BOOLEAN);
 
-            if (isValidCOPPAMetaData(key, formattedValue)) {
+            if (MetaDataUtils.isValidMetaData(key, VUNGLE_COPPA_FLAG, formattedValue)) {
                 setCOPPAValue(MetaDataUtils.getMetaDataBooleanValue(formattedValue));
             }
         }
@@ -801,9 +789,6 @@ class VungleAdapter extends AbstractAdapter implements INetworkInitCallbackListe
         }
     }
 
-    private boolean isValidCOPPAMetaData(String key, String value) {
-        return (key.equalsIgnoreCase(VUNGLE_COPPA_FLAG) && !TextUtils.isEmpty(value));
-    }
     //endregion
 
     //region Helpers
@@ -867,7 +852,7 @@ class VungleAdapter extends AbstractAdapter implements INetworkInitCallbackListe
             case "RECTANGLE":
                 return AdConfig.AdSize.VUNGLE_MREC;
             case "SMART":
-                return AdapterUtils.isLargeScreen(ContextProvider.getInstance().getCurrentActiveActivity()) ? AdConfig.AdSize.BANNER_LEADERBOARD : AdConfig.AdSize.BANNER;
+                return AdapterUtils.isLargeScreen(ContextProvider.getInstance().getApplicationContext()) ? AdConfig.AdSize.BANNER_LEADERBOARD : AdConfig.AdSize.BANNER;
         }
 
         return null;
@@ -910,21 +895,21 @@ class VungleAdapter extends AbstractAdapter implements INetworkInitCallbackListe
     protected FrameLayout.LayoutParams getBannerLayoutParams(ISBannerSize size) {
         FrameLayout.LayoutParams layoutParams = new FrameLayout.LayoutParams(0,0);
 
-        Activity activity = ContextProvider.getInstance().getCurrentActiveActivity();
+        Context context = ContextProvider.getInstance().getApplicationContext();
 
         switch (size.getDescription()) {
             case "BANNER":
             case "LARGE":
-                layoutParams = new FrameLayout.LayoutParams(AdapterUtils.dpToPixels(activity, 320), AdapterUtils.dpToPixels(activity, 50));
+                layoutParams = new FrameLayout.LayoutParams(AdapterUtils.dpToPixels(context, 320), AdapterUtils.dpToPixels(context, 50));
                 break;
             case "RECTANGLE":
-                layoutParams = new FrameLayout.LayoutParams(AdapterUtils.dpToPixels(activity, 300), AdapterUtils.dpToPixels(activity, 250));
+                layoutParams = new FrameLayout.LayoutParams(AdapterUtils.dpToPixels(context, 300), AdapterUtils.dpToPixels(context, 250));
                 break;
             case "SMART":
-                if (AdapterUtils.isLargeScreen(activity)) {
-                    layoutParams = new FrameLayout.LayoutParams(AdapterUtils.dpToPixels(activity, 728), AdapterUtils.dpToPixels(activity, 90));
+                if (AdapterUtils.isLargeScreen(context)) {
+                    layoutParams = new FrameLayout.LayoutParams(AdapterUtils.dpToPixels(context, 728), AdapterUtils.dpToPixels(context, 90));
                 } else {
-                    layoutParams = new FrameLayout.LayoutParams(AdapterUtils.dpToPixels(activity, 320), AdapterUtils.dpToPixels(activity, 50));
+                    layoutParams = new FrameLayout.LayoutParams(AdapterUtils.dpToPixels(context, 320), AdapterUtils.dpToPixels(context, 50));
                 }
 
                 break;
