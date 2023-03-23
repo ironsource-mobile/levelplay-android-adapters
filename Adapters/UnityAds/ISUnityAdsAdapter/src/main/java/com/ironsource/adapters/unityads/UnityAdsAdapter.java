@@ -796,6 +796,7 @@ class UnityAdsAdapter extends AbstractAdapter implements IUnityAdsInitialization
         switch (size.getDescription()) {
             case "BANNER":
             case "LARGE":
+            case "RECTANGLE":
             case "SMART":
                 return true;
             default:
@@ -808,9 +809,10 @@ class UnityAdsAdapter extends AbstractAdapter implements IUnityAdsInitialization
             case "BANNER":
             case "LARGE":
                 return new UnityBannerSize(320, 50);
+            case "RECTANGLE":
+                return new UnityBannerSize(300, 250);
             case "SMART":
                 return isLargeScreen ? new UnityBannerSize(728, 90) : new UnityBannerSize(320, 50);
-
         }
 
         return null;
