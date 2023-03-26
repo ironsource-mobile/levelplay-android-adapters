@@ -1,6 +1,6 @@
 package com.ironsource.adapters.yahoo
 
-import android.app.Activity
+import android.content.Context
 import android.view.Gravity
 import android.widget.FrameLayout
 import com.ironsource.environment.ContextProvider
@@ -93,7 +93,7 @@ class YahooAdapter(providerName: String) : AbstractAdapter(providerName),
         }
 
         @JvmStatic
-        fun getIntegrationData(activity: Activity?): IntegrationData {
+        fun getIntegrationData(context: Context?): IntegrationData {
             return IntegrationData("Yahoo", VERSION)
         }
 
@@ -146,7 +146,7 @@ class YahooAdapter(providerName: String) : AbstractAdapter(providerName),
     }
 
     private fun initializationSuccess() {
-        IronLog.ADAPTER_CALLBACK.verbose("")
+        IronLog.ADAPTER_CALLBACK.verbose()
 
         mInitState = InitState.INIT_STATE_SUCCESS
 
@@ -159,7 +159,7 @@ class YahooAdapter(providerName: String) : AbstractAdapter(providerName),
     }
 
     private fun initializationFailure() {
-        IronLog.ADAPTER_CALLBACK.verbose("")
+        IronLog.ADAPTER_CALLBACK.verbose()
 
         mInitState = InitState.INIT_STATE_FAILED
 
@@ -214,9 +214,6 @@ class YahooAdapter(providerName: String) : AbstractAdapter(providerName),
         }
     }
 
-    override fun onNetworkInitCallbackLoadSuccess(placement: String?) {
-    }
-
     //endregion
 
     //region Rewarded Video API
@@ -240,10 +237,7 @@ class YahooAdapter(providerName: String) : AbstractAdapter(providerName),
 
         IronLog.ADAPTER_API.verbose("placementId = $placementId")
 
-        val rewardedVideoAdListener = YahooRewardedVideoAdListener(listener, WeakReference(this), placementId)
-
         //add to rewarded video listener map
-        mPlacementIdToRewardedVideoAdListener[placementId] = rewardedVideoAdListener
         mPlacementIdToRewardedVideoListener[placementId] = listener
 
         when (mInitState) {
@@ -260,18 +254,19 @@ class YahooAdapter(providerName: String) : AbstractAdapter(providerName),
         }
     }
 
-    // Yahoo only supports bidding flows, given that this method is for non bidding flow it is unused
-    override fun initAndLoadRewardedVideo(appKey: String?, userId: String?, config: JSONObject?, listener: RewardedVideoSmashListener) {
-        IronLog.INTERNAL.warning("Unsupported method")
-    }
-
-    override fun loadRewardedVideoForBidding(config: JSONObject, listener: RewardedVideoSmashListener?, serverData: String?) {
+    override fun loadRewardedVideoForBidding(
+        config: JSONObject,
+        adData: JSONObject?,
+        serverData: String?,
+        listener: RewardedVideoSmashListener?
+    ) {
         val placementId = config.optString(PLACEMENT_ID_KEY)
         IronLog.ADAPTER_API.verbose("placementId = $placementId")
 
         setRewardedVideoAdAvailability(placementId, false)
 
-        val rewardedVideoAdListener = mPlacementIdToRewardedVideoAdListener[placementId]
+        val rewardedVideoAdListener = YahooRewardedVideoAdListener(listener, WeakReference(this), placementId)
+        mPlacementIdToRewardedVideoAdListener[placementId] = rewardedVideoAdListener
         val rewardedVideoAd = InterstitialAd(ContextProvider.getInstance().applicationContext, placementId, rewardedVideoAdListener)
         val rewardedVideoPlacementConfig = InterstitialPlacementConfig(placementId, getLoadRequestMetaData(serverData))
 
@@ -280,15 +275,9 @@ class YahooAdapter(providerName: String) : AbstractAdapter(providerName),
         }
     }
 
-    // Yahoo only supports bidding flows, given that this method is for non bidding flow it is unused
-    override fun fetchRewardedVideoForAutomaticLoad(config: JSONObject?, listener: RewardedVideoSmashListener?) {
-        IronLog.INTERNAL.warning("Unsupported method")
-    }
-
     override fun showRewardedVideo(config: JSONObject, listener: RewardedVideoSmashListener?) {
         val placementId = config.optString(PLACEMENT_ID_KEY)
         IronLog.ADAPTER_API.verbose("placementId = $placementId")
-        listener?.onRewardedVideoAvailabilityChanged(false)
 
         if (isRewardedVideoAvailable(config)) {
             postOnUIThread {
@@ -316,7 +305,7 @@ class YahooAdapter(providerName: String) : AbstractAdapter(providerName),
                 (mPlacementIdToRewardedVideoAdAvailability[placementId] == true))
     }
 
-    override fun getRewardedVideoBiddingData(config: JSONObject?): MutableMap<String, Any>? {
+    override fun getRewardedVideoBiddingData(config: JSONObject?, adData: JSONObject?): MutableMap<String, Any>? {
         return getBiddingData()
     }
 
@@ -342,10 +331,7 @@ class YahooAdapter(providerName: String) : AbstractAdapter(providerName),
 
         IronLog.ADAPTER_API.verbose("placementId = $placementId")
 
-        val interstitialAdListener = YahooInterstitialAdListener(listener, WeakReference(this), placementId)
-
         //add to interstitial listener map
-        mPlacementIdToInterstitialAdListener[placementId] = interstitialAdListener
         mPlacementIdToInterstitialListener[placementId] = listener
 
         when (mInitState) {
@@ -362,29 +348,25 @@ class YahooAdapter(providerName: String) : AbstractAdapter(providerName),
         }
     }
 
-    // Yahoo only supports bidding flows, given that this method is for non bidding flow it is unused
-    override fun initInterstitial(appKey: String?, userId: String?, config: JSONObject?, listener: InterstitialSmashListener?) {
-        IronLog.INTERNAL.warning("Unsupported method")
-    }
-
-    override fun loadInterstitialForBidding(config: JSONObject, listener: InterstitialSmashListener?, serverData: String?) {
+    override fun loadInterstitialForBidding(
+        config: JSONObject,
+        adData: JSONObject?,
+        serverData: String?,
+        listener: InterstitialSmashListener?
+    ) {
         val placementId = config.optString(PLACEMENT_ID_KEY)
         IronLog.ADAPTER_API.verbose("placementId = $placementId")
 
         setInterstitialAdAvailability(placementId, false)
 
-        val interstitialAdListener = mPlacementIdToInterstitialAdListener[placementId]
+        val interstitialAdListener = YahooInterstitialAdListener(listener, WeakReference(this), placementId)
+        mPlacementIdToInterstitialAdListener[placementId] = interstitialAdListener
         val interstitialAd = InterstitialAd(ContextProvider.getInstance().applicationContext, placementId, interstitialAdListener)
         val interstitialPlacementConfig = InterstitialPlacementConfig(placementId, getLoadRequestMetaData(serverData))
 
         postOnUIThread {
             interstitialAd.load(interstitialPlacementConfig)
         }
-    }
-
-    // Yahoo only supports bidding flows, given that this method is for non bidding flow it is unused
-    override fun loadInterstitial(config: JSONObject?, listener: InterstitialSmashListener?) {
-        IronLog.INTERNAL.warning("Unsupported method")
     }
 
     override fun showInterstitial(config: JSONObject, listener: InterstitialSmashListener?) {
@@ -417,7 +399,7 @@ class YahooAdapter(providerName: String) : AbstractAdapter(providerName),
                 (mPlacementIdToInterstitialAdAvailability[placementId] == true))
     }
 
-    override fun getInterstitialBiddingData(config: JSONObject?): MutableMap<String, Any>? {
+    override fun getInterstitialBiddingData(config: JSONObject?, adData: JSONObject?): MutableMap<String, Any>? {
         return getBiddingData()
     }
 
@@ -460,12 +442,13 @@ class YahooAdapter(providerName: String) : AbstractAdapter(providerName),
         }
     }
 
-    // Yahoo only supports bidding flows, given that this method is for non bidding flow it is unused
-    override fun initBanners(appKey: String?, userId: String?, config: JSONObject?, listener: BannerSmashListener?) {
-        IronLog.INTERNAL.warning("Unsupported method")
-    }
-
-    override fun loadBannerForBidding(banner: IronSourceBannerLayout?, config: JSONObject, listener: BannerSmashListener?, serverData: String?) {
+    override fun loadBannerForBidding(
+        config: JSONObject,
+        adData: JSONObject?,
+        serverData: String?,
+        banner: IronSourceBannerLayout?,
+        listener: BannerSmashListener?
+    ) {
         val placementId = config.optString(PLACEMENT_ID_KEY)
         IronLog.ADAPTER_API.verbose("placementId = $placementId")
 
@@ -491,16 +474,6 @@ class YahooAdapter(providerName: String) : AbstractAdapter(providerName),
         }
     }
 
-    // Yahoo only supports bidding flows, given that this method is for non bidding flow it is unused
-    override fun loadBanner(banner: IronSourceBannerLayout?, config: JSONObject?, listener: BannerSmashListener?) {
-        IronLog.INTERNAL.warning("Unsupported method")
-    }
-
-    // Yahoo only supports bidding flows, given that this method is for non bidding flow it is unused
-    override fun reloadBanner(banner: IronSourceBannerLayout?, config: JSONObject?, listener: BannerSmashListener?) {
-        IronLog.INTERNAL.warning("Unsupported method")
-    }
-
     override fun destroyBanner(config: JSONObject?) {
         val placementId = config?.optString(PLACEMENT_ID_KEY)
         IronLog.ADAPTER_API.verbose("placementId = $placementId")
@@ -520,7 +493,7 @@ class YahooAdapter(providerName: String) : AbstractAdapter(providerName),
         }
     }
 
-    override fun getBannerBiddingData(config: JSONObject?): MutableMap<String, Any>? {
+    override fun getBannerBiddingData(config: JSONObject?, adData: JSONObject?): MutableMap<String, Any>? {
         return getBiddingData()
     }
 
@@ -528,7 +501,7 @@ class YahooAdapter(providerName: String) : AbstractAdapter(providerName),
 
     //region memory handling
 
-    override fun releaseMemory(adUnit: IronSource.AD_UNIT?, config: JSONObject?) {
+    override fun releaseMemory(adUnit: IronSource.AD_UNIT, config: JSONObject?) {
         IronLog.INTERNAL.verbose("adUnit = $adUnit")
 
         when (adUnit) {
@@ -577,10 +550,10 @@ class YahooAdapter(providerName: String) : AbstractAdapter(providerName),
             MetaDataUtils.isValidCCPAMetaData(key, value) -> {
                 setCCPAValue(MetaDataUtils.getMetaDataBooleanValue(value))
             }
-            isGDPRAMetaData(key, value) -> {
+            MetaDataUtils.isValidMetaData(key, META_DATA_YAHOO_GDPR, value) -> {
                 setGDPRConsentString(value)
             }
-            isCOPPAMetaData(key, formattedValue) -> {
+            MetaDataUtils.isValidMetaData(key, META_DATA_YAHOO_COPPA, formattedValue) -> {
                 setCOPPAValue(MetaDataUtils.getMetaDataBooleanValue(formattedValue))
             }
         }
@@ -599,19 +572,11 @@ class YahooAdapter(providerName: String) : AbstractAdapter(providerName),
         YASAds.addConsent(ccpaConsent)
     }
 
-    private fun isGDPRAMetaData(key: String, value: String): Boolean {
-        return key.equals(META_DATA_YAHOO_GDPR, true) && value.isNotEmpty()
-    }
-
     private fun setGDPRConsentString(consentString: String) {
         IronLog.ADAPTER_API.verbose("consentString = $consentString")
         YASAds.applyGdpr()
         val gdprConsent = GdprConsent(consentString)
         YASAds.addConsent(gdprConsent)
-    }
-
-    private fun isCOPPAMetaData(key: String, value: String): Boolean {
-        return key.equals(META_DATA_YAHOO_COPPA, true) && value.isNotEmpty()
     }
 
     private fun setCOPPAValue(isCoppa: Boolean) {
@@ -687,14 +652,14 @@ class YahooAdapter(providerName: String) : AbstractAdapter(providerName),
     }
 
     private fun getBannerSize(bannerSize: ISBannerSize): AdSize {
-        val activity = ContextProvider.getInstance().currentActiveActivity
+        val context = ContextProvider.getInstance().applicationContext
 
         return when (bannerSize.description) {
             "BANNER" -> AdSize(320, 50)
             "LARGE" -> AdSize(320, 90)
             "RECTANGLE" -> AdSize(300, 250)
             "SMART" ->
-                (if (AdapterUtils.isLargeScreen(activity)) {
+                (if (AdapterUtils.isLargeScreen(context)) {
                     AdSize(728, 90)
                 } else {
                     AdSize(320, 50)
@@ -705,35 +670,35 @@ class YahooAdapter(providerName: String) : AbstractAdapter(providerName),
     }
 
     private fun getBannerLayoutParams(size: ISBannerSize?): FrameLayout.LayoutParams {
-        val activity = ContextProvider.getInstance().currentActiveActivity
+        val context = ContextProvider.getInstance().applicationContext
         val layoutParams = when (size?.description) {
             "BANNER" -> FrameLayout.LayoutParams(
-                AdapterUtils.dpToPixels(activity, 320),
-                AdapterUtils.dpToPixels(activity, 50)
+                AdapterUtils.dpToPixels(context, 320),
+                AdapterUtils.dpToPixels(context, 50)
             )
             "LARGE" -> FrameLayout.LayoutParams(
-                AdapterUtils.dpToPixels(activity, 320),
-                AdapterUtils.dpToPixels(activity, 90)
+                AdapterUtils.dpToPixels(context, 320),
+                AdapterUtils.dpToPixels(context, 90)
             )
             "RECTANGLE" -> FrameLayout.LayoutParams(
-                AdapterUtils.dpToPixels(activity, 300),
-                AdapterUtils.dpToPixels(activity, 250)
+                AdapterUtils.dpToPixels(context, 300),
+                AdapterUtils.dpToPixels(context, 250)
             )
             "SMART" ->
-                if (AdapterUtils.isLargeScreen(activity)) {
+                if (AdapterUtils.isLargeScreen(context)) {
                     FrameLayout.LayoutParams(
-                        AdapterUtils.dpToPixels(activity, 728),
-                        AdapterUtils.dpToPixels(activity, 90)
+                        AdapterUtils.dpToPixels(context, 728),
+                        AdapterUtils.dpToPixels(context, 90)
                     )
                 } else {
                     FrameLayout.LayoutParams(
-                        AdapterUtils.dpToPixels(activity, 320),
-                        AdapterUtils.dpToPixels(activity, 50)
+                        AdapterUtils.dpToPixels(context, 320),
+                        AdapterUtils.dpToPixels(context, 50)
                     )
                 }
             "CUSTOM" -> FrameLayout.LayoutParams(
-                AdapterUtils.dpToPixels(activity, size.width),
-                AdapterUtils.dpToPixels(activity, size.height)
+                AdapterUtils.dpToPixels(context, size.width),
+                AdapterUtils.dpToPixels(context, size.height)
             )
             else -> FrameLayout.LayoutParams(0, 0)
         }
