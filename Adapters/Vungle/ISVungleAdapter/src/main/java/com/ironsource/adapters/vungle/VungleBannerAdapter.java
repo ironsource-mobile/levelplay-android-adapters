@@ -16,7 +16,7 @@ import com.vungle.ads.BannerAdListener;
 import com.vungle.ads.BannerAdSize;
 import com.vungle.ads.BannerView;
 import com.vungle.ads.BaseAd;
-import com.vungle.ads.VungleException;
+import com.vungle.ads.VungleError;
 
 final class VungleBannerAdapter implements BannerAdListener {
 
@@ -114,14 +114,14 @@ final class VungleBannerAdapter implements BannerAdListener {
     }
 
     @Override
-    public void onAdFailedToPlay(BaseAd baseAd, VungleException exception) {
-        IronLog.ADAPTER_CALLBACK.verbose("onAdFailedToPlay placementId = " + baseAd.getPlacementId() + ", exception = " + exception);
+    public void onAdFailedToPlay(BaseAd baseAd, VungleError e) {
+        IronLog.ADAPTER_CALLBACK.verbose("onAdFailedToPlay placementId = " + baseAd.getPlacementId() + ", error = " + e);
         // no-op
     }
 
     @Override
-    public void onAdFailedToLoad(BaseAd baseAd, VungleException exception) {
-        IronLog.ADAPTER_CALLBACK.verbose("onAdFailedToLoad placementId = " + baseAd.getPlacementId() + ", exception = " + exception);
+    public void onAdFailedToLoad(BaseAd baseAd, VungleError e) {
+        IronLog.ADAPTER_CALLBACK.verbose("onAdFailedToLoad placementId = " + baseAd.getPlacementId() + ", error = " + e);
 
         if (mListener == null) {
             IronLog.INTERNAL.verbose("listener is null");
@@ -129,10 +129,10 @@ final class VungleBannerAdapter implements BannerAdListener {
         }
 
         IronSourceError error;
-        if (exception.getExceptionCode() == VungleException.NO_SERVE) {
-            error = new IronSourceError(IronSourceError.ERROR_BN_LOAD_NO_FILL, exception.getLocalizedMessage());
+        if (e.getCode() == VungleError.NO_SERVE) {
+            error = new IronSourceError(IronSourceError.ERROR_BN_LOAD_NO_FILL, e.getErrorMessage());
         } else {
-            error = ErrorBuilder.buildLoadFailedError(exception.getLocalizedMessage());
+            error = ErrorBuilder.buildLoadFailedError(e.getErrorMessage());
         }
 
         mListener.onBannerAdLoadFailed(error);

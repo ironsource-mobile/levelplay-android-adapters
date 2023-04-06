@@ -5,7 +5,7 @@ import android.content.Context;
 import com.ironsource.mediationsdk.logger.IronLog;
 import com.vungle.ads.InitializationListener;
 import com.vungle.ads.VungleAds;
-import com.vungle.ads.VungleException;
+import com.vungle.ads.VungleError;
 
 import java.util.ArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -61,12 +61,12 @@ public class VungleInitializer implements InitializationListener {
     }
 
     @Override
-    public void onError(VungleException exception) {
+    public void onError(VungleError e) {
         IronLog.ADAPTER_CALLBACK.verbose(
-                "Failed to initialize SDK - " + exception.getLocalizedMessage());
+                "Failed to initialize SDK - " + e.getErrorMessage());
 
         for (VungleInitializationListener listener : initListeners) {
-            listener.onInitializeError(exception.getLocalizedMessage());
+            listener.onInitializeError(e.getErrorMessage());
         }
 
         initListeners.clear();

@@ -12,7 +12,7 @@ import com.vungle.ads.AdConfig;
 import com.vungle.ads.BaseAd;
 import com.vungle.ads.RewardedAd;
 import com.vungle.ads.RewardedAdListener;
-import com.vungle.ads.VungleException;
+import com.vungle.ads.VungleError;
 
 final class VungleRewardedAdapter implements RewardedAdListener {
 
@@ -147,20 +147,20 @@ final class VungleRewardedAdapter implements RewardedAdListener {
     }
 
     @Override
-    public void onAdFailedToPlay(BaseAd baseAd, VungleException exception) {
-        IronLog.ADAPTER_CALLBACK.verbose("onAdFailedToPlay placementId = " + baseAd.getPlacementId() + ", exception = " + exception);
+    public void onAdFailedToPlay(BaseAd baseAd, VungleError e) {
+        IronLog.ADAPTER_CALLBACK.verbose("onAdFailedToPlay placementId = " + baseAd.getPlacementId() + ", error = " + e);
 
         if (mListener == null) {
             IronLog.INTERNAL.verbose("listener is null");
             return;
         }
 
-        mListener.onRewardedVideoAdShowFailed(ErrorBuilder.buildShowFailedError(IronSourceConstants.REWARDED_VIDEO_AD_UNIT, exception.getLocalizedMessage()));
+        mListener.onRewardedVideoAdShowFailed(ErrorBuilder.buildShowFailedError(IronSourceConstants.REWARDED_VIDEO_AD_UNIT, e.getErrorMessage()));
     }
 
     @Override
-    public void onAdFailedToLoad(BaseAd baseAd, VungleException exception) {
-        IronLog.ADAPTER_CALLBACK.verbose("onAdFailedToLoad placementId = " + baseAd.getPlacementId() + ", exception = " + exception);
+    public void onAdFailedToLoad(BaseAd baseAd, VungleError e) {
+        IronLog.ADAPTER_CALLBACK.verbose("onAdFailedToLoad placementId = " + baseAd.getPlacementId() + ", error = " + e);
 
         if (mListener == null) {
             IronLog.INTERNAL.verbose("listener is null");
@@ -168,10 +168,10 @@ final class VungleRewardedAdapter implements RewardedAdListener {
         }
 
         IronSourceError error;
-        if (exception.getExceptionCode() == VungleException.NO_SERVE) {
-            error = new IronSourceError(IronSourceError.ERROR_RV_LOAD_NO_FILL, exception.getLocalizedMessage());
+        if (e.getCode() == VungleError.NO_SERVE) {
+            error = new IronSourceError(IronSourceError.ERROR_RV_LOAD_NO_FILL, e.getErrorMessage());
         } else {
-            error = ErrorBuilder.buildLoadFailedError(exception.getLocalizedMessage());
+            error = ErrorBuilder.buildLoadFailedError(e.getErrorMessage());
         }
 
         mListener.onRewardedVideoAvailabilityChanged(false);

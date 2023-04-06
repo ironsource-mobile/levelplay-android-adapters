@@ -10,7 +10,7 @@ import com.vungle.ads.AdConfig;
 import com.vungle.ads.BaseAd;
 import com.vungle.ads.InterstitialAd;
 import com.vungle.ads.InterstitialAdListener;
-import com.vungle.ads.VungleException;
+import com.vungle.ads.VungleError;
 
 final class VungleInterstitialAdapter implements InterstitialAdListener {
 
@@ -110,21 +110,21 @@ final class VungleInterstitialAdapter implements InterstitialAdListener {
     }
 
     @Override
-    public void onAdFailedToPlay(BaseAd baseAd, VungleException exception) {
-        IronLog.ADAPTER_CALLBACK.verbose("onAdFailedToPlay placementId = " + baseAd.getPlacementId() + ", exception = " + exception);
+    public void onAdFailedToPlay(BaseAd baseAd, VungleError e) {
+        IronLog.ADAPTER_CALLBACK.verbose("onAdFailedToPlay placementId = " + baseAd.getPlacementId() + ", error = " + e);
 
         if (mListener == null) {
             IronLog.INTERNAL.verbose("listener is null");
             return;
         }
 
-        String errorMessage = " reason = " + exception.getLocalizedMessage() + " errorCode = " + exception.getExceptionCode();
+        String errorMessage = " reason = " + e.getErrorMessage() + " errorCode = " + e.getCode();
         mListener.onInterstitialAdShowFailed(ErrorBuilder.buildShowFailedError(IronSourceConstants.INTERSTITIAL_AD_UNIT, errorMessage));
     }
 
     @Override
-    public void onAdFailedToLoad(BaseAd baseAd, VungleException exception) {
-        IronLog.ADAPTER_CALLBACK.verbose("onAdFailedToLoad placementId = " + baseAd.getPlacementId() + ", exception = " + exception);
+    public void onAdFailedToLoad(BaseAd baseAd, VungleError e) {
+        IronLog.ADAPTER_CALLBACK.verbose("onAdFailedToLoad placementId = " + baseAd.getPlacementId() + ", error = " + e);
 
         if (mListener == null) {
             IronLog.INTERNAL.verbose("listener is null");
@@ -132,10 +132,10 @@ final class VungleInterstitialAdapter implements InterstitialAdListener {
         }
 
         IronSourceError error;
-        if (exception.getExceptionCode() == VungleException.NO_SERVE) {
-            error = new IronSourceError(IronSourceError.ERROR_IS_LOAD_NO_FILL, exception.getLocalizedMessage());
+        if (e.getCode() == VungleError.NO_SERVE) {
+            error = new IronSourceError(IronSourceError.ERROR_IS_LOAD_NO_FILL, e.getErrorMessage());
         } else {
-            error = ErrorBuilder.buildLoadFailedError(exception.getLocalizedMessage());
+            error = ErrorBuilder.buildLoadFailedError(e.getErrorMessage());
         }
 
         mListener.onInterstitialAdLoadFailed(error);

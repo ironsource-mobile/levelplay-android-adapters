@@ -1,7 +1,8 @@
 apply plugin: 'com.android.library'
+apply plugin: 'com.android.library'
 
 ext {
-    adapterVersion = '4.3.19'
+    adapterVersion = '4.3.20'
 }
 
 def getGitHash = { ->
@@ -32,7 +33,7 @@ android {
         buildConfigField "String", "GitHash", "\"${getGitHash()}\""
         buildConfigField("String","VERSION_NAME","\"${defaultConfig.versionName}\"")
     }
-    
+
     buildTypes {
         debug{
             minifyEnabled false
@@ -49,9 +50,10 @@ android {
     }
 }
 
- dependencies {
-    implementation 'com.ironsource.sdk:mediationsdk:7.2.7'
-    implementation 'com.github.vungle:vng-android-sdk:7.0.0-early1-RC5'
+dependencies {
+    implementation 'com.ironsource.sdk:mediationsdk:7.3.0.1'
+    implementation 'com.github.vungle:vng-android-sdk:7.0.0-early1-RC6'
+
 }
 
 task sourcesJar(type: Jar) {
@@ -70,5 +72,4 @@ task createAAR(type: Copy,group:'buildTasks') {
         fileName.replace('release', adapterVersion)
     }
 }
-
 

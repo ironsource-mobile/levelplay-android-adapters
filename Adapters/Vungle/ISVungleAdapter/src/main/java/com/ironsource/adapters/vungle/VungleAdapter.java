@@ -133,7 +133,7 @@ class VungleAdapter extends AbstractAdapter {
 
     @Override
     // used for flows when the mediation doesn't need to get a callback for init
-    public void initAndLoadRewardedVideo(String appKey, String userId, JSONObject config, RewardedVideoSmashListener listener) {
+    public void initAndLoadRewardedVideo(String appKey, String userId, JSONObject config, JSONObject adData, RewardedVideoSmashListener listener) {
         String placementId = config.optString(PLACEMENT_ID);
         String appId = config.optString(APP_ID);
 
@@ -171,7 +171,7 @@ class VungleAdapter extends AbstractAdapter {
     }
 
     @Override
-    public void loadRewardedVideoForBidding(JSONObject config, final RewardedVideoSmashListener listener, String serverData) {
+    public void loadRewardedVideoForBidding(JSONObject config, JSONObject adData, String serverData, final RewardedVideoSmashListener listener) {
         String placementId = config.optString(PLACEMENT_ID);
         String appId = config.optString(APP_ID);
 
@@ -197,43 +197,6 @@ class VungleAdapter extends AbstractAdapter {
                         AdConfig adConfig = createAdConfig();
                         rewardedAdapter = new VungleRewardedAdapter(placementId, adConfig, listener);
                         rewardedAdapter.loadWithBid(serverData);
-                    }
-
-                    @Override
-                    public void onInitializeError(String error) {
-                        IronLog.INTERNAL.verbose("init failed - placementId = " + placementId);
-                        listener.onRewardedVideoAvailabilityChanged(false);
-                    }
-                });
-    }
-
-    @Override
-    public void fetchRewardedVideoForAutomaticLoad(final JSONObject config, final RewardedVideoSmashListener listener) {
-        String placementId = config.optString(PLACEMENT_ID);
-        String appId = config.optString(APP_ID);
-
-        if (TextUtils.isEmpty(placementId)) {
-            IronLog.INTERNAL.error("Missing param - " + PLACEMENT_ID);
-            listener.onRewardedVideoAvailabilityChanged(false);
-            return;
-        }
-
-        if (TextUtils.isEmpty(appId)) {
-            IronLog.INTERNAL.error("Missing param - " + APP_ID);
-            listener.onRewardedVideoAvailabilityChanged(false);
-            return;
-        }
-
-        IronLog.ADAPTER_API.verbose("placementId = " + placementId + ", appId = " + appId);
-
-        VungleInitializer.getInstance().initialize(appId,
-                ContextProvider.getInstance().getApplicationContext(),
-                new VungleInitializer.VungleInitializationListener() {
-                    @Override
-                    public void onInitializeSuccess() {
-                        AdConfig adConfig = createAdConfig();
-                        rewardedAdapter = new VungleRewardedAdapter(placementId, adConfig, listener);
-                        rewardedAdapter.load();
                     }
 
                     @Override
@@ -275,7 +238,7 @@ class VungleAdapter extends AbstractAdapter {
     }
 
     @Override
-    public Map<String, Object> getRewardedVideoBiddingData(JSONObject config) {
+    public Map<String, Object> getRewardedVideoBiddingData(JSONObject config, JSONObject adData) {
         return getBiddingData();
     }
 
@@ -324,7 +287,7 @@ class VungleAdapter extends AbstractAdapter {
     }
 
     @Override
-    public void loadInterstitialForBidding(JSONObject config, InterstitialSmashListener listener, String serverData) {
+    public void loadInterstitialForBidding(JSONObject config, JSONObject adData, String serverData, InterstitialSmashListener listener) {
         final String placementId = config.optString(PLACEMENT_ID);
         final String appId = config.optString(APP_ID);
 
@@ -362,7 +325,7 @@ class VungleAdapter extends AbstractAdapter {
     }
 
     @Override
-    public void loadInterstitial(JSONObject config, final InterstitialSmashListener listener) {
+    public void loadInterstitial(JSONObject config, JSONObject adData, final InterstitialSmashListener listener) {
         String placementId = config.optString(PLACEMENT_ID);
         String appId = config.optString(APP_ID);
 
@@ -420,7 +383,7 @@ class VungleAdapter extends AbstractAdapter {
     }
 
     @Override
-    public Map<String, Object> getInterstitialBiddingData(JSONObject config) {
+    public Map<String, Object> getInterstitialBiddingData(JSONObject config, JSONObject adData) {
         return getBiddingData();
     }
 
@@ -501,7 +464,7 @@ class VungleAdapter extends AbstractAdapter {
     }
 
     @Override
-    public void loadBannerForBidding(IronSourceBannerLayout banner, JSONObject config, BannerSmashListener listener, String serverData) {
+    public void loadBannerForBidding(JSONObject config, JSONObject adData, String serverData, IronSourceBannerLayout banner, BannerSmashListener listener) {
         String placementId = config.optString(PLACEMENT_ID);
         String appId = config.optString(APP_ID);
 
@@ -551,7 +514,7 @@ class VungleAdapter extends AbstractAdapter {
     }
 
     @Override
-    public void loadBanner(final IronSourceBannerLayout banner, JSONObject config, final BannerSmashListener listener) {
+    public void loadBanner(JSONObject config, JSONObject adData, final IronSourceBannerLayout banner, final BannerSmashListener listener) {
         String placementId = config.optString(PLACEMENT_ID);
         String appId = config.optString(APP_ID);
 
@@ -601,11 +564,6 @@ class VungleAdapter extends AbstractAdapter {
     }
 
     @Override
-    public void reloadBanner(final IronSourceBannerLayout banner, final JSONObject config, final BannerSmashListener listener) {
-        IronLog.INTERNAL.warning("Unsupported method");
-    }
-
-    @Override
     public void destroyBanner(JSONObject config) {
         final String placementId = config.optString(PLACEMENT_ID);
         IronLog.ADAPTER_API.verbose("placementId = " + placementId);
@@ -620,14 +578,7 @@ class VungleAdapter extends AbstractAdapter {
     }
 
     @Override
-    //network does not support banner reload
-    //return true if banner view needs to be bound again on reload
-    public boolean shouldBindBannerViewOnReload() {
-        return true;
-    }
-
-    @Override
-    public Map<String, Object> getBannerBiddingData(JSONObject config) {
+    public Map<String, Object> getBannerBiddingData(JSONObject config, JSONObject adData) {
         return getBiddingData();
     }
     //endregion
