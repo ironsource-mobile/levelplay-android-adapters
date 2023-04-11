@@ -9,7 +9,7 @@ import com.ironsource.mediationsdk.logger.IronLog;
 import com.ironsource.mediationsdk.logger.IronSourceError;
 import com.ironsource.mediationsdk.sdk.RewardedVideoSmashListener;
 
-import java.lang.ref.WeakReference; 
+import java.lang.ref.WeakReference;
 
 import static com.ironsource.mediationsdk.logger.IronSourceError.ERROR_RV_EXPIRED_ADS;
 

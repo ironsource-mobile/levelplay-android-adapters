@@ -1,7 +1,5 @@
 package com.ironsource.adapters.applovin;
 
-import android.os.Handler;
-import android.os.Looper;
 import android.widget.FrameLayout;
 
 import com.applovin.adview.AppLovinAdView;
@@ -12,6 +10,7 @@ import com.applovin.sdk.AppLovinAdClickListener;
 import com.applovin.sdk.AppLovinAdDisplayListener;
 import com.applovin.sdk.AppLovinAdLoadListener;
 import com.applovin.sdk.AppLovinErrorCodes;
+import com.ironsource.mediationsdk.AbstractAdapter;
 import com.ironsource.mediationsdk.logger.IronLog;
 import com.ironsource.mediationsdk.logger.IronSourceError;
 import com.ironsource.mediationsdk.sdk.BannerSmashListener;
@@ -64,7 +63,7 @@ public class AppLovinBannerListener implements AppLovinAdLoadListener, AppLovinA
             return;
         }
 
-        new Handler(Looper.getMainLooper()).post(new Runnable() {
+        AppLovinAdapter.postOnUIThread(new Runnable() {
             @Override
             public void run() {
                 adView.renderAd(appLovinAd);

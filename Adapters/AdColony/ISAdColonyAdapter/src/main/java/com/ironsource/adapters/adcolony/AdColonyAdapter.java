@@ -1,6 +1,7 @@
 package com.ironsource.adapters.adcolony;
 
-import android.app.Activity; 
+import android.app.Activity;
+import android.content.Context;
 import android.text.TextUtils;
 import android.view.Gravity;
 import android.widget.FrameLayout;
@@ -75,6 +76,7 @@ class AdColonyAdapter extends AbstractAdapter {
 
     protected ConcurrentHashMap<String, AdColonyAdView> mZoneIdToBannerAdView;
     protected ConcurrentHashMap<String, IronSourceBannerLayout> mZoneIdToBannerLayout;
+    protected ConcurrentHashMap<String, AdColonyBannerAdListener> mZoneIdToBannerAdListener;
 
     //region Adapter Methods
     public static AdColonyAdapter startAdapter(String providerName) {
@@ -83,7 +85,7 @@ class AdColonyAdapter extends AbstractAdapter {
 
     private AdColonyAdapter(String providerName) {
         super(providerName);
-        IronLog.INTERNAL.verbose("");
+        IronLog.INTERNAL.verbose();
 
         // rewarded video
         mZoneIdToRewardedVideoListener = new ConcurrentHashMap<>();
@@ -96,13 +98,14 @@ class AdColonyAdapter extends AbstractAdapter {
         // banner
         mZoneIdToBannerLayout = new ConcurrentHashMap<>();
         mZoneIdToBannerAdView = new ConcurrentHashMap<>();
+        mZoneIdToBannerAdListener = new ConcurrentHashMap<>();
 
         // The network's capability to load a Rewarded Video ad while another Rewarded Video ad of that network is showing
         mLWSSupportState = LoadWhileShowSupportState.LOAD_WHILE_SHOW_BY_NETWORK;
     }
 
     // get the network and adapter integration data
-    public static IntegrationData getIntegrationData(Activity activity) {
+    public static IntegrationData getIntegrationData(Context context) {
         return new IntegrationData("AdColony", VERSION);
     }
 
@@ -164,18 +167,16 @@ class AdColonyAdapter extends AbstractAdapter {
 
         IronLog.ADAPTER_API.verbose("appId = " + appId + " zoneId = " + zoneId);
 
-        AdColonyRewardedVideoAdListener rewardedVideoListener = new AdColonyRewardedVideoAdListener(AdColonyAdapter.this, listener, zoneId);
-        //add to rewarded video listener map
-        mZoneIdToRewardedVideoListener.put(zoneId, rewardedVideoListener);
-
         // init SDK
         initSDK(userId, appId);
+
+        // call init success
         listener.onRewardedVideoInitSuccess();
     }
 
     // used for flows when the mediation doesn't need to get a callback for init
     @Override
-    public void initAndLoadRewardedVideo(String appKey, String userId, final JSONObject config, final RewardedVideoSmashListener listener) {
+    public void initAndLoadRewardedVideo(String appKey, String userId, final JSONObject config, JSONObject adData, final RewardedVideoSmashListener listener) {
 
         final String appId = config.optString(APP_ID);
         final String zoneId = config.optString(ZONE_ID);
@@ -194,35 +195,29 @@ class AdColonyAdapter extends AbstractAdapter {
 
         IronLog.ADAPTER_API.verbose("appId = " + appId + " zoneId = " + zoneId);
 
-        AdColonyRewardedVideoAdListener rewardedVideoListener = new AdColonyRewardedVideoAdListener(AdColonyAdapter.this, listener, zoneId);
-        //add to rewarded video listener map
-        mZoneIdToRewardedVideoListener.put(zoneId, rewardedVideoListener);
-
         // init SDK
         initSDK(userId, appId);
 
         // load rewarded video ad
-        loadRewardedVideoInternal(zoneId);
+        loadRewardedVideo(config, adData, listener);
     }
 
     @Override
-    public void loadRewardedVideoForBidding(JSONObject config, final RewardedVideoSmashListener listener, final String serverData) {
+    public void loadRewardedVideoForBidding(JSONObject config, JSONObject adData, final String serverData, final RewardedVideoSmashListener listener) {
         final String zoneId = config.optString(ZONE_ID);
         IronLog.ADAPTER_API.verbose("zoneId = " + zoneId);
         AdColonyAdOptions adOptions = new AdColonyAdOptions().setOption(ADM, serverData);
-        AdColonyRewardedVideoAdListener rewardedVideoListener = mZoneIdToRewardedVideoListener.get(zoneId);
+        AdColonyRewardedVideoAdListener rewardedVideoListener = new AdColonyRewardedVideoAdListener(AdColonyAdapter.this, listener, zoneId);
+        mZoneIdToRewardedVideoListener.put(zoneId, rewardedVideoListener);
         AdColony.requestInterstitial(zoneId, rewardedVideoListener, adOptions);
     }
 
     @Override
-    public void fetchRewardedVideoForAutomaticLoad(JSONObject config, RewardedVideoSmashListener listener) {
+    public void loadRewardedVideo(JSONObject config, JSONObject adData, RewardedVideoSmashListener listener) {
         final String zoneId = config.optString(ZONE_ID);
-        loadRewardedVideoInternal(zoneId);
-    }
-
-    private void loadRewardedVideoInternal(final String zoneId) {
         IronLog.ADAPTER_API.verbose("zoneId = " + zoneId);
-        AdColonyRewardedVideoAdListener rewardedVideoListener = mZoneIdToRewardedVideoListener.get(zoneId);
+        AdColonyRewardedVideoAdListener rewardedVideoListener = new AdColonyRewardedVideoAdListener(AdColonyAdapter.this, listener, zoneId);
+        mZoneIdToRewardedVideoListener.put(zoneId, rewardedVideoListener);
         AdColony.requestInterstitial(zoneId, rewardedVideoListener);
     }
 
@@ -231,11 +226,8 @@ class AdColonyAdapter extends AbstractAdapter {
         final String zoneId = config.optString(ZONE_ID);
         AdColonyInterstitial rewardedVideoAd = mZoneIdToRewardedVideoAdObject.get(zoneId);
 
-        //change rewarded video availability to false
-        listener.onRewardedVideoAvailabilityChanged(false);
-
         if (isRewardedVideoAvailable(config)) {
-            IronLog.ADAPTER_API.verbose("show zoneId =" + zoneId);
+            IronLog.ADAPTER_API.verbose("show zoneId = " + zoneId);
             AdColonyRewardedVideoAdListener rewardedVideoListener = mZoneIdToRewardedVideoListener.get(zoneId);
             AdColony.setRewardListener(rewardedVideoListener);
             rewardedVideoAd.show();
@@ -250,12 +242,12 @@ class AdColonyAdapter extends AbstractAdapter {
         final String zoneId = config.optString(ZONE_ID);
         AdColonyInterstitial rewardedVideoAd = mZoneIdToRewardedVideoAdObject.get(zoneId);
         boolean isRewardedVideoAvailable = (rewardedVideoAd != null) && !rewardedVideoAd.isExpired();
-        IronLog.ADAPTER_API.verbose("isRewardedVideoAvailable=" + isRewardedVideoAvailable);
+        IronLog.ADAPTER_API.verbose("isRewardedVideoAvailable = " + isRewardedVideoAvailable);
         return isRewardedVideoAvailable;
     }
 
     @Override
-    public Map<String, Object> getRewardedVideoBiddingData(JSONObject config) {
+    public Map<String, Object> getRewardedVideoBiddingData(JSONObject config, JSONObject adData) {
         return getBiddingData();
     }
     //endregion
@@ -263,13 +255,13 @@ class AdColonyAdapter extends AbstractAdapter {
     //region Interstitial API
     @Override
     public void initInterstitialForBidding(String appKey, String userId, JSONObject config, InterstitialSmashListener listener) {
-        IronLog.ADAPTER_API.verbose("");
+        IronLog.ADAPTER_API.verbose();
         initInterstitialInternal(appKey, userId, config, listener);
     }
 
     @Override
     public void initInterstitial(String appKey, final String userId, final JSONObject config, final InterstitialSmashListener listener) {
-        IronLog.ADAPTER_API.verbose("");
+        IronLog.ADAPTER_API.verbose();
         initInterstitialInternal(appKey, userId, config, listener);
     }
 
@@ -293,31 +285,29 @@ class AdColonyAdapter extends AbstractAdapter {
 
         IronLog.ADAPTER_API.verbose("appId = " + appId + " zoneId = " + zoneId);
 
-        AdColonyInterstitialAdListener interstitialListener = new AdColonyInterstitialAdListener(AdColonyAdapter.this, listener, zoneId);
-        mZoneIdToInterstitialListener.put(zoneId, interstitialListener);
-
         // init SDK
         initSDK(userId, appId);
 
-        // init success
+        // call init success
         listener.onInterstitialInitSuccess();
-
     }
 
     @Override
-    public void loadInterstitialForBidding(final JSONObject config, final InterstitialSmashListener listener, final String serverData) {
+    public void loadInterstitialForBidding(final JSONObject config, final JSONObject adData, final String serverData, final InterstitialSmashListener listener) {
         final String zoneId = config.optString(ZONE_ID);
         IronLog.ADAPTER_API.verbose("zoneId = " + zoneId);
         AdColonyAdOptions adOptions = new AdColonyAdOptions().setOption(ADM, serverData);
-        AdColonyInterstitialAdListener interstitialListener = mZoneIdToInterstitialListener.get(zoneId);
+        AdColonyInterstitialAdListener interstitialListener = new AdColonyInterstitialAdListener(AdColonyAdapter.this, listener, zoneId);
+        mZoneIdToInterstitialListener.put(zoneId, interstitialListener);
         AdColony.requestInterstitial(zoneId, interstitialListener, adOptions);
     }
 
     @Override
-    public void loadInterstitial(JSONObject config, InterstitialSmashListener listener) {
+    public void loadInterstitial(JSONObject config, JSONObject adData, InterstitialSmashListener listener) {
         final String zoneId = config.optString(ZONE_ID);
-        IronLog.ADAPTER_API.verbose("zoneid " + zoneId);
-        AdColonyInterstitialAdListener interstitialListener = mZoneIdToInterstitialListener.get(zoneId);
+        IronLog.ADAPTER_API.verbose("zoneId " + zoneId);
+        AdColonyInterstitialAdListener interstitialListener = new AdColonyInterstitialAdListener(AdColonyAdapter.this, listener, zoneId);
+        mZoneIdToInterstitialListener.put(zoneId, interstitialListener);
         AdColony.requestInterstitial(zoneId, interstitialListener);
     }
 
@@ -327,13 +317,12 @@ class AdColonyAdapter extends AbstractAdapter {
         AdColonyInterstitial interstitialAd = mZoneIdToInterstitialAdObject.get(zoneId);
 
         if (isInterstitialReady(config)) {
-            IronLog.ADAPTER_API.verbose("show zoneId =" + zoneId);
+            IronLog.ADAPTER_API.verbose("show zoneId = " + zoneId);
             interstitialAd.show();
         } else {
             IronLog.INTERNAL.error("ad is expired");
             listener.onInterstitialAdShowFailed(ErrorBuilder.buildNoAdsToShowError(IronSourceConstants.INTERSTITIAL_AD_UNIT));
         }
-
     }
 
     @Override
@@ -341,12 +330,12 @@ class AdColonyAdapter extends AbstractAdapter {
         final String zoneId = config.optString(ZONE_ID);
         AdColonyInterstitial interstitialAd = mZoneIdToInterstitialAdObject.get(zoneId);
         boolean isInterstitialAvailable = (interstitialAd != null) && !interstitialAd.isExpired();
-        IronLog.ADAPTER_API.verbose("isInterstitialAvailable=" + isInterstitialAvailable);
+        IronLog.ADAPTER_API.verbose("isInterstitialAvailable = " + isInterstitialAvailable);
         return isInterstitialAvailable;
     }
 
     @Override
-    public Map<String, Object> getInterstitialBiddingData(JSONObject config) {
+    public Map<String, Object> getInterstitialBiddingData(JSONObject config, JSONObject adData) {
         return getBiddingData();
     }
     //endregion
@@ -359,7 +348,7 @@ class AdColonyAdapter extends AbstractAdapter {
 
     @Override
     public void initBannerForBidding(String appKey, String userId, JSONObject config, BannerSmashListener listener) {
-        IronLog.ADAPTER_API.verbose("");
+        IronLog.ADAPTER_API.verbose();
         initBannersInternal(userId, config, listener);
     }
 
@@ -379,24 +368,24 @@ class AdColonyAdapter extends AbstractAdapter {
             IronSourceError error = ErrorBuilder.buildInitFailedError("Missing params - " + ZONE_ID, IronSourceConstants.BANNER_AD_UNIT);
             return;
         }
+
         // init SDK
         initSDK(userId, appId);
 
         // call init success
         listener.onBannerInitSuccess();
-
     }
 
     @Override
-    public void loadBannerForBidding(IronSourceBannerLayout banner, JSONObject config, BannerSmashListener listener, String serverData) {
-        IronLog.ADAPTER_API.verbose("");
+    public void loadBannerForBidding(JSONObject config, JSONObject adData, String serverData, IronSourceBannerLayout banner, BannerSmashListener listener) {
+        IronLog.ADAPTER_API.verbose();
         AdColonyAdOptions adOptions = new AdColonyAdOptions().setOption(ADM, serverData);
         loadBannerInternal(banner, config, listener, adOptions);
     }
 
     @Override
-    public void loadBanner(final IronSourceBannerLayout banner, final JSONObject config, final BannerSmashListener listener) {
-        IronLog.ADAPTER_API.verbose("");
+    public void loadBanner(final JSONObject config, final JSONObject adData, final IronSourceBannerLayout banner, final BannerSmashListener listener) {
+        IronLog.ADAPTER_API.verbose();
         loadBannerInternal(banner, config, listener, null);
     }
 
@@ -410,6 +399,7 @@ class AdColonyAdapter extends AbstractAdapter {
 
         // verify size
         ISBannerSize ironSourceBannerSize = banner.getSize();
+
         if (!isBannerSizeSupported(ironSourceBannerSize)) {
             IronLog.INTERNAL.error("loadBanner - size not supported, size = " + ironSourceBannerSize.getDescription());
             listener.onBannerAdLoadFailed(ErrorBuilder.unsupportedBannerSize(getProviderName()));
@@ -428,14 +418,11 @@ class AdColonyAdapter extends AbstractAdapter {
 
         AdColonyBannerAdListener bannerListener = new AdColonyBannerAdListener(AdColonyAdapter.this, listener, zoneId, layoutParams);
 
+        mZoneIdToBannerAdListener.put(zoneId, bannerListener);
+
         // request banner from AdColony
         IronLog.ADAPTER_API.verbose("zone id " + zoneId);
         AdColony.requestAdView(zoneId, bannerListener, bannerSize, adOptions);
-    }
-
-    @Override
-    public void reloadBanner(IronSourceBannerLayout banner, JSONObject config, BannerSmashListener listener) {
-        IronLog.INTERNAL.warning("Unsupported method");
     }
 
     // destroy banner ad and clear banner ad map
@@ -449,20 +436,21 @@ class AdColonyAdapter extends AbstractAdapter {
         AdColonyAdView bannerView = mZoneIdToBannerAdView.get(zoneId);
 
         if (bannerView != null) {
+            // destroy banner
             bannerView.destroy();
+
+            // remove banner layout from map
             mZoneIdToBannerAdView.remove(zoneId);
+
+            // remove banner ad listener from map
+            mZoneIdToBannerAdListener.remove(zoneId);
+
+            // remove
         }
     }
 
-    //network does not support banner reload
-    //return true if banner view needs to be bound again on reload
     @Override
-    public boolean shouldBindBannerViewOnReload() {
-        return true;
-    }
-
-    @Override
-    public Map<String, Object> getBannerBiddingData(JSONObject config) {
+    public Map<String, Object> getBannerBiddingData(JSONObject config, JSONObject adData) {
         return getBiddingData();
     }
     //endregion
@@ -479,6 +467,7 @@ class AdColonyAdapter extends AbstractAdapter {
     //endregion
 
     //region legal
+    @Override
     protected void setConsent(boolean consent) {
         mAdColonyOptions.setPrivacyConsentString(AdColonyAppOptions.GDPR, consent ? "1" : "0");
         mAdColonyOptions.setPrivacyFrameworkRequired(AdColonyAppOptions.GDPR, true);
@@ -504,21 +493,12 @@ class AdColonyAdapter extends AbstractAdapter {
         } else {
             String formattedValue = MetaDataUtils.formatValueForType(value, MetaData.MetaDataValueTypes.META_DATA_VALUE_BOOLEAN);
 
-            if (isCOPPAMetaData(key, formattedValue)) {
+            if (MetaDataUtils.isValidMetaData(key, META_DATA_ADCOLONY_COPPA, formattedValue)) {
                 setCOPPAValue(formattedValue);
-            } else if (isChildDirectedMetaData(key, formattedValue)) {
+            } else if (MetaDataUtils.isValidMetaData(key, META_DATA_ADCOLONY_CHILD_DIRECTED, formattedValue)) {
                 setChildDirectedValue(formattedValue);
             }
         }
-
-    }
-
-    private boolean isCOPPAMetaData(String key, String value) {
-        return (key.equalsIgnoreCase(META_DATA_ADCOLONY_COPPA) && (value.length() > 0));
-    }
-
-    private boolean isChildDirectedMetaData(String key, String value) {
-        return (key.equalsIgnoreCase(META_DATA_ADCOLONY_CHILD_DIRECTED) && (value.length() > 0));
     }
 
     private void setCCPAValue(final String value) {
@@ -596,7 +576,7 @@ class AdColonyAdapter extends AbstractAdapter {
             case "RECTANGLE":
                 return AdColonyAdSize.MEDIUM_RECTANGLE;
             case "SMART":
-                return AdapterUtils.isLargeScreen(ContextProvider.getInstance().getCurrentActiveActivity()) ? AdColonyAdSize.LEADERBOARD : AdColonyAdSize.BANNER;
+                return AdapterUtils.isLargeScreen(ContextProvider.getInstance().getApplicationContext()) ? AdColonyAdSize.LEADERBOARD : AdColonyAdSize.BANNER;
             case "CUSTOM":
                 return new AdColonyAdSize(size.getWidth(), size.getHeight());
         }
@@ -607,25 +587,25 @@ class AdColonyAdapter extends AbstractAdapter {
     private FrameLayout.LayoutParams getBannerLayoutParams(ISBannerSize size) {
         FrameLayout.LayoutParams layoutParams = new FrameLayout.LayoutParams(0, 0);
 
-        Activity activity = ContextProvider.getInstance().getCurrentActiveActivity();
+        Context context = ContextProvider.getInstance().getApplicationContext();
 
         switch (size.getDescription()) {
             case "BANNER":
             case "LARGE":
-                layoutParams = new FrameLayout.LayoutParams(AdapterUtils.dpToPixels(activity, 320), AdapterUtils.dpToPixels(activity, 50));
+                layoutParams = new FrameLayout.LayoutParams(AdapterUtils.dpToPixels(context, 320), AdapterUtils.dpToPixels(context, 50));
                 break;
             case "RECTANGLE":
-                layoutParams = new FrameLayout.LayoutParams(AdapterUtils.dpToPixels(activity, 300), AdapterUtils.dpToPixels(activity, 250));
+                layoutParams = new FrameLayout.LayoutParams(AdapterUtils.dpToPixels(context, 300), AdapterUtils.dpToPixels(context, 250));
                 break;
             case "SMART":
-                if (AdapterUtils.isLargeScreen(activity)) {
-                    layoutParams = new FrameLayout.LayoutParams(AdapterUtils.dpToPixels(activity, 728), AdapterUtils.dpToPixels(activity, 90));
+                if (AdapterUtils.isLargeScreen(context)) {
+                    layoutParams = new FrameLayout.LayoutParams(AdapterUtils.dpToPixels(context, 728), AdapterUtils.dpToPixels(context, 90));
                 } else {
-                    layoutParams = new FrameLayout.LayoutParams(AdapterUtils.dpToPixels(activity, 320), AdapterUtils.dpToPixels(activity, 50));
+                    layoutParams = new FrameLayout.LayoutParams(AdapterUtils.dpToPixels(context, 320), AdapterUtils.dpToPixels(context, 50));
                 }
                 break;
             case "CUSTOM":
-                layoutParams = new FrameLayout.LayoutParams(AdapterUtils.dpToPixels(activity, size.getWidth()), AdapterUtils.dpToPixels(activity, size.getHeight()));
+                layoutParams = new FrameLayout.LayoutParams(AdapterUtils.dpToPixels(context, size.getWidth()), AdapterUtils.dpToPixels(context, size.getHeight()));
                 break;
         }
 

@@ -1,9 +1,8 @@
 package com.ironsource.adapters.vungle;
 
-import static com.ironsource.adapters.vungle.VungleBannerAdapter.getBannerSize;
 import static com.ironsource.mediationsdk.metadata.MetaData.MetaDataValueTypes.META_DATA_VALUE_BOOLEAN;
 
-import android.app.Activity;
+import android.content.Context;
 import android.text.TextUtils;
 
 import com.ironsource.environment.ContextProvider;
@@ -69,10 +68,8 @@ class VungleAdapter extends AbstractAdapter {
     }
 
     // Get the network and adapter integration data
-    public static IntegrationData getIntegrationData(Activity activity) {
-        IntegrationData ret = new IntegrationData("Vungle", VERSION);
-        ret.validateWriteExternalStorage = true;
-        return ret;
+    public static IntegrationData getIntegrationData(Context context) {
+        return new IntegrationData("Vungle", VERSION);
     }
 
     @Override
@@ -152,22 +149,14 @@ class VungleAdapter extends AbstractAdapter {
 
         IronLog.ADAPTER_API.verbose("placementId = " + placementId + ", appId = " + appId);
 
-        VungleInitializer.getInstance().initialize(appId,
-                ContextProvider.getInstance().getApplicationContext(),
-                new VungleInitializer.VungleInitializationListener() {
-                    @Override
-                    public void onInitializeSuccess() {
-                        AdConfig adConfig = createAdConfig();
-                        rewardedAdapter = new VungleRewardedAdapter(placementId, adConfig, listener);
-                        rewardedAdapter.load();
-                    }
+        loadRewardedVideoInternal(appId, placementId, listener, null);
+    }
 
-                    @Override
-                    public void onInitializeError(String error) {
-                        IronLog.INTERNAL.verbose("init failed - placementId = " + placementId);
-                        listener.onRewardedVideoAvailabilityChanged(false);
-                    }
-                });
+    public void loadRewardedVideo(final JSONObject config, JSONObject adData, final RewardedVideoSmashListener listener) {
+        String placementId = config.optString(PLACEMENT_ID);
+        String appId = config.optString(APP_ID);
+
+        loadRewardedVideoInternal(appId, placementId, listener, null);
     }
 
     @Override
@@ -175,18 +164,11 @@ class VungleAdapter extends AbstractAdapter {
         String placementId = config.optString(PLACEMENT_ID);
         String appId = config.optString(APP_ID);
 
-        if (TextUtils.isEmpty(placementId)) {
-            IronLog.INTERNAL.error("Missing param - " + PLACEMENT_ID);
-            listener.onRewardedVideoAvailabilityChanged(false);
-            return;
-        }
+        IronLog.ADAPTER_API.verbose("placementId = " + placementId + ", appId = " + appId);
+        loadRewardedVideoInternal(appId, placementId, listener, serverData);
+    }
 
-        if (TextUtils.isEmpty(appId)) {
-            IronLog.INTERNAL.error("Missing param - " + APP_ID);
-            listener.onRewardedVideoAvailabilityChanged(false);
-            return;
-        }
-
+    private void loadRewardedVideoInternal(String appId, String placementId, RewardedVideoSmashListener listener, String serverData) {
         IronLog.ADAPTER_API.verbose("placementId = " + placementId + ", appId = " + appId);
 
         VungleInitializer.getInstance().initialize(appId,
@@ -211,9 +193,6 @@ class VungleAdapter extends AbstractAdapter {
     public void showRewardedVideo(JSONObject config, final RewardedVideoSmashListener listener) {
         String placementId = config.optString(PLACEMENT_ID);
         IronLog.ADAPTER_API.verbose("placementId = " + placementId);
-
-        // change rewarded video availability to false
-        listener.onRewardedVideoAvailabilityChanged(false);
 
         // if we can play
         if (rewardedAdapter != null && rewardedAdapter.canPlayAd()) {
@@ -291,19 +270,18 @@ class VungleAdapter extends AbstractAdapter {
         final String placementId = config.optString(PLACEMENT_ID);
         final String appId = config.optString(APP_ID);
 
-        // Configuration Validation
-        if (TextUtils.isEmpty(placementId)) {
-            IronLog.INTERNAL.error("Missing param - " + PLACEMENT_ID);
-            listener.onInterstitialInitFailed(ErrorBuilder.buildInitFailedError("Missing param - " + PLACEMENT_ID, IronSourceConstants.INTERSTITIAL_AD_UNIT));
-            return;
-        }
+        loadInterstitialInternal(appId, placementId, listener, serverData);
+    }
 
-        if (TextUtils.isEmpty(appId)) {
-            IronLog.INTERNAL.error("Missing param - " + APP_ID);
-            listener.onInterstitialInitFailed(ErrorBuilder.buildInitFailedError("Missing param - " + APP_ID, IronSourceConstants.INTERSTITIAL_AD_UNIT));
-            return;
-        }
+    @Override
+    public void loadInterstitial(JSONObject config, JSONObject adData, final InterstitialSmashListener listener) {
+        String placementId = config.optString(PLACEMENT_ID);
+        String appId = config.optString(APP_ID);
 
+        loadInterstitialInternal(appId, placementId, listener, null);
+    }
+
+    private void loadInterstitialInternal(final String appId, final String placementId, final InterstitialSmashListener listener, String serverData) {
         IronLog.ADAPTER_API.verbose("placementId = " + placementId + ", appId = " + appId);
 
         VungleInitializer.getInstance().initialize(appId,
@@ -314,44 +292,6 @@ class VungleAdapter extends AbstractAdapter {
                         AdConfig adConfig = createAdConfig();
                         interstitialAdapter = new VungleInterstitialAdapter(placementId, adConfig, listener);
                         interstitialAdapter.loadWithBid(serverData);
-                    }
-
-                    @Override
-                    public void onInitializeError(String error) {
-                        IronLog.INTERNAL.verbose("init failed - placementId = " + placementId);
-                        listener.onInterstitialInitFailed(ErrorBuilder.buildInitFailedError(error, IronSourceConstants.INTERSTITIAL_AD_UNIT));
-                    }
-                });
-    }
-
-    @Override
-    public void loadInterstitial(JSONObject config, JSONObject adData, final InterstitialSmashListener listener) {
-        String placementId = config.optString(PLACEMENT_ID);
-        String appId = config.optString(APP_ID);
-
-        // Configuration Validation
-        if (TextUtils.isEmpty(placementId)) {
-            IronLog.INTERNAL.error("Missing param - " + PLACEMENT_ID);
-            listener.onInterstitialInitFailed(ErrorBuilder.buildInitFailedError("Missing param - " + PLACEMENT_ID, IronSourceConstants.INTERSTITIAL_AD_UNIT));
-            return;
-        }
-
-        if (TextUtils.isEmpty(appId)) {
-            IronLog.INTERNAL.error("Missing param - " + APP_ID);
-            listener.onInterstitialInitFailed(ErrorBuilder.buildInitFailedError("Missing param - " + APP_ID, IronSourceConstants.INTERSTITIAL_AD_UNIT));
-            return;
-        }
-
-        IronLog.ADAPTER_API.verbose("placementId = " + placementId + ", appId = " + appId);
-
-        VungleInitializer.getInstance().initialize(appId,
-                ContextProvider.getInstance().getApplicationContext(),
-                new VungleInitializer.VungleInitializationListener() {
-                    @Override
-                    public void onInitializeSuccess() {
-                        AdConfig adConfig = createAdConfig();
-                        interstitialAdapter = new VungleInterstitialAdapter(placementId, adConfig, listener);
-                        interstitialAdapter.load();
                     }
 
                     @Override
@@ -393,38 +333,7 @@ class VungleAdapter extends AbstractAdapter {
 
     @Override
     public void initBannerForBidding(String appKey, String userId, JSONObject config, BannerSmashListener listener) {
-        String placementId = config.optString(PLACEMENT_ID);
-        String appId = config.optString(APP_ID);
-
-        // Configuration Validation
-        if (TextUtils.isEmpty(placementId)) {
-            IronLog.INTERNAL.error("Missing param - " + PLACEMENT_ID);
-            listener.onBannerInitFailed(ErrorBuilder.buildInitFailedError("Missing param - " + PLACEMENT_ID, IronSourceConstants.BANNER_AD_UNIT));
-            return;
-        }
-
-        if (TextUtils.isEmpty(appId)) {
-            IronLog.INTERNAL.error("Missing param - " + APP_ID);
-            listener.onBannerInitFailed(ErrorBuilder.buildInitFailedError("Missing param - " + APP_ID, IronSourceConstants.BANNER_AD_UNIT));
-            return;
-        }
-
-        IronLog.ADAPTER_API.verbose("placementId = " + placementId + ", appId = " + appId);
-
-        VungleInitializer.getInstance().initialize(appId,
-                ContextProvider.getInstance().getApplicationContext(),
-                new VungleInitializer.VungleInitializationListener() {
-                    @Override
-                    public void onInitializeSuccess() {
-                        listener.onBannerInitSuccess();
-                    }
-
-                    @Override
-                    public void onInitializeError(String error) {
-                        IronLog.INTERNAL.verbose("init failed - placementId = " + placementId);
-                        listener.onBannerInitFailed(ErrorBuilder.buildInitFailedError(error, IronSourceConstants.BANNER_AD_UNIT));
-                    }
-                });
+        initBanners(appKey, userId, config, listener);
     }
 
     @Override
@@ -465,33 +374,32 @@ class VungleAdapter extends AbstractAdapter {
 
     @Override
     public void loadBannerForBidding(JSONObject config, JSONObject adData, String serverData, IronSourceBannerLayout banner, BannerSmashListener listener) {
+        final String placementId = config.optString(PLACEMENT_ID);
+        final String appId = config.optString(APP_ID);
+        loadBannerInternal(appId, placementId, banner, listener, serverData);
+    }
+
+    @Override
+    public void loadBanner(JSONObject config, JSONObject adData, final IronSourceBannerLayout banner, final BannerSmashListener listener) {
         String placementId = config.optString(PLACEMENT_ID);
         String appId = config.optString(APP_ID);
 
-        // Configuration Validation
-        if (TextUtils.isEmpty(placementId)) {
-            IronLog.INTERNAL.error("Missing param - " + PLACEMENT_ID);
-            listener.onBannerInitFailed(ErrorBuilder.buildInitFailedError("Missing param - " + PLACEMENT_ID, IronSourceConstants.BANNER_AD_UNIT));
-            return;
-        }
+        loadBannerInternal(appId, placementId, banner, listener, null);
+    }
 
-        if (TextUtils.isEmpty(appId)) {
-            IronLog.INTERNAL.error("Missing param - " + APP_ID);
-            listener.onBannerInitFailed(ErrorBuilder.buildInitFailedError("Missing param - " + APP_ID, IronSourceConstants.BANNER_AD_UNIT));
-            return;
-        }
+    private void loadBannerInternal(final String appId, final String placementId, final IronSourceBannerLayout banner,
+                                    final BannerSmashListener listener, final String serverData) {
+        IronLog.ADAPTER_API.verbose("placementId = " + placementId + ", appId = " + appId);
 
         // verify size
         ISBannerSize isBannerSize = banner.getSize();
-        BannerAdSize loBannerSize = getBannerSize(isBannerSize);
+        BannerAdSize loBannerSize = VungleBannerAdapter.getBannerSize(isBannerSize);
         IronLog.ADAPTER_API.verbose("bannerSize = " + loBannerSize);
         if (loBannerSize == null) {
-            IronLog.ADAPTER_API.verbose("size not supported, size = " + isBannerSize.getDescription());
+            IronLog.ADAPTER_API.verbose("size not supported, size = " + banner.getSize().getDescription());
             listener.onBannerAdLoadFailed(ErrorBuilder.unsupportedBannerSize(getProviderName()));
             return;
         }
-
-        IronLog.ADAPTER_API.verbose("placementId = " + placementId + ", appId = " + appId);
 
         VungleInitializer.getInstance().initialize(appId,
                 ContextProvider.getInstance().getApplicationContext(),
@@ -511,56 +419,7 @@ class VungleAdapter extends AbstractAdapter {
                         listener.onBannerInitFailed(ErrorBuilder.buildInitFailedError(error, IronSourceConstants.BANNER_AD_UNIT));
                     }
                 });
-    }
 
-    @Override
-    public void loadBanner(JSONObject config, JSONObject adData, final IronSourceBannerLayout banner, final BannerSmashListener listener) {
-        String placementId = config.optString(PLACEMENT_ID);
-        String appId = config.optString(APP_ID);
-
-        // Configuration Validation
-        if (TextUtils.isEmpty(placementId)) {
-            IronLog.INTERNAL.error("Missing param - " + PLACEMENT_ID);
-            listener.onBannerInitFailed(ErrorBuilder.buildInitFailedError("Missing param - " + PLACEMENT_ID, IronSourceConstants.BANNER_AD_UNIT));
-            return;
-        }
-
-        if (TextUtils.isEmpty(appId)) {
-            IronLog.INTERNAL.error("Missing param - " + APP_ID);
-            listener.onBannerInitFailed(ErrorBuilder.buildInitFailedError("Missing param - " + APP_ID, IronSourceConstants.BANNER_AD_UNIT));
-            return;
-        }
-
-        // verify size
-        ISBannerSize isBannerSize = banner.getSize();
-        BannerAdSize loBannerSize = getBannerSize(isBannerSize);
-        IronLog.ADAPTER_API.verbose("bannerSize = " + loBannerSize);
-        if (loBannerSize == null) {
-            IronLog.ADAPTER_API.verbose("size not supported, size = " + isBannerSize.getDescription());
-            listener.onBannerAdLoadFailed(ErrorBuilder.unsupportedBannerSize(getProviderName()));
-            return;
-        }
-
-        IronLog.ADAPTER_API.verbose("placementId = " + placementId + ", appId = " + appId);
-
-        VungleInitializer.getInstance().initialize(appId,
-                ContextProvider.getInstance().getApplicationContext(),
-                new VungleInitializer.VungleInitializationListener() {
-                    @Override
-                    public void onInitializeSuccess() {
-                        // run on main thread
-                        postOnUIThread(() -> {
-                            bannerAdapter = new VungleBannerAdapter(placementId, isBannerSize, loBannerSize, listener);
-                            bannerAdapter.load();
-                        });
-                    }
-
-                    @Override
-                    public void onInitializeError(String error) {
-                        IronLog.INTERNAL.verbose("init failed - placementId = " + placementId);
-                        listener.onBannerInitFailed(ErrorBuilder.buildInitFailedError(error, IronSourceConstants.BANNER_AD_UNIT));
-                    }
-                });
     }
 
     @Override
@@ -626,6 +485,7 @@ class VungleAdapter extends AbstractAdapter {
     //endregion
 
     //region legal
+    @Override
     protected void setConsent(boolean consent) {
         VungleConsent.setGDPRStatus(consent, CONSENT_MESSAGE_VERSION);
     }
@@ -642,20 +502,16 @@ class VungleAdapter extends AbstractAdapter {
         if (MetaDataUtils.isValidCCPAMetaData(key, value)) {
             boolean ccpa = MetaDataUtils.getMetaDataBooleanValue(value);
             VungleConsent.setCCPAValue(ccpa);
-        } else if (key.equalsIgnoreCase(ORIENTATION_FLAG)) {
+        } else if (MetaDataUtils.isValidMetaData(key, ORIENTATION_FLAG, value)) {
             mAdOrientation = value;
         } else {
             String formattedValue = MetaDataUtils.formatValueForType(value, META_DATA_VALUE_BOOLEAN);
 
-            if (isValidCOPPAMetaData(key, formattedValue)) {
+            if (MetaDataUtils.isValidMetaData(key, VUNGLE_COPPA_FLAG, formattedValue)) {
                 boolean isUserCoppa = MetaDataUtils.getMetaDataBooleanValue(formattedValue);
                 VungleConsent.setCOPPAValue(isUserCoppa);
             }
         }
-    }
-
-    private boolean isValidCOPPAMetaData(String key, String value) {
-        return (key.equalsIgnoreCase(VUNGLE_COPPA_FLAG) && !TextUtils.isEmpty(value));
     }
     //endregion
 
