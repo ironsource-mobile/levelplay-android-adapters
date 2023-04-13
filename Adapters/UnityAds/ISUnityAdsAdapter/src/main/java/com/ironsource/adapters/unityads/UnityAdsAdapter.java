@@ -595,6 +595,11 @@ class UnityAdsAdapter extends AbstractAdapter implements IUnityAdsInitialization
 
     //region Banner API
     @Override
+    public void initBannerForBidding(String appKey, String userId, JSONObject config, BannerSmashListener listener) {
+        initBanners(appKey, userId, config, listener);
+    }
+
+    @Override
     public void initBanners(String appKey, String userId, final JSONObject config, final BannerSmashListener listener) {
         String gameId = config.optString(GAME_ID);
         String placementId = config.optString(PLACEMENT_ID);
@@ -641,7 +646,16 @@ class UnityAdsAdapter extends AbstractAdapter implements IUnityAdsInitialization
     }
 
     @Override
-    public void loadBanner(final JSONObject config, final JSONObject adData, final IronSourceBannerLayout banner, final BannerSmashListener listener) {
+    public void loadBannerForBidding(JSONObject config, JSONObject adData, String serverData, IronSourceBannerLayout banner, BannerSmashListener listener) {
+        loadBannerInternal(config,adData, banner,listener, serverData);
+    }
+
+    @Override
+    public void loadBanner(JSONObject config, JSONObject adData, IronSourceBannerLayout banner, BannerSmashListener listener) {
+        loadBannerInternal(config,adData, banner,listener, null);
+    }
+
+    public void loadBannerInternal(final JSONObject config, final JSONObject adData, final IronSourceBannerLayout banner, final BannerSmashListener listener, String serverData) {
         String placementId = config.optString(PLACEMENT_ID);
 
         // check banner
@@ -663,8 +677,19 @@ class UnityAdsAdapter extends AbstractAdapter implements IUnityAdsInitialization
         // create banner
         BannerView bannerView = getBannerView(banner, placementId, listener);
 
+        UnityAdsLoadOptions loadOptions = new UnityAdsLoadOptions();
+
+        // objectId is used to identify a loaded ad and to show it
+        String mObjectId = UUID.randomUUID().toString();
+        loadOptions.setObjectId(mObjectId);
+
+        if (!TextUtils.isEmpty(serverData)) {
+            // add adMarkup for bidder instances
+            loadOptions.setAdMarkup(serverData);
+        }
+
         // load
-        bannerView.load();
+        bannerView.load(loadOptions);
     }
 
     @Override
@@ -675,6 +700,11 @@ class UnityAdsAdapter extends AbstractAdapter implements IUnityAdsInitialization
             mPlacementIdToBannerAd.get(placementId).destroy();
             mPlacementIdToBannerAd.remove(placementId);
         }
+    }
+
+    @Override
+    public Map<String, Object> getBannerBiddingData(JSONObject config, JSONObject adData) {
+        return getBiddingData();
     }
 
     //endregion
