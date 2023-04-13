@@ -136,60 +136,53 @@ public class AdMobAdapter extends AbstractAdapter {
     //endregion
 
     //region Initializations methods and callbacks
-    // All calls to MobileAds must be on the main thread --> run all calls to initSDK in a thread.
     public void initSDK(final JSONObject config) {
-        postOnUIThread(new Runnable() {
-            @Override
-            public void run() {
-                // add self to the init listeners only in case the initialization has not finished yet
-                if (mInitState == InitState.INIT_STATE_NONE || mInitState == InitState.INIT_STATE_IN_PROGRESS) {
-                    initCallbackListeners.add(AdMobAdapter.this);
-                }
-                //init sdk will only be called once
-                if (mWasInitCalled.compareAndSet(false, true)) {
-                    mInitState = InitState.INIT_STATE_IN_PROGRESS;
+        // add self to the init listeners only in case the initialization has not finished yet
+        if (mInitState == InitState.INIT_STATE_NONE || mInitState == InitState.INIT_STATE_IN_PROGRESS) {
+            initCallbackListeners.add(AdMobAdapter.this);
+        }
+        //init sdk will only be called once
+        if (mWasInitCalled.compareAndSet(false, true)) {
+            mInitState = InitState.INIT_STATE_IN_PROGRESS;
 
-                    IronLog.ADAPTER_API.verbose();
-                    boolean networkOnlyInit = config.optBoolean(NETWORK_ONLY_INIT, true);
+            IronLog.ADAPTER_API.verbose();
+            boolean networkOnlyInit = config.optBoolean(NETWORK_ONLY_INIT, true);
 
-                    if (networkOnlyInit) {
-                        IronLog.ADAPTER_API.verbose("disableMediationAdapterInitialization");
-                        // Limit the AdMob initialization to its network
-                        MobileAds.disableMediationAdapterInitialization(ContextProvider.getInstance().getApplicationContext());
-                    }
-
-                    //check if we want to perform the init process with an init callback
-                    boolean shouldWaitForInitCallback = config.optBoolean(INIT_RESPONSE_REQUIRED, false);
-
-                    if (shouldWaitForInitCallback) {
-                        IronLog.ADAPTER_API.verbose("init and wait for callback");
-
-                        //init AdMob sdk with callback
-                        MobileAds.initialize(ContextProvider.getInstance().getApplicationContext(), new OnInitializationCompleteListener() {
-                            @Override
-                            public void onInitializationComplete(@NotNull InitializationStatus initializationStatus) {
-                                AdapterStatus status = initializationStatus.getAdapterStatusMap().get("com.google.android.gms.ads.MobileAds");
-                                AdapterStatus.State state = status != null ? status.getInitializationState() : null;
-
-                                if (state == AdapterStatus.State.READY) {
-                                    IronLog.ADAPTER_API.verbose("initializationStatus = READY");
-                                    initializationSuccess();
-                                } else {
-                                    IronLog.ADAPTER_API.verbose("initializationStatus = NOT READY");
-                                    initializationFailure();
-                                }
-                            }
-                        });
-                    } else {
-                        //init AdMob sdk without callback
-                        IronLog.ADAPTER_API.verbose("init without callback");
-                        MobileAds.initialize(ContextProvider.getInstance().getApplicationContext());
-                        initializationSuccess();
-                    }
-                }
-
+            if (networkOnlyInit) {
+                IronLog.ADAPTER_API.verbose("disableMediationAdapterInitialization");
+                // Limit the AdMob initialization to its network
+                MobileAds.disableMediationAdapterInitialization(ContextProvider.getInstance().getApplicationContext());
             }
-        });
+
+            //check if we want to perform the init process with an init callback
+            boolean shouldWaitForInitCallback = config.optBoolean(INIT_RESPONSE_REQUIRED, false);
+
+            if (shouldWaitForInitCallback) {
+                IronLog.ADAPTER_API.verbose("init and wait for callback");
+
+                //init AdMob sdk with callback
+                MobileAds.initialize(ContextProvider.getInstance().getApplicationContext(), new OnInitializationCompleteListener() {
+                    @Override
+                    public void onInitializationComplete(@NotNull InitializationStatus initializationStatus) {
+                        AdapterStatus status = initializationStatus.getAdapterStatusMap().get("com.google.android.gms.ads.MobileAds");
+                        AdapterStatus.State state = status != null ? status.getInitializationState() : null;
+
+                        if (state == AdapterStatus.State.READY) {
+                            IronLog.ADAPTER_API.verbose("initializationStatus = READY");
+                            initializationSuccess();
+                        } else {
+                            IronLog.ADAPTER_API.verbose("initializationStatus = NOT READY");
+                            initializationFailure();
+                        }
+                    }
+                });
+            } else {
+                //init AdMob sdk without callback
+                IronLog.ADAPTER_API.verbose("init without callback");
+                MobileAds.initialize(ContextProvider.getInstance().getApplicationContext());
+                initializationSuccess();
+            }
+        }
     }
 
     private void initializationSuccess() {
