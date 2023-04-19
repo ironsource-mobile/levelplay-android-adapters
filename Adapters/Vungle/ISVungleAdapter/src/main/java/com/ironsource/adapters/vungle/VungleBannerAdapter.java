@@ -32,10 +32,6 @@ final class VungleBannerAdapter implements BannerAdListener {
         mBannerAd.setAdListener(this);
     }
 
-    void load() {
-        mBannerAd.load(null);
-    }
-
     public void loadWithBid(String serverData) {
         mBannerAd.load(serverData);
     }

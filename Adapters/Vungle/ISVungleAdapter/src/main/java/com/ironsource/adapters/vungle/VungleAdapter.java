@@ -195,10 +195,10 @@ class VungleAdapter extends AbstractAdapter {
         IronLog.ADAPTER_API.verbose("placementId = " + placementId);
 
         // if we can play
-        if (rewardedAdapter != null && rewardedAdapter.canPlayAd()) {
+        if (rewardedAdapter != null) {
             // dynamic user id
             if (!TextUtils.isEmpty(getDynamicUserId())) {
-                rewardedAdapter.setIncentivizedFields(getDynamicUserId(), null, null, null, null);
+                rewardedAdapter.setUserId(getDynamicUserId());
             }
 
             rewardedAdapter.play();
@@ -283,7 +283,6 @@ class VungleAdapter extends AbstractAdapter {
 
     private void loadInterstitialInternal(final String appId, final String placementId, final InterstitialSmashListener listener, String serverData) {
         IronLog.ADAPTER_API.verbose("placementId = " + placementId + ", appId = " + appId);
-
         VungleInitializer.getInstance().initialize(appId,
                 ContextProvider.getInstance().getApplicationContext(),
                 new VungleInitializer.VungleInitializationListener() {
@@ -309,7 +308,7 @@ class VungleAdapter extends AbstractAdapter {
         IronLog.ADAPTER_API.verbose("placementId = " + placementId);
 
         // if we can play
-        if (interstitialAdapter != null && interstitialAdapter.canPlayAd()) {
+        if (interstitialAdapter != null) {
             interstitialAdapter.play();
         } else {
             IronLog.INTERNAL.error("There is no ad available for placementId = " + placementId);
@@ -406,11 +405,8 @@ class VungleAdapter extends AbstractAdapter {
                 new VungleInitializer.VungleInitializationListener() {
                     @Override
                     public void onInitializeSuccess() {
-                        // run on main thread
-                        postOnUIThread(() -> {
-                            bannerAdapter = new VungleBannerAdapter(placementId, isBannerSize, loBannerSize, listener);
-                            bannerAdapter.loadWithBid(serverData);
-                        });
+                        bannerAdapter = new VungleBannerAdapter(placementId, isBannerSize, loBannerSize, listener);
+                        bannerAdapter.loadWithBid(serverData);
                     }
 
                     @Override
@@ -487,6 +483,8 @@ class VungleAdapter extends AbstractAdapter {
     //region legal
     @Override
     protected void setConsent(boolean consent) {
+        IronLog.ADAPTER_API.verbose("consent = " + consent);
+
         VungleConsent.setGDPRStatus(consent, CONSENT_MESSAGE_VERSION);
     }
 

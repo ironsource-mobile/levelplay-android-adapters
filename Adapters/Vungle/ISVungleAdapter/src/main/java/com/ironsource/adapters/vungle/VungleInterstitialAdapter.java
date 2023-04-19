@@ -28,10 +28,6 @@ final class VungleInterstitialAdapter implements InterstitialAdListener {
         mInterstitialAd.setAdListener(this);
     }
 
-    void load() {
-        mInterstitialAd.load(null);
-    }
-
     public void loadWithBid(String serverData) {
         mInterstitialAd.load(serverData);
     }

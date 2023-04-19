@@ -30,10 +30,6 @@ final class VungleRewardedAdapter implements RewardedAdListener {
         mRewardedAd.setAdListener(this);
     }
 
-    void load() {
-        mRewardedAd.load(null);
-    }
-
     public void loadWithBid(String serverData) {
         mRewardedAd.load(serverData);
     }
@@ -51,25 +47,9 @@ final class VungleRewardedAdapter implements RewardedAdListener {
         mRewardedAd = null;
     }
 
-    public void setIncentivizedFields(final String userID,
-                                      final String title,
-                                      final String body,
-                                      final String keepWatching,
-                                      final String close) {
+    public void setUserId(final String userID) {
         if (!TextUtils.isEmpty(userID)) {
             mRewardedAd.setUserId(userID);
-        }
-        if (!TextUtils.isEmpty(title)) {
-            mRewardedAd.setAlertTitleText(title);
-        }
-        if (!TextUtils.isEmpty(body)) {
-            mRewardedAd.setAlertBodyText(body);
-        }
-        if (!TextUtils.isEmpty(keepWatching)) {
-            mRewardedAd.setAlertContinueButtonText(keepWatching);
-        }
-        if (!TextUtils.isEmpty(close)) {
-            mRewardedAd.setAlertCloseButtonText(close);
         }
     }
 
