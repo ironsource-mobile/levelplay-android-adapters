@@ -1,5 +1,4 @@
 apply plugin: 'com.android.library'
-apply plugin: 'com.android.library'
 
 ext {
     adapterVersion = '4.3.20'
@@ -52,7 +51,7 @@ android {
 
 dependencies {
     implementation 'com.ironsource.sdk:mediationsdk:7.3.0.1'
-    implementation 'com.github.vungle:vng-android-sdk:7.0.0-early1-RC8'
+    implementation 'com.vungle:vungle-ads:7.0.0-EA1'
 
 }
 
