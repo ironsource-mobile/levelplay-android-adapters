@@ -1,7 +1,7 @@
 apply plugin: 'com.android.library'
 apply plugin: 'kotlin-android'
 ext {
-    adapterVersion = '4.3.17'
+    adapterVersion = '4.3.18'
 }
 
 def getGitHash = { ->
@@ -56,7 +56,7 @@ android {
 
  dependencies {
      implementation 'com.ironsource.sdk:mediationsdk:7.3.0.1'
-     implementation 'com.pangle.global:ads-sdk:5.0.0.8'
+     implementation 'com.pangle.global:ads-sdk:5.1.0.9'
      implementation 'com.google.android.gms:play-services-ads-identifier:17.0.0'
  }
 
