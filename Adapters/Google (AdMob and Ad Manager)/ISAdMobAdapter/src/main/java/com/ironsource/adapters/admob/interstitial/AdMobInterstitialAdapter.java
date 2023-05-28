@@ -58,20 +58,15 @@ public class AdMobInterstitialAdapter extends AbstractInterstitialAdapter<AdMobA
         //add to interstitial listener map
         mAdUnitIdToListener.put(adUnitId, listener);
 
-        postOnUIThread(new Runnable() {
-            @Override
-            public void run() {
-                if (getAdapter().getInitState() == AdMobAdapter.InitState.INIT_STATE_SUCCESS) {
-                    IronLog.INTERNAL.verbose("onInterstitialInitSuccess - adUnitId = " + adUnitId);
-                    listener.onInterstitialInitSuccess();
-                } else if (getAdapter().getInitState() == AdMobAdapter.InitState.INIT_STATE_FAILED) {
-                    IronLog.INTERNAL.verbose("onInterstitialInitFailed - adUnitId = " + adUnitId);
-                    listener.onInterstitialInitFailed(ErrorBuilder.buildInitFailedError("AdMob sdk init failed", IronSourceConstants.INTERSTITIAL_AD_UNIT));
-                } else {
-                    getAdapter().initSDK(config);
-                }
-            }
-        });
+        if (getAdapter().getInitState() == AdMobAdapter.InitState.INIT_STATE_SUCCESS) {
+            IronLog.INTERNAL.verbose("onInterstitialInitSuccess - adUnitId = " + adUnitId);
+            listener.onInterstitialInitSuccess();
+        } else if (getAdapter().getInitState() == AdMobAdapter.InitState.INIT_STATE_FAILED) {
+            IronLog.INTERNAL.verbose("onInterstitialInitFailed - adUnitId = " + adUnitId);
+            listener.onInterstitialInitFailed(ErrorBuilder.buildInitFailedError("AdMob sdk init failed", IronSourceConstants.INTERSTITIAL_AD_UNIT));
+        } else {
+            getAdapter().initSDK(config);
+        }
     }
 
     @Override

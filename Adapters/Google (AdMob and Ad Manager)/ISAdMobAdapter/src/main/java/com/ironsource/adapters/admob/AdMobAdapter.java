@@ -21,6 +21,7 @@ import com.ironsource.environment.StringUtils;
 import com.ironsource.mediationsdk.AbstractAdapter;
 import com.ironsource.mediationsdk.INetworkInitCallbackListener;
 import com.ironsource.mediationsdk.IntegrationData;
+import com.ironsource.mediationsdk.IronSource;
 import com.ironsource.mediationsdk.LoadWhileShowSupportState;
 import com.ironsource.mediationsdk.bidding.BiddingDataCallback;
 import com.ironsource.mediationsdk.logger.IronLog;
@@ -133,6 +134,9 @@ public class AdMobAdapter extends AbstractAdapter {
         return MobileAds.getVersion().toString();
     }
 
+    public boolean isUsingActivityBeforeImpression(@NotNull IronSource.AD_UNIT adUnit) {
+        return false;
+    }
     //endregion
 
     //region Initializations methods and callbacks
