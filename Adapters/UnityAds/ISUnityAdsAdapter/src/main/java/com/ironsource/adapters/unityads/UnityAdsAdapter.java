@@ -35,6 +35,7 @@ import com.unity3d.services.banners.BannerView;
 import com.unity3d.services.banners.UnityBannerSize;
 import com.unity3d.ads.IUnityAdsInitializationListener;
 
+import org.jetbrains.annotations.NotNull;
 import org.json.JSONObject;
 
 import java.util.HashMap;
@@ -159,6 +160,10 @@ class UnityAdsAdapter extends AbstractAdapter implements IUnityAdsInitialization
 
     public static String getAdapterSDKVersion() {
         return UnityAds.getVersion();
+    }
+
+    public boolean isUsingActivityBeforeImpression(@NotNull IronSource.AD_UNIT adUnit) {
+        return false;
     }
 
     //endregion
