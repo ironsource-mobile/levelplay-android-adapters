@@ -1,6 +1,5 @@
 package com.ironsource.adapters.applovin;
 
-import android.app.Activity;
 import android.content.Context;
 import android.text.TextUtils;
 import android.view.Gravity;
@@ -37,6 +36,7 @@ import com.ironsource.mediationsdk.AdapterUtils;
 import com.ironsource.mediationsdk.utils.ErrorBuilder;
 import com.ironsource.mediationsdk.utils.IronSourceConstants;
 
+import org.jetbrains.annotations.NotNull;
 import org.json.JSONObject;
 
 import java.util.HashSet;
@@ -149,6 +149,10 @@ class AppLovinAdapter extends AbstractAdapter implements INetworkInitCallbackLis
 
     public static String getAdapterSDKVersion() {
         return AppLovinSdk.VERSION;
+    }
+
+    public boolean isUsingActivityBeforeImpression(@NotNull IronSource.AD_UNIT adUnit) {
+        return false;
     }
 
     //endregion
