@@ -15,6 +15,7 @@ import com.google.android.gms.ads.query.QueryInfo;
 import com.google.android.gms.ads.query.QueryInfoGenerationCallback;
 import com.ironsource.adapters.admob.banner.AdMobBannerAdapter;
 import com.ironsource.adapters.admob.interstitial.AdMobInterstitialAdapter;
+import com.ironsource.adapters.admob.nativead.AdMobNativeAdAdapter;
 import com.ironsource.adapters.admob.rewardedvideo.AdMobRewardedVideoAdapter;
 import com.ironsource.environment.ContextProvider;
 import com.ironsource.environment.StringUtils;
@@ -108,6 +109,7 @@ public class AdMobAdapter extends AbstractAdapter {
         setRewardedVideoAdapter(new AdMobRewardedVideoAdapter(this));
         setInterstitialAdapter(new AdMobInterstitialAdapter(this));
         setBannerAdapter(new AdMobBannerAdapter(this));
+        setNativeAdAdapter(new AdMobNativeAdAdapter(this));
 
         // The network's capability to load a Rewarded Video ad while another Rewarded Video ad of that network is showing
         mLWSSupportState = LoadWhileShowSupportState.LOAD_WHILE_SHOW_BY_INSTANCE;

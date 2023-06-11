@@ -2,6 +2,8 @@ package com.ironsource.adapters.admob.rewardedvideo;
 
 import android.text.TextUtils;
 
+import androidx.annotation.NonNull;
+
 import com.google.android.gms.ads.AdFormat;
 import com.google.android.gms.ads.AdRequest;
 import com.google.android.gms.ads.rewarded.RewardedAd;
@@ -41,7 +43,7 @@ public class AdMobRewardedVideoAdapter extends AbstractRewardedVideoAdapter<AdMo
     }
 
     @Override
-    public void initAndLoadRewardedVideo(String appKey, String userId, final JSONObject config, final JSONObject adData, final RewardedVideoSmashListener listener) {
+    public void initAndLoadRewardedVideo(String appKey, String userId, @NonNull final JSONObject config, final JSONObject adData, @NonNull final RewardedVideoSmashListener listener) {
 
         final String adUnitIdKey = getAdapter().getAdUnitIdKey();
         final String adUnitId = getConfigStringValueFromKey(config, adUnitIdKey);
@@ -72,7 +74,7 @@ public class AdMobRewardedVideoAdapter extends AbstractRewardedVideoAdapter<AdMo
     }
 
     @Override
-    public void initRewardedVideoWithCallback(String appKey, String userId, final JSONObject config, final RewardedVideoSmashListener listener) {
+    public void initRewardedVideoWithCallback(String appKey, String userId, @NonNull final JSONObject config, @NonNull final RewardedVideoSmashListener listener) {
 
         final String adUnitIdKey = getAdapter().getAdUnitIdKey();
         final String adUnitId = getConfigStringValueFromKey(config, adUnitIdKey);
@@ -128,18 +130,18 @@ public class AdMobRewardedVideoAdapter extends AbstractRewardedVideoAdapter<AdMo
     }
 
     @Override
-    public void loadRewardedVideo(final JSONObject config, final JSONObject adData, final RewardedVideoSmashListener listener) {
+    public void loadRewardedVideo(@NonNull final JSONObject config, final JSONObject adData, @NonNull final RewardedVideoSmashListener listener) {
         final String adUnitId = getConfigStringValueFromKey(config, getAdapter().getAdUnitIdKey());
         loadRewardedVideoAdInternal(adUnitId, adData, null, listener);
     }
 
     @Override
-    public void loadRewardedVideoForBidding(final JSONObject config, final JSONObject adData, final String serverData, final RewardedVideoSmashListener listener) {
+    public void loadRewardedVideoForBidding(@NonNull final JSONObject config, final JSONObject adData, final String serverData, @NonNull final RewardedVideoSmashListener listener) {
         final String adUnitId = getConfigStringValueFromKey(config, getAdapter().getAdUnitIdKey());
         loadRewardedVideoAdInternal(adUnitId, adData, serverData, listener);
     }
 
-    private void loadRewardedVideoAdInternal(final String adUnitId, final JSONObject adData, final String serverData, final RewardedVideoSmashListener listener) {
+    private void loadRewardedVideoAdInternal(final String adUnitId, final JSONObject adData, final String serverData, @NonNull final RewardedVideoSmashListener listener) {
         postOnUIThread(new Runnable() {
             @Override
             public void run() {
@@ -155,8 +157,8 @@ public class AdMobRewardedVideoAdapter extends AbstractRewardedVideoAdapter<AdMo
     }
 
     @Override
-    public void showRewardedVideo(final JSONObject config,
-                                  final RewardedVideoSmashListener listener) {
+    public void showRewardedVideo(@NonNull final JSONObject config,
+                                  @NonNull final RewardedVideoSmashListener listener) {
         postOnUIThread(new Runnable() {
             @Override
             public void run() {
@@ -177,7 +179,7 @@ public class AdMobRewardedVideoAdapter extends AbstractRewardedVideoAdapter<AdMo
         });
     }
 
-    public boolean isRewardedVideoAvailable(JSONObject config) {
+    public boolean isRewardedVideoAvailable(@NonNull JSONObject config) {
         final String adUnitId = getConfigStringValueFromKey(config, getAdapter().getAdUnitIdKey());
         return isRewardedVideoAvailableForAdUnitId(adUnitId);
     }
@@ -190,7 +192,7 @@ public class AdMobRewardedVideoAdapter extends AbstractRewardedVideoAdapter<AdMo
     }
 
     @Override
-    public void releaseMemory(IronSource.AD_UNIT adUnit, JSONObject config) {
+    public void releaseMemory(@NonNull IronSource.AD_UNIT adUnit, JSONObject config) {
         for (RewardedAd rewardedVideoAd : mAdUnitIdToAd.values()) {
             rewardedVideoAd.setFullScreenContentCallback(null);
         }
@@ -203,7 +205,7 @@ public class AdMobRewardedVideoAdapter extends AbstractRewardedVideoAdapter<AdMo
     }
 
     @Override
-    public void collectRewardedVideoBiddingData(JSONObject config, JSONObject adData, @NotNull final BiddingDataCallback biddingDataCallback) {
+    public void collectRewardedVideoBiddingData(@NonNull JSONObject config, JSONObject adData, @NotNull final BiddingDataCallback biddingDataCallback) {
         getAdapter().collectBiddingData(biddingDataCallback, AdFormat.REWARDED, null);
     }
 

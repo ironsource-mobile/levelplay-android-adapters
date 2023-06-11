@@ -2,6 +2,8 @@ package com.ironsource.adapters.admob.interstitial;
 
 import android.text.TextUtils;
 
+import androidx.annotation.NonNull;
+
 import com.google.android.gms.ads.AdFormat;
 import com.google.android.gms.ads.AdRequest;
 import com.google.android.gms.ads.interstitial.InterstitialAd;
@@ -34,17 +36,17 @@ public class AdMobInterstitialAdapter extends AbstractInterstitialAdapter<AdMobA
         mAdUnitIdToAdsAvailability = new ConcurrentHashMap<>();
     }
 
-    public void initInterstitial(String appKey, String userId, final JSONObject config,
-                                 final InterstitialSmashListener listener) {
+    public void initInterstitial(String appKey, String userId, @NonNull final JSONObject config,
+                                 @NonNull final InterstitialSmashListener listener) {
         initInterstitialInternal(config, listener);
     }
 
-    public void initInterstitialForBidding(String appKey, String userId, final JSONObject config,
-                                           final InterstitialSmashListener listener) {
+    public void initInterstitialForBidding(String appKey, String userId, @NonNull final JSONObject config,
+                                           @NonNull final InterstitialSmashListener listener) {
         initInterstitialInternal(config, listener);
     }
 
-    private void initInterstitialInternal(final JSONObject config, final InterstitialSmashListener listener) {
+    private void initInterstitialInternal(@NonNull final JSONObject config, @NonNull final InterstitialSmashListener listener) {
         final String adUnitIdKey = getAdapter().getAdUnitIdKey();
         final String adUnitId = getConfigStringValueFromKey(config, adUnitIdKey);
 
@@ -83,18 +85,18 @@ public class AdMobInterstitialAdapter extends AbstractInterstitialAdapter<AdMobA
         }
     }
 
-    public void loadInterstitial(final JSONObject config, final JSONObject adData,
-                                 final InterstitialSmashListener listener) {
-        loadInterstitialInternal(config, adData, listener, null);
+    public void loadInterstitial(@NonNull final JSONObject config, final JSONObject adData,
+                                 @NonNull final InterstitialSmashListener listener) {
+        loadInterstitialInternal(config, adData, null, listener);
     }
 
 
     @Override
-    public void loadInterstitialForBidding(final JSONObject config, final JSONObject adData, final String serverData, final InterstitialSmashListener listener) {
-        loadInterstitialInternal(config, adData, listener, serverData);
+    public void loadInterstitialForBidding(@NonNull final JSONObject config, final JSONObject adData, final String serverData, @NonNull final InterstitialSmashListener listener) {
+        loadInterstitialInternal(config, adData, serverData, listener);
     }
 
-    private void loadInterstitialInternal(final JSONObject config, final JSONObject adData, final InterstitialSmashListener listener, final String serverData) {
+    private void loadInterstitialInternal(@NonNull final JSONObject config, final JSONObject adData, final String serverData, @NonNull final InterstitialSmashListener listener) {
         postOnUIThread(new Runnable() {
             @Override
             public void run() {
@@ -111,8 +113,8 @@ public class AdMobInterstitialAdapter extends AbstractInterstitialAdapter<AdMobA
     }
 
     @Override
-    public void showInterstitial(final JSONObject config,
-                                 final InterstitialSmashListener listener) {
+    public void showInterstitial(@NonNull final JSONObject config,
+                                 @NonNull final InterstitialSmashListener listener) {
         postOnUIThread(new Runnable() {
             @Override
             public void run() {
@@ -138,7 +140,7 @@ public class AdMobInterstitialAdapter extends AbstractInterstitialAdapter<AdMobA
 
     }
 
-    public final boolean isInterstitialReady(final JSONObject config) {
+    public final boolean isInterstitialReady(@NonNull final JSONObject config) {
         final String adUnitId = getConfigStringValueFromKey(config, getAdapter().getAdUnitIdKey());
         return isInterstitialReadyForAdUnitId(adUnitId);
     }
@@ -151,7 +153,7 @@ public class AdMobInterstitialAdapter extends AbstractInterstitialAdapter<AdMobA
     }
 
     @Override
-    public void releaseMemory(IronSource.AD_UNIT adUnit, JSONObject config) {
+    public void releaseMemory(@NonNull IronSource.AD_UNIT adUnit, JSONObject config) {
         for (InterstitialAd interstitialAd : mAdUnitIdToAd.values()) {
             interstitialAd.setFullScreenContentCallback(null);
         }
@@ -162,7 +164,7 @@ public class AdMobInterstitialAdapter extends AbstractInterstitialAdapter<AdMobA
     }
 
     @Override
-    public void collectInterstitialBiddingData(JSONObject config, JSONObject adData, @NotNull BiddingDataCallback biddingDataCallback) {
+    public void collectInterstitialBiddingData(@NonNull JSONObject config, JSONObject adData, @NotNull BiddingDataCallback biddingDataCallback) {
         getAdapter().collectBiddingData(biddingDataCallback, AdFormat.INTERSTITIAL, null);
     }
 
