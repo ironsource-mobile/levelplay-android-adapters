@@ -335,17 +335,21 @@ public class AdMobAdapter extends AbstractAdapter {
 
         Bundle extras = new Bundle();
         extras.putString("platform_name", PLATFORM_NAME);
+        boolean hybridMode = false;
 
         if (adData != null) {
             String requestId = adData.optString("requestId", EMPTY_STRING);
-            boolean hybridMode = adData.optBoolean("isHybrid", false);
+            hybridMode = adData.optBoolean("isHybrid", false);
 
             if (!requestId.isEmpty()) {
                 extras.putString("placement_req_id", requestId);
-                extras.putString("is_hybrid_setup", hybridMode ? "true" : "false");
                 IronLog.INTERNAL.verbose("adData requestId = " + requestId + ", isHybrid = " + hybridMode);
             }
+        } else {
+            IronLog.INTERNAL.verbose("adData is null, using default hybridMode = false");
         }
+
+        extras.putString("is_hybrid_setup", String.valueOf(hybridMode));
 
         setRequestConfiguration();
 

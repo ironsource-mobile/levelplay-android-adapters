@@ -1,7 +1,7 @@
 apply plugin: 'com.android.library'
 
 ext {
-    adapterVersion = '4.3.38'
+    adapterVersion = '4.3.39'
 }
 
 def getGitHash = { ->
@@ -49,8 +49,8 @@ android {
 }
 
  dependencies {
-    implementation 'com.ironsource.sdk:mediationsdk:7.3.1'
-    implementation 'com.google.android.gms:play-services-ads:22.1.0'
+    implementation 'com.ironsource.sdk:mediationsdk:7.3.1.1'
+    implementation 'com.google.android.gms:play-services-ads:22.2.0'
     implementation 'org.jetbrains:annotations:15.0'
 }
 
