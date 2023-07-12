@@ -1,26 +1,28 @@
-package com.ironsource.adapters.facebook;
+package com.ironsource.adapters.facebook.rewardedvideo;
 
 import com.facebook.ads.Ad;
 import com.facebook.ads.AdError;
-import com.facebook.ads.InterstitialAdExtendedListener;
+import com.facebook.ads.RewardedVideoAdExtendedListener;
+import com.ironsource.adapters.facebook.FacebookAdapter;
 import com.ironsource.mediationsdk.logger.IronLog;
 import com.ironsource.mediationsdk.logger.IronSourceError;
-import com.ironsource.mediationsdk.sdk.InterstitialSmashListener;
+import com.ironsource.mediationsdk.sdk.RewardedVideoSmashListener;
 
 import java.lang.ref.WeakReference;
 
-public class FacebookInterstitialAdListener implements InterstitialAdExtendedListener {
+public class FacebookRewardedVideoAdListener implements RewardedVideoAdExtendedListener {
     // data
     private String mPlacementId;
-    private WeakReference<FacebookAdapter> mAdapter;
-    private InterstitialSmashListener mListener;
+    private RewardedVideoSmashListener mListener;
+    private WeakReference<FacebookRewardedVideoAdapter> mAdapter;
 
     // Ad closed indication
     private boolean mDidCallClosed;
-    FacebookInterstitialAdListener(FacebookAdapter adapter, InterstitialSmashListener listener, String placement) {
+
+    public FacebookRewardedVideoAdListener(FacebookRewardedVideoAdapter adapter, String placementId, RewardedVideoSmashListener listener) {
         mAdapter = new WeakReference<>(adapter);
+        mPlacementId = placementId;
         mListener = listener;
-        mPlacementId = placement;
     }
 
     @Override
@@ -37,8 +39,8 @@ public class FacebookInterstitialAdListener implements InterstitialAdExtendedLis
             return;
         }
 
-        mAdapter.get().mInterstitialAdsAvailability.put(mPlacementId, true);
-        mListener.onInterstitialAdReady();
+        mAdapter.get().mAdsAvailability.put(mPlacementId, true);
+        mListener.onRewardedVideoAvailabilityChanged(true);
 
     }
 
@@ -56,21 +58,18 @@ public class FacebookInterstitialAdListener implements InterstitialAdExtendedLis
             return;
         }
 
-        mAdapter.get().mInterstitialAdsAvailability.put(mPlacementId, false);
-        int errorCode = adError.getErrorCode() == AdError.NO_FILL_ERROR_CODE ? IronSourceError.ERROR_IS_LOAD_NO_FILL : adError.getErrorCode();
+        mAdapter.get().mAdsAvailability.put(mPlacementId, false);
+        int errorCode = FacebookAdapter.isNoFillError(adError) ? IronSourceError.ERROR_RV_LOAD_NO_FILL : adError.getErrorCode();
         IronSourceError ironSourceError = new IronSourceError(errorCode, adError.getErrorMessage());
 
-        if (mAdapter.get().mInterstitialPlacementIdShowCalled.get(mPlacementId)) {
-            mListener.onInterstitialAdShowFailed(ironSourceError);
+
+        if (mAdapter.get().mPlacementIdToShowAttempts.get(mPlacementId)) {
+            mListener.onRewardedVideoAdShowFailed(ironSourceError);
         } else {
-            mListener.onInterstitialAdLoadFailed(ironSourceError);
+            mListener.onRewardedVideoAvailabilityChanged(false);
+            mListener.onRewardedVideoLoadFailed(ironSourceError);
         }
 
-    }
-
-    @Override
-    public void onInterstitialDisplayed(Ad ad) {
-        IronLog.ADAPTER_CALLBACK.verbose("placementId = " + mPlacementId);
     }
 
     @Override
@@ -88,8 +87,8 @@ public class FacebookInterstitialAdListener implements InterstitialAdExtendedLis
         }
 
         mDidCallClosed = false;
-        mListener.onInterstitialAdOpened();
-        mListener.onInterstitialAdShowSucceeded();
+        mListener.onRewardedVideoAdOpened();
+        mListener.onRewardedVideoAdStarted();
     }
 
     @Override
@@ -101,11 +100,24 @@ public class FacebookInterstitialAdListener implements InterstitialAdExtendedLis
             return;
         }
 
-        mListener.onInterstitialAdClicked();
+        mListener.onRewardedVideoAdClicked();
     }
 
     @Override
-    public void onInterstitialDismissed(Ad ad) {
+    public void onRewardedVideoCompleted() {
+        IronLog.ADAPTER_CALLBACK.verbose("placementId = " + mPlacementId);
+
+        if (mListener == null) {
+            IronLog.INTERNAL.verbose("listener is null");
+            return;
+        }
+
+        mListener.onRewardedVideoAdEnded();
+        mListener.onRewardedVideoAdRewarded();
+    }
+
+    @Override
+    public void onRewardedVideoClosed() {
         IronLog.ADAPTER_CALLBACK.verbose("placementId = " + mPlacementId);
 
         if (mListener == null) {
@@ -119,11 +131,11 @@ public class FacebookInterstitialAdListener implements InterstitialAdExtendedLis
         }
 
         mDidCallClosed = true;
-        mListener.onInterstitialAdClosed();
+        mListener.onRewardedVideoAdClosed();
     }
 
     @Override
-    public void onInterstitialActivityDestroyed() {
+    public void onRewardedVideoActivityDestroyed() {
         IronLog.ADAPTER_CALLBACK.verbose("placementId = " + mPlacementId);
 
         if (mListener == null) {
@@ -137,31 +149,14 @@ public class FacebookInterstitialAdListener implements InterstitialAdExtendedLis
         }
 
         /*
-         * This callback will only be triggered if the Interstitial activity has
+         * This callback will only be triggered if the Rewarded Video activity has
          * been destroyed without being properly closed. This can happen if an
          * app with launchMode:singleTask (such as a Unity game) goes to
          * background and is then relaunched by tapping the icon.
          */
         if (!mDidCallClosed) {
-            mListener.onInterstitialAdClosed();
+            mListener.onRewardedVideoAdClosed();
         }
     }
-
-
-    @Override
-    public void onRewardedAdCompleted() {
-        IronLog.ADAPTER_CALLBACK.verbose("placementId = " + mPlacementId);
-    }
-
-    @Override
-    public void onRewardedAdServerSucceeded() {
-        IronLog.ADAPTER_CALLBACK.verbose("placementId = " + mPlacementId);
-    }
-
-    @Override
-    public void onRewardedAdServerFailed() {
-        IronLog.ADAPTER_CALLBACK.verbose("placementId = " + mPlacementId);
-    }
-
 
 }

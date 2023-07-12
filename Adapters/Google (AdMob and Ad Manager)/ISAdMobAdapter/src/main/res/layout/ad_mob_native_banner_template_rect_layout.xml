@@ -62,7 +62,7 @@
                         android:ellipsize="end"
                         android:maxLines="1"
                         android:textColor="#000000"
-                        android:textSize="@dimen/ad_mob_text_size_small"
+                        android:textSize="@dimen/ad_mob_text_size_medium"
                         android:textStyle="bold"
                         tools:ellipsize="end" />
                 </LinearLayout>
@@ -88,7 +88,7 @@
             android:layout_marginTop="@dimen/ad_mob_default_margin"
             android:ellipsize="end"
             android:maxLines="2"
-            android:textSize="@dimen/ad_mob_text_size_small"
+            android:textSize="@dimen/ad_mob_text_size_medium"
             tools:visibility="visible" />
 
         <com.google.android.gms.ads.nativead.MediaView
@@ -109,7 +109,7 @@
             android:background="@color/ad_mob_button_blue"
             android:gravity="center"
             android:textColor="@color/common_google_signin_btn_text_dark_default"
-            android:textSize="@dimen/ad_mob_text_size_small"
+            android:textSize="@dimen/ad_mob_text_size_medium"
             tools:ignore="SpeakableTextPresentCheck"
             tools:visibility="visible" />
 

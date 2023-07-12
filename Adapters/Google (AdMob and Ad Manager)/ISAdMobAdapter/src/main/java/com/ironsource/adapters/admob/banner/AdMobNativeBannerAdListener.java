@@ -24,12 +24,14 @@ public class AdMobNativeBannerAdListener extends AdListener implements NativeAd.
     private final WeakReference<AdMobBannerAdapter> mBannerAdapter;
     private final BannerSmashListener mListener;
     private final ISBannerSize mBannerSize;
+    private final NativeTemplateType mTemplateType;
 
-    AdMobNativeBannerAdListener(AdMobBannerAdapter adapter, BannerSmashListener listener, String adUnitId, ISBannerSize bannerSize) {
+    AdMobNativeBannerAdListener(AdMobBannerAdapter adapter, BannerSmashListener listener, String adUnitId, ISBannerSize bannerSize, NativeTemplateType templateType) {
         mBannerAdapter = new WeakReference<>(adapter);
         mListener = listener;
         mAdUnitId = adUnitId;
         mBannerSize = bannerSize;
+        mTemplateType = templateType;
     }
 
     @Override
@@ -50,14 +52,14 @@ public class AdMobNativeBannerAdListener extends AdListener implements NativeAd.
                 }
 
                 Context context = ContextProvider.getInstance().getApplicationContext();
-                AdMobNativeBannerViewHandler adMobNativeLayout = new AdMobNativeBannerViewHandler(mBannerSize, context);
+                AdMobNativeBannerViewHandler nativeBannerHandler = new AdMobNativeBannerViewHandler(mBannerSize, mTemplateType, context);
                 AdMobNativeBannerViewBinder nativeBannerBinder = new AdMobNativeBannerViewBinder();
-                nativeBannerBinder.bindView(nativeAd, adMobNativeLayout);
+                nativeBannerBinder.bindView(nativeAd, nativeBannerHandler.getNativeAdView(), mTemplateType);
 
                 //add native banner ad to map
                 mBannerAdapter.get().mAdUnitIdToNativeBannerAd.put(mAdUnitId, nativeAd);
 
-                mListener.onBannerAdLoaded(adMobNativeLayout.getNativeAdView(), adMobNativeLayout.getLayoutParams());
+                mListener.onBannerAdLoaded(nativeBannerHandler.getNativeAdView(), nativeBannerHandler.getLayoutParams());
             }
         });
     }

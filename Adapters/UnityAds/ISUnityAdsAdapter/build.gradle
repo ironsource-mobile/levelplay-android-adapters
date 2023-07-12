@@ -2,7 +2,7 @@ apply plugin: 'com.android.library'
 apply plugin: 'com.android.library'
 
 ext {
-    adapterVersion = '4.3.27'
+    adapterVersion = '4.3.30'
 }
 
 def getGitHash = { ->
@@ -23,7 +23,7 @@ repositories {
 }
 
 android {
-    compileSdkVersion 30
+    compileSdkVersion 33
     buildToolsVersion "30.0.3"
 
     defaultConfig {
@@ -52,8 +52,8 @@ android {
 }
 
  dependencies {
-    implementation 'com.ironsource.sdk:mediationsdk:7.3.0.1'
-    implementation 'com.unity3d.ads:unity-ads:4.6.1'
+    implementation 'com.ironsource.sdk:mediationsdk:7.3.1'
+    implementation 'com.unity3d.ads:unity-ads:4.7.1'
 
 }
 

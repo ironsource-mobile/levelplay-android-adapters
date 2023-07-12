@@ -1,4 +1,4 @@
-package com.ironsource.adapters.facebook;
+package com.ironsource.adapters.facebook.banner;
 
 import android.widget.FrameLayout;
 
@@ -6,6 +6,7 @@ import com.facebook.ads.Ad;
 import com.facebook.ads.AdError;
 import com.facebook.ads.AdListener;
 import com.facebook.ads.AdView;
+import com.ironsource.adapters.facebook.FacebookAdapter;
 import com.ironsource.mediationsdk.logger.IronLog;
 import com.ironsource.mediationsdk.logger.IronSourceError;
 import com.ironsource.mediationsdk.sdk.BannerSmashListener;
@@ -14,15 +15,15 @@ import java.lang.ref.WeakReference;
 
 public class FacebookBannerAdListener implements AdListener {
     // data
-    private String mPlacementId;
-    private BannerSmashListener mListener;
-    private WeakReference<FacebookAdapter> mAdapter;
-    private FrameLayout.LayoutParams mBannerLayoutParams;
+    private final String mPlacementId;
+    private final BannerSmashListener mListener;
+    private final WeakReference<FacebookBannerAdapter> mAdapter;
+    private final FrameLayout.LayoutParams mBannerLayoutParams;
 
-    public FacebookBannerAdListener(FacebookAdapter adapter, BannerSmashListener listener, String placement, FrameLayout.LayoutParams bannerLayoutParams) {
+    public FacebookBannerAdListener(FacebookBannerAdapter adapter, FrameLayout.LayoutParams bannerLayoutParams, String placementId, BannerSmashListener listener) {
         mAdapter = new WeakReference<>(adapter);
         mListener = listener;
-        mPlacementId = placement;
+        mPlacementId = placementId;
         mBannerLayoutParams = bannerLayoutParams;
     }
 
@@ -40,7 +41,7 @@ public class FacebookBannerAdListener implements AdListener {
             return;
         }
 
-        AdView adView = mAdapter.get().mBannerPlacementIdToAd.get(mPlacementId);
+        AdView adView = mAdapter.get().mPlacementIdToAd.get(mPlacementId);
         if (adView != null) {
             mListener.onBannerAdLoaded(adView, mBannerLayoutParams);
         }
@@ -55,7 +56,7 @@ public class FacebookBannerAdListener implements AdListener {
             return;
         }
 
-        int errorCode = adError.getErrorCode() == AdError.NO_FILL_ERROR_CODE ? IronSourceError.ERROR_BN_LOAD_NO_FILL : adError.getErrorCode();
+        int errorCode = FacebookAdapter.isNoFillError(adError) ? IronSourceError.ERROR_BN_LOAD_NO_FILL : adError.getErrorCode();
         mListener.onBannerAdLoadFailed(new IronSourceError(errorCode, adError.getErrorMessage()));
 
     }

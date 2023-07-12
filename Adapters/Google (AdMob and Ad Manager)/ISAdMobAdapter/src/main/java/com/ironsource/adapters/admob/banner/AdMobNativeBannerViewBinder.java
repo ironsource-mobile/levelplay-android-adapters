@@ -15,22 +15,24 @@ public class AdMobNativeBannerViewBinder {
 
     private NativeAdView mAdView;
     private NativeAd mNativeAd;
+    private NativeTemplateType mTemplateType;
 
-    public void bindView(NativeAd nativeAd, AdMobNativeBannerViewHandler nativeBannerLayout) {
+    public void bindView(NativeAd nativeAd, NativeAdView nativeAdView, NativeTemplateType templateType) {
 
-        mAdView = nativeBannerLayout.getNativeAdView();
+        mAdView = nativeAdView;
         mNativeAd = nativeAd;
-        populateView(nativeBannerLayout);
+        mTemplateType = templateType;
+        populateView();
         mAdView.setNativeAd(nativeAd);
     }
 
-    private void populateView(AdMobNativeBannerViewHandler nativeBannerLayout) {
+    private void populateView() {
         populateIconView();
         populateHeadlineView();
         populateAdvertiserView();
         populateBodyView();
-        populateMediaView(nativeBannerLayout.shouldHideVideoContent());
-        populateCallToActionView(nativeBannerLayout.shouldHideCallToAction());
+        populateMediaView();
+        populateCallToActionView();
     }
 
     private void populateIconView() {
@@ -89,12 +91,12 @@ public class AdMobNativeBannerViewBinder {
         }
     }
 
-    private void populateMediaView(boolean shouldHideVideoContent) {
+    private void populateMediaView() {
 
         MediaView mediaView = mAdView.findViewById(R.id.ad_media);
         if (mediaView != null) {
             if (mNativeAd.getMediaContent() != null) {
-                boolean shouldHideMedia = mNativeAd.getMediaContent().hasVideoContent() && shouldHideVideoContent;
+                boolean shouldHideMedia = mNativeAd.getMediaContent().hasVideoContent() && mTemplateType.shouldHideVideoContent();
                 mAdView.setMediaView(mediaView);
                 mediaView.setMediaContent(mNativeAd.getMediaContent());
                 mediaView.setVisibility(shouldHideMedia ? GONE : VISIBLE);
@@ -104,11 +106,11 @@ public class AdMobNativeBannerViewBinder {
         }
     }
 
-    private void populateCallToActionView(boolean shouldHideCallToAction) {
+    private void populateCallToActionView() {
 
         Button callToActionView = mAdView.findViewById(R.id.ad_call_to_action);
         if (callToActionView != null) {
-            if (mNativeAd.getCallToAction() == null || shouldHideCallToAction) {
+            if (mNativeAd.getCallToAction() == null || mTemplateType.shouldHideCallToAction()) {
                 callToActionView.setVisibility(GONE);
             } else {
                 mAdView.setCallToActionView(callToActionView);

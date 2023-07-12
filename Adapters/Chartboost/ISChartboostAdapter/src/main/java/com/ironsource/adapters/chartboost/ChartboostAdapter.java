@@ -37,6 +37,7 @@ import com.ironsource.mediationsdk.utils.ErrorBuilder;
 import com.ironsource.mediationsdk.utils.IronSourceConstants;
 import com.ironsource.mediationsdk.utils.IronSourceUtils;
 
+import org.jetbrains.annotations.NotNull;
 import org.json.JSONObject;
 
 import java.util.HashSet;
@@ -150,6 +151,10 @@ class ChartboostAdapter extends AbstractAdapter implements INetworkInitCallbackL
 
     public static String getAdapterSDKVersion() {
         return Chartboost.getSDKVersion();
+    }
+
+    public boolean isUsingActivityBeforeImpression(@NotNull IronSource.AD_UNIT adUnit) {
+        return false;
     }
 
     //endregion

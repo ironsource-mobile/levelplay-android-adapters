@@ -15,12 +15,14 @@ import com.google.android.gms.ads.query.QueryInfo;
 import com.google.android.gms.ads.query.QueryInfoGenerationCallback;
 import com.ironsource.adapters.admob.banner.AdMobBannerAdapter;
 import com.ironsource.adapters.admob.interstitial.AdMobInterstitialAdapter;
+import com.ironsource.adapters.admob.nativead.AdMobNativeAdAdapter;
 import com.ironsource.adapters.admob.rewardedvideo.AdMobRewardedVideoAdapter;
 import com.ironsource.environment.ContextProvider;
 import com.ironsource.environment.StringUtils;
 import com.ironsource.mediationsdk.AbstractAdapter;
 import com.ironsource.mediationsdk.INetworkInitCallbackListener;
 import com.ironsource.mediationsdk.IntegrationData;
+import com.ironsource.mediationsdk.IronSource;
 import com.ironsource.mediationsdk.LoadWhileShowSupportState;
 import com.ironsource.mediationsdk.bidding.BiddingDataCallback;
 import com.ironsource.mediationsdk.logger.IronLog;
@@ -107,6 +109,7 @@ public class AdMobAdapter extends AbstractAdapter {
         setRewardedVideoAdapter(new AdMobRewardedVideoAdapter(this));
         setInterstitialAdapter(new AdMobInterstitialAdapter(this));
         setBannerAdapter(new AdMobBannerAdapter(this));
+        setNativeAdAdapter(new AdMobNativeAdAdapter(this));
 
         // The network's capability to load a Rewarded Video ad while another Rewarded Video ad of that network is showing
         mLWSSupportState = LoadWhileShowSupportState.LOAD_WHILE_SHOW_BY_INSTANCE;
@@ -133,63 +136,59 @@ public class AdMobAdapter extends AbstractAdapter {
         return MobileAds.getVersion().toString();
     }
 
+    public boolean isUsingActivityBeforeImpression(@NotNull IronSource.AD_UNIT adUnit) {
+        return false;
+    }
     //endregion
 
     //region Initializations methods and callbacks
-    // All calls to MobileAds must be on the main thread --> run all calls to initSDK in a thread.
     public void initSDK(final JSONObject config) {
-        postOnUIThread(new Runnable() {
-            @Override
-            public void run() {
-                // add self to the init listeners only in case the initialization has not finished yet
-                if (mInitState == InitState.INIT_STATE_NONE || mInitState == InitState.INIT_STATE_IN_PROGRESS) {
-                    initCallbackListeners.add(AdMobAdapter.this);
-                }
-                //init sdk will only be called once
-                if (mWasInitCalled.compareAndSet(false, true)) {
-                    mInitState = InitState.INIT_STATE_IN_PROGRESS;
+        // add self to the init listeners only in case the initialization has not finished yet
+        if (mInitState == InitState.INIT_STATE_NONE || mInitState == InitState.INIT_STATE_IN_PROGRESS) {
+            initCallbackListeners.add(AdMobAdapter.this);
+        }
+        //init sdk will only be called once
+        if (mWasInitCalled.compareAndSet(false, true)) {
+            mInitState = InitState.INIT_STATE_IN_PROGRESS;
 
-                    IronLog.ADAPTER_API.verbose();
-                    boolean networkOnlyInit = config.optBoolean(NETWORK_ONLY_INIT, true);
+            IronLog.ADAPTER_API.verbose();
+            boolean networkOnlyInit = config.optBoolean(NETWORK_ONLY_INIT, true);
 
-                    if (networkOnlyInit) {
-                        IronLog.ADAPTER_API.verbose("disableMediationAdapterInitialization");
-                        // Limit the AdMob initialization to its network
-                        MobileAds.disableMediationAdapterInitialization(ContextProvider.getInstance().getApplicationContext());
-                    }
-
-                    //check if we want to perform the init process with an init callback
-                    boolean shouldWaitForInitCallback = config.optBoolean(INIT_RESPONSE_REQUIRED, false);
-
-                    if (shouldWaitForInitCallback) {
-                        IronLog.ADAPTER_API.verbose("init and wait for callback");
-
-                        //init AdMob sdk with callback
-                        MobileAds.initialize(ContextProvider.getInstance().getApplicationContext(), new OnInitializationCompleteListener() {
-                            @Override
-                            public void onInitializationComplete(@NotNull InitializationStatus initializationStatus) {
-                                AdapterStatus status = initializationStatus.getAdapterStatusMap().get("com.google.android.gms.ads.MobileAds");
-                                AdapterStatus.State state = status != null ? status.getInitializationState() : null;
-
-                                if (state == AdapterStatus.State.READY) {
-                                    IronLog.ADAPTER_API.verbose("initializationStatus = READY");
-                                    initializationSuccess();
-                                } else {
-                                    IronLog.ADAPTER_API.verbose("initializationStatus = NOT READY");
-                                    initializationFailure();
-                                }
-                            }
-                        });
-                    } else {
-                        //init AdMob sdk without callback
-                        IronLog.ADAPTER_API.verbose("init without callback");
-                        MobileAds.initialize(ContextProvider.getInstance().getApplicationContext());
-                        initializationSuccess();
-                    }
-                }
-
+            if (networkOnlyInit) {
+                IronLog.ADAPTER_API.verbose("disableMediationAdapterInitialization");
+                // Limit the AdMob initialization to its network
+                MobileAds.disableMediationAdapterInitialization(ContextProvider.getInstance().getApplicationContext());
             }
-        });
+
+            //check if we want to perform the init process with an init callback
+            boolean shouldWaitForInitCallback = config.optBoolean(INIT_RESPONSE_REQUIRED, false);
+
+            if (shouldWaitForInitCallback) {
+                IronLog.ADAPTER_API.verbose("init and wait for callback");
+
+                //init AdMob sdk with callback
+                MobileAds.initialize(ContextProvider.getInstance().getApplicationContext(), new OnInitializationCompleteListener() {
+                    @Override
+                    public void onInitializationComplete(@NotNull InitializationStatus initializationStatus) {
+                        AdapterStatus status = initializationStatus.getAdapterStatusMap().get("com.google.android.gms.ads.MobileAds");
+                        AdapterStatus.State state = status != null ? status.getInitializationState() : null;
+
+                        if (state == AdapterStatus.State.READY) {
+                            IronLog.ADAPTER_API.verbose("initializationStatus = READY");
+                            initializationSuccess();
+                        } else {
+                            IronLog.ADAPTER_API.verbose("initializationStatus = NOT READY");
+                            initializationFailure();
+                        }
+                    }
+                });
+            } else {
+                //init AdMob sdk without callback
+                IronLog.ADAPTER_API.verbose("init without callback");
+                MobileAds.initialize(ContextProvider.getInstance().getApplicationContext());
+                initializationSuccess();
+            }
+        }
     }
 
     private void initializationSuccess() {
@@ -336,17 +335,21 @@ public class AdMobAdapter extends AbstractAdapter {
 
         Bundle extras = new Bundle();
         extras.putString("platform_name", PLATFORM_NAME);
+        boolean hybridMode = false;
 
         if (adData != null) {
             String requestId = adData.optString("requestId", EMPTY_STRING);
-            boolean hybridMode = adData.optBoolean("isHybrid", false);
+            hybridMode = adData.optBoolean("isHybrid", false);
 
             if (!requestId.isEmpty()) {
                 extras.putString("placement_req_id", requestId);
-                extras.putString("is_hybrid_setup", hybridMode ? "true" : "false");
                 IronLog.INTERNAL.verbose("adData requestId = " + requestId + ", isHybrid = " + hybridMode);
             }
+        } else {
+            IronLog.INTERNAL.verbose("adData is null, using default hybridMode = false");
         }
+
+        extras.putString("is_hybrid_setup", String.valueOf(hybridMode));
 
         setRequestConfiguration();
 

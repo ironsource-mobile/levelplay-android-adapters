@@ -16,12 +16,13 @@ import java.lang.ref.WeakReference;
 public class AdMobInterstitialAdLoadListener extends InterstitialAdLoadCallback {
 
     // data
-    private WeakReference<AdMobInterstitialAdapter> mInterstitialAdapter;
-    private InterstitialSmashListener mListener;
-    private String mAdUnitId;
+    private final WeakReference<AdMobInterstitialAdapter> mAdapter;
+    private final String mAdUnitId;
+    private final InterstitialSmashListener mListener;
+
 
     AdMobInterstitialAdLoadListener(AdMobInterstitialAdapter adapter, String adUnitId, InterstitialSmashListener listener) {
-        mInterstitialAdapter = new WeakReference<>(adapter);
+        mAdapter = new WeakReference<>(adapter);
         mAdUnitId = adUnitId;
         mListener = listener;
     }
@@ -36,12 +37,12 @@ public class AdMobInterstitialAdLoadListener extends InterstitialAdLoadCallback 
             return;
         }
 
-        if (mInterstitialAdapter == null || mInterstitialAdapter.get() == null) {
+        if (mAdapter == null || mAdapter.get() == null) {
             IronLog.INTERNAL.verbose("adapter is null");
             return;
         }
 
-        mInterstitialAdapter.get().onInterstitialAdLoaded(mAdUnitId, interstitialAd);
+        mAdapter.get().onInterstitialAdLoaded(mAdUnitId, interstitialAd);
 
         mListener.onInterstitialAdReady();
     }
