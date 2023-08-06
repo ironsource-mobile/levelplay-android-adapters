@@ -20,9 +20,9 @@ import com.vungle.ads.VungleError;
 
 final class VungleBannerAdapter implements BannerAdListener {
 
-    private BannerSmashListener mListener;
+    private final BannerSmashListener mListener;
+    private final ISBannerSize mISBannerSize;
     private BannerAd mBannerAd;
-    private ISBannerSize mISBannerSize;
 
     VungleBannerAdapter(String placementId, ISBannerSize size, BannerAdSize loBannerSize, BannerSmashListener listener) {
         this.mListener = listener;
@@ -41,8 +41,6 @@ final class VungleBannerAdapter implements BannerAdListener {
             mBannerAd.finishAd();
             mBannerAd = null;
         }
-        mListener = null;
-        mISBannerSize = null;
     }
 
     @Override
@@ -54,7 +52,7 @@ final class VungleBannerAdapter implements BannerAdListener {
             return;
         }
 
-        if (mISBannerSize == null) {
+        if (mISBannerSize == null || mISBannerSize.getDescription() == null) {
             IronLog.INTERNAL.verbose("banner size is null");
             return;
         }
@@ -68,7 +66,13 @@ final class VungleBannerAdapter implements BannerAdListener {
         BannerView bannerView = mBannerAd.getBannerView();
 
         if (bannerView != null) {
-            mListener.onBannerAdLoaded(bannerView, getBannerLayoutParams(mISBannerSize));
+            FrameLayout.LayoutParams params = getBannerLayoutParams(mISBannerSize);
+            if (params == null) {
+                IronLog.ADAPTER_CALLBACK.error("IS banner size is null");
+                mListener.onBannerAdLoadFailed(ErrorBuilder.buildLoadFailedError("Vungle LoadBanner failed - IS banner size is null"));
+                return;
+            }
+            mListener.onBannerAdLoaded(bannerView, params);
         } else {
             IronLog.ADAPTER_CALLBACK.error("banner view is null");
             mListener.onBannerAdLoadFailed(ErrorBuilder.buildLoadFailedError("Vungle LoadBanner failed - banner view is null"));
@@ -147,6 +151,9 @@ final class VungleBannerAdapter implements BannerAdListener {
     }
 
     static BannerAdSize getBannerSize(ISBannerSize size) {
+        if (size == null || size.getDescription() == null) {
+            return null;
+        }
         switch (size.getDescription()) {
             case "BANNER":
             case "LARGE":
@@ -161,6 +168,9 @@ final class VungleBannerAdapter implements BannerAdListener {
     }
 
     private FrameLayout.LayoutParams getBannerLayoutParams(ISBannerSize size) {
+        if (size == null || size.getDescription() == null) {
+            return null;
+        }
         FrameLayout.LayoutParams layoutParams = new FrameLayout.LayoutParams(0, 0);
 
         Activity activity = ContextProvider.getInstance().getCurrentActiveActivity();
