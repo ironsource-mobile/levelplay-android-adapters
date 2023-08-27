@@ -1,6 +1,6 @@
 package com.ironsource.adapters.adcolony;
 
-import android.app.Activity;
+import android.app.Application;
 import android.content.Context;
 import android.text.TextUtils;
 import android.view.Gravity;
@@ -30,6 +30,7 @@ import com.ironsource.mediationsdk.sdk.RewardedVideoSmashListener;
 import com.ironsource.mediationsdk.utils.ErrorBuilder;
 import com.ironsource.mediationsdk.utils.IronSourceConstants;
 
+import org.jetbrains.annotations.NotNull;
 import org.json.JSONObject;
 
 import java.util.HashMap;
