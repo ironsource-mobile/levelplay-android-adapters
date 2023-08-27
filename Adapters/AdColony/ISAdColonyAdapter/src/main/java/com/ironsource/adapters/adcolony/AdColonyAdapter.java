@@ -124,6 +124,10 @@ class AdColonyAdapter extends AbstractAdapter {
     public static String getAdapterSDKVersion() {
         return AdColony.getSDKVersion();
     }
+
+    public boolean isUsingActivityBeforeImpression(@NotNull IronSource.AD_UNIT adUnit) {
+        return false;
+    }
     //endregion
 
     //region Initializations methods and callbacks
@@ -140,7 +144,7 @@ class AdColonyAdapter extends AbstractAdapter {
             mAdColonyOptions.setMediationNetwork(MEDIATION_NAME, VERSION);
 
             //no need for init callbacks because AdColony doesn't have an init failed callback
-            AdColony.configure(ContextProvider.getInstance().getCurrentActiveActivity().getApplication(), mAdColonyOptions, appId);
+            AdColony.configure((Application) ContextProvider.getInstance().getApplicationContext(), mAdColonyOptions, appId);
         }
     }
 
