@@ -50,8 +50,9 @@ android {
  dependencies {
     implementation 'com.ironsource.sdk:mediationsdk:7.4.0'
     implementation 'com.adcolony:sdk:4.8.0'
+     implementation 'org.jetbrains:annotations:15.0'
 
-}
+ }
 
 task sourcesJar(type: Jar) {
     archiveClassifier = 'sources'
