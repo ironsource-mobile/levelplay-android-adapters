@@ -42,6 +42,22 @@ final class UnityAdsBannerListener implements BannerView.IListener {
     }
 
     @Override
+    public void onBannerShown(BannerView bannerAdView) {
+        IronLog.ADAPTER_CALLBACK.verbose("placementId = " + mPlacementId);
+
+        if (mListener == null) {
+            IronLog.INTERNAL.verbose("listener is null");
+            return;
+        }
+
+        if (mAdapter == null || mAdapter.get() == null) {
+            IronLog.INTERNAL.verbose("adapter is null");
+            return;
+        }
+        mListener.onBannerAdShown();
+    }
+
+    @Override
     public void onBannerFailedToLoad(BannerView bannerView, BannerErrorInfo bannerErrorInfo) {
 
         if (mListener == null) {
