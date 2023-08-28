@@ -2,7 +2,6 @@ package com.ironsource.adapters.vungle;
 
 import static com.ironsource.mediationsdk.metadata.MetaData.MetaDataValueTypes.META_DATA_VALUE_BOOLEAN;
 
-import android.app.Activity;
 import android.content.Context;
 import android.text.TextUtils;
 import android.view.Gravity;
@@ -12,11 +11,11 @@ import com.ironsource.environment.ContextProvider;
 import com.ironsource.mediationsdk.AbstractAdapter;
 import com.ironsource.mediationsdk.AdapterUtils;
 import com.ironsource.mediationsdk.INetworkInitCallbackListener;
-import com.ironsource.mediationsdk.LoadWhileShowSupportState;
 import com.ironsource.mediationsdk.ISBannerSize;
 import com.ironsource.mediationsdk.IntegrationData;
 import com.ironsource.mediationsdk.IronSource;
 import com.ironsource.mediationsdk.IronSourceBannerLayout;
+import com.ironsource.mediationsdk.LoadWhileShowSupportState;
 import com.ironsource.mediationsdk.logger.IronLog;
 import com.ironsource.mediationsdk.metadata.MetaDataUtils;
 import com.ironsource.mediationsdk.sdk.BannerSmashListener;
@@ -24,18 +23,18 @@ import com.ironsource.mediationsdk.sdk.InterstitialSmashListener;
 import com.ironsource.mediationsdk.sdk.RewardedVideoSmashListener;
 import com.ironsource.mediationsdk.utils.ErrorBuilder;
 import com.ironsource.mediationsdk.utils.IronSourceConstants;
-
+import com.vungle.warren.AdConfig;
 import com.vungle.warren.BannerAdConfig;
 import com.vungle.warren.Banners;
+import com.vungle.warren.InitCallback;
 import com.vungle.warren.Plugin;
 import com.vungle.warren.Vungle;
-import com.vungle.warren.AdConfig;
-import com.vungle.warren.InitCallback;
 import com.vungle.warren.VungleApiClient;
 import com.vungle.warren.VungleBanner;
 import com.vungle.warren.VungleSettings;
 import com.vungle.warren.error.VungleException;
 
+import org.jetbrains.annotations.NotNull;
 import org.json.JSONObject;
 
 import java.util.HashMap;
@@ -86,7 +85,6 @@ class VungleAdapter extends AbstractAdapter implements INetworkInitCallbackListe
     private static Boolean mConsent = null;
     private static Boolean mCCPA = null;
     private static String mAdOrientation = null;
-    private ISBannerSize mCurrentBannerSize = null;
 
     // init state possible values
     private enum InitState {
@@ -146,6 +144,10 @@ class VungleAdapter extends AbstractAdapter implements INetworkInitCallbackListe
         return com.vungle.warren.BuildConfig.VERSION_NAME;
     }
 
+    public boolean isUsingActivityBeforeImpression(@NotNull IronSource.AD_UNIT adUnit) {
+        return false;
+    }
+
     //endregion
 
     //region Initializations methods and callbacks
@@ -183,7 +185,7 @@ class VungleAdapter extends AbstractAdapter implements INetworkInitCallbackListe
         if (mCCPA != null) {
             setCCPAValue(mCCPA);
         }
-        
+
         for (INetworkInitCallbackListener adapter : initCallbackListeners) {
             adapter.onNetworkInitCallbackSuccess();
         }
@@ -238,7 +240,7 @@ class VungleAdapter extends AbstractAdapter implements INetworkInitCallbackListe
         // rewarded video listener
         for (String placementId : mPlacementIdToRewardedVideoSmashListener.keySet()) {
             RewardedVideoSmashListener listener = mPlacementIdToRewardedVideoSmashListener.get(placementId);
-            
+
             if (mRewardedVideoPlacementIdsForInitCallbacks.contains(placementId)) {
                 listener.onRewardedVideoInitFailed(ErrorBuilder.buildInitFailedError(error, IronSourceConstants.REWARDED_VIDEO_AD_UNIT));
             } else {
@@ -354,7 +356,7 @@ class VungleAdapter extends AbstractAdapter implements INetworkInitCallbackListe
     @Override
     public void loadRewardedVideo(final JSONObject config, JSONObject adData, final RewardedVideoSmashListener listener) {
         String placementId = config.optString(PLACEMENT_ID);
-        
+
         if (isRewardedVideoAdAvailableInternal(placementId)) {
             IronLog.ADAPTER_API.verbose("ad already cached for placement Id " + placementId);
             listener.onRewardedVideoAvailabilityChanged(true);
@@ -615,15 +617,18 @@ class VungleAdapter extends AbstractAdapter implements INetworkInitCallbackListe
     private void loadBannerInternal(final String placementId, final IronSourceBannerLayout banner, final BannerSmashListener listener, final String serverData) {
         IronLog.ADAPTER_API.verbose("placementId = " + placementId);
 
+        if (banner == null) {
+            IronLog.INTERNAL.verbose("banner is null");
+            listener.onBannerAdLoadFailed(ErrorBuilder.unsupportedBannerSize(getProviderName()));
+            return;
+        }
+
         // verify size
         if (!isBannerSizeSupported(banner.getSize())) {
             IronLog.ADAPTER_API.verbose("size not supported, size = " + banner.getSize().getDescription());
             listener.onBannerAdLoadFailed(ErrorBuilder.unsupportedBannerSize(getProviderName()));
             return;
         }
-        
-        // save banner size
-        mCurrentBannerSize = banner.getSize();
 
         //add to banner listener map
         mPlacementIdToBannerSmashListener.put(placementId, listener);
@@ -632,21 +637,40 @@ class VungleAdapter extends AbstractAdapter implements INetworkInitCallbackListe
         postOnUIThread(new Runnable() {
             @Override
             public void run() {
+                ISBannerSize size = banner.getSize();
+                if (size == null) {
+                    IronLog.INTERNAL.error("size not supported, size is null");
+                    listener.onBannerAdLoadFailed(ErrorBuilder.unsupportedBannerSize(getProviderName()));
+                    return;
+                }
 
                 // get size
-                AdConfig.AdSize bannerSize = getBannerSize(banner.getSize());
+                AdConfig.AdSize bannerSize = getBannerSize(size);
                 BannerAdConfig bannerAdConfig = new BannerAdConfig(bannerSize);
                 IronLog.ADAPTER_API.verbose("bannerSize = " + bannerSize);
 
                 // create Vungle load listener
-                VungleBannerLoadListener vungleLoadListener = new VungleBannerLoadListener(VungleAdapter.this, listener, mCurrentBannerSize);
+                VungleBannerLoadListener vungleLoadListener = new VungleBannerLoadListener(
+                        VungleAdapter.this,
+                        listener,
+                        size
+                );
 
                 if (!TextUtils.isEmpty(serverData)) {
                     // Load banner for bidding instance
-                    Banners.loadBanner(placementId, serverData, bannerAdConfig, vungleLoadListener);
+                    Banners.loadBanner(
+                            placementId,
+                            serverData,
+                            bannerAdConfig,
+                            vungleLoadListener
+                    );
                 } else {
                     // Load banner for non bidding instance
-                    Banners.loadBanner(placementId, bannerAdConfig, vungleLoadListener);
+                    Banners.loadBanner(
+                            placementId,
+                            bannerAdConfig,
+                            vungleLoadListener
+                    );
                 }
             }
         });
@@ -656,11 +680,6 @@ class VungleAdapter extends AbstractAdapter implements INetworkInitCallbackListe
     public void destroyBanner(JSONObject config) {
         final String placementId = config.optString(PLACEMENT_ID);
         IronLog.ADAPTER_API.verbose("placementId = " + placementId);
-
-        if (mCurrentBannerSize == null) {
-            IronLog.ADAPTER_API.verbose("mCurrentBannerSize is null");
-            return;
-        }
 
         // run on main thread
         postOnUIThread(new Runnable() {
@@ -676,8 +695,6 @@ class VungleAdapter extends AbstractAdapter implements INetworkInitCallbackListe
                     // remove from map
                     mPlacementIdToBannerView.remove(placementId);
                 }
-
-                mCurrentBannerSize = null;
 
             }
         });
@@ -707,7 +724,6 @@ class VungleAdapter extends AbstractAdapter implements INetworkInitCallbackListe
             mPlacementIdToBannerView.clear();
             mPlacementIdToBannerSmashListener.clear();
             mPlacementIdToBannerServerData.clear();
-            mCurrentBannerSize = null;
         }
     }
     //endregion
@@ -833,6 +849,10 @@ class VungleAdapter extends AbstractAdapter implements INetworkInitCallbackListe
     }
 
     private boolean isBannerSizeSupported(ISBannerSize size) {
+        if(size == null) {
+            IronLog.INTERNAL.verbose("Banner size is null");
+            return false;
+        }
         switch (size.getDescription()) {
             case "BANNER":
             case "LARGE":
@@ -840,11 +860,14 @@ class VungleAdapter extends AbstractAdapter implements INetworkInitCallbackListe
             case "SMART":
                 return true;
         }
-
         return false;
     }
 
     protected AdConfig.AdSize getBannerSize(ISBannerSize size) {
+        if(size == null) {
+            IronLog.INTERNAL.verbose("Banner size is null");
+            return null;
+        }
         switch (size.getDescription()) {
             case "BANNER":
             case "LARGE":
@@ -854,7 +877,6 @@ class VungleAdapter extends AbstractAdapter implements INetworkInitCallbackListe
             case "SMART":
                 return AdapterUtils.isLargeScreen(ContextProvider.getInstance().getApplicationContext()) ? AdConfig.AdSize.BANNER_LEADERBOARD : AdConfig.AdSize.BANNER;
         }
-
         return null;
     }
 

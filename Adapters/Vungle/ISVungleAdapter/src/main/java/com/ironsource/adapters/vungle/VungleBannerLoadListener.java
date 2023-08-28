@@ -1,7 +1,6 @@
 package com.ironsource.adapters.vungle;
 
 import com.ironsource.mediationsdk.ISBannerSize;
-import com.ironsource.mediationsdk.IronSource;
 import com.ironsource.mediationsdk.logger.IronLog;
 import com.ironsource.mediationsdk.logger.IronSourceError;
 import com.ironsource.mediationsdk.sdk.BannerSmashListener;
