@@ -53,8 +53,9 @@ android {
 dependencies {
     implementation 'com.ironsource.sdk:mediationsdk:7.4.0'
     implementation 'com.vungle:vungle-ads:7.0.0'
+    implementation 'org.jetbrains:annotations:15.0'
 
-}
+ }
 
 task sourcesJar(type: Jar) {
     archiveClassifier = 'sources'

@@ -19,6 +19,7 @@ repositories {
     maven {
         url 'https://android-sdk.is.com/'
     }
+    maven { url 'https://cboost.jfrog.io/artifactory/chartboost-ads/' }
 }
 
 android {

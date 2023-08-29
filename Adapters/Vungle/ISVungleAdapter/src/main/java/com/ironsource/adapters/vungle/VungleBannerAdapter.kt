@@ -49,7 +49,7 @@ internal class VungleBannerAdapter(
             IronLog.INTERNAL.verbose("listener is null")
             return
         }
-        if (mISBannerSize?.description == null) {
+        if (mISBannerSize.description == null) {
             IronLog.INTERNAL.verbose("banner size is null")
             return
         }
@@ -127,8 +127,8 @@ internal class VungleBannerAdapter(
         listener.onBannerAdLeftApplication()
     }
 
-    private fun getBannerLayoutParams(size: ISBannerSize?): FrameLayout.LayoutParams? {
-        if (size == null || size.description == null) {
+    private fun getBannerLayoutParams(size: ISBannerSize): FrameLayout.LayoutParams? {
+        if (size.description == null) {
             return null
         }
         var layoutParams = FrameLayout.LayoutParams(0, 0)

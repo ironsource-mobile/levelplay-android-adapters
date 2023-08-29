@@ -34,7 +34,6 @@ import com.unity3d.ads.metadata.PlayerMetaData;
 import com.unity3d.services.banners.BannerView;
 import com.unity3d.services.banners.UnityBannerSize;
 import com.unity3d.ads.IUnityAdsInitializationListener;
-
 import org.jetbrains.annotations.NotNull;
 import org.json.JSONObject;
 

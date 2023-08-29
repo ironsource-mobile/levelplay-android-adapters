@@ -1,6 +1,6 @@
 package com.ironsource.adapters.adcolony;
 
-import android.app.Activity;
+import android.app.Application;
 import android.content.Context;
 import android.text.TextUtils;
 import android.view.Gravity;
@@ -30,6 +30,7 @@ import com.ironsource.mediationsdk.sdk.RewardedVideoSmashListener;
 import com.ironsource.mediationsdk.utils.ErrorBuilder;
 import com.ironsource.mediationsdk.utils.IronSourceConstants;
 
+import org.jetbrains.annotations.NotNull;
 import org.json.JSONObject;
 
 import java.util.HashMap;
@@ -124,6 +125,10 @@ class AdColonyAdapter extends AbstractAdapter {
     public static String getAdapterSDKVersion() {
         return AdColony.getSDKVersion();
     }
+
+    public boolean isUsingActivityBeforeImpression(@NotNull IronSource.AD_UNIT adUnit) {
+        return false;
+    }
     //endregion
 
     //region Initializations methods and callbacks
@@ -140,7 +145,7 @@ class AdColonyAdapter extends AbstractAdapter {
             mAdColonyOptions.setMediationNetwork(MEDIATION_NAME, VERSION);
 
             //no need for init callbacks because AdColony doesn't have an init failed callback
-            AdColony.configure(ContextProvider.getInstance().getCurrentActiveActivity().getApplication(), mAdColonyOptions, appId);
+            AdColony.configure((Application) ContextProvider.getInstance().getApplicationContext(), mAdColonyOptions, appId);
         }
     }
 

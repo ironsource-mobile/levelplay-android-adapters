@@ -24,6 +24,7 @@ import com.vungle.ads.AdConfig
 import com.vungle.ads.VungleAds
 import org.json.JSONObject
 
+
 class VungleAdapter private constructor(providerName: String) :
     AbstractAdapter(providerName) {
 
@@ -83,6 +84,10 @@ class VungleAdapter private constructor(providerName: String) :
     //get network sdk version
     override fun getCoreSDKVersion(): String {
         return getAdapterSDKVersion()
+    }
+
+    override fun isUsingActivityBeforeImpression(adUnit: AD_UNIT): Boolean {
+        return false
     }
 
     //endregion
@@ -505,18 +510,30 @@ class VungleAdapter private constructor(providerName: String) :
             )
             return
         }
-
         IronLog.ADAPTER_API.verbose("placementId = $placementId, appId = $appId")
 
+        if (banner == null) {
+            IronLog.INTERNAL.verbose("banner is null");
+            listener?.onBannerAdLoadFailed(ErrorBuilder.unsupportedBannerSize(providerName));
+            return;
+        }
+
         // verify size
-        val isBannerSize = banner?.size
+        val isBannerSize = banner.size
+        if (isBannerSize == null) {
+            IronLog.INTERNAL.error("size not supported, size is null");
+            listener?.onBannerAdLoadFailed(ErrorBuilder.unsupportedBannerSize(providerName));
+            return;
+        }
+
         val loBannerSize = getBannerSize(isBannerSize)
-        IronLog.ADAPTER_API.verbose("bannerSize = $loBannerSize")
-        if (isBannerSize == null || loBannerSize == null) {
-            IronLog.ADAPTER_API.verbose("size not supported, IS_size = ${isBannerSize?.description}, LO_size= $loBannerSize")
+        if (loBannerSize == null) {
+            IronLog.ADAPTER_API.verbose("size not supported, IS_size = ${isBannerSize.description}")
             listener?.onBannerAdLoadFailed(ErrorBuilder.unsupportedBannerSize(providerName))
             return
         }
+        IronLog.ADAPTER_API.verbose("bannerSize = $loBannerSize")
+
         VungleInitializer.instance.initialize(appId,
             ContextProvider.getInstance().applicationContext,
             object : VungleInitializationListener {
