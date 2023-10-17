@@ -1,7 +1,9 @@
 package com.ironsource.adapters.vungle
 
 import android.view.Gravity
+import android.view.ViewGroup
 import android.widget.FrameLayout
+import android.widget.RelativeLayout
 import com.ironsource.environment.ContextProvider
 import com.ironsource.mediationsdk.AdapterUtils
 import com.ironsource.mediationsdk.ISBannerSize
@@ -58,19 +60,26 @@ internal class VungleBannerAdapter(
             listener.onBannerAdLoadFailed(ErrorBuilder.buildLoadFailedError("can't play ad"))
             return
         }
-        val bannerView = mBannerAd?.getBannerView()
-        if (bannerView != null) {
-            val params = getBannerLayoutParams(mISBannerSize)
-            if (params == null) {
-                IronLog.ADAPTER_CALLBACK.error("IS banner size is null")
-                listener.onBannerAdLoadFailed(ErrorBuilder.buildLoadFailedError("Vungle LoadBanner failed - IS banner size is null"))
-                return
-            }
-            listener.onBannerAdLoaded(bannerView, params)
-        } else {
-            IronLog.ADAPTER_CALLBACK.error("banner view is null")
-            listener.onBannerAdLoadFailed(ErrorBuilder.buildLoadFailedError("Vungle LoadBanner failed - banner view is null"))
+        val params = getBannerLayoutParams(mISBannerSize)
+        if (params == null) {
+            IronLog.ADAPTER_CALLBACK.error("IS banner size is null")
+            listener.onBannerAdLoadFailed(ErrorBuilder.buildLoadFailedError("Vungle LoadBanner failed - IS banner size is null"))
+            return
         }
+        val adViewLayout = object : RelativeLayout(baseAd.context) {
+            override fun onAttachedToWindow() {
+                super.onAttachedToWindow()
+                val bannerView = mBannerAd?.getBannerView()
+                if (bannerView != null) {
+                    if (bannerView.parent != null) {
+                        (bannerView.parent as ViewGroup).removeView(bannerView)
+                    }
+
+                    addView(bannerView)
+                }
+            }
+        }
+        listener.onBannerAdLoaded(adViewLayout, params)
     }
 
     override fun onAdStart(baseAd: BaseAd) {
