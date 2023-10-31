@@ -54,7 +54,7 @@ final class ChartboostRewardedVideoAdListener implements RewardedCallback {
 
             mListener.onRewardedVideoAvailabilityChanged(false);
             mListener.onRewardedVideoLoadFailed(isError);
-            
+
         } else {
             mListener.onRewardedVideoAvailabilityChanged(true);
         }
