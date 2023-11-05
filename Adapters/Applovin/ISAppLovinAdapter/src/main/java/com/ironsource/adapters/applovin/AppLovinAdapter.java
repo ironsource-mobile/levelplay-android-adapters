@@ -59,9 +59,6 @@ class AppLovinAdapter extends AbstractAdapter implements INetworkInitCallbackLis
 
     // Meta data flags
     private static final String META_DATA_APPLOVIN_AGE_RESTRICTION_KEY = "AppLovin_AgeRestrictedUser";
-    private static Boolean mConsentCollectingUserData = null;
-    private static Boolean mCCPACollectingUserData = null;
-    private static Boolean mAgeRestrictionData = null;
 
     // Rewarded video collections
     protected final ConcurrentHashMap<String, AppLovinIncentivizedInterstitial> mZoneIdToRewardedVideoAd;
@@ -201,21 +198,6 @@ class AppLovinAdapter extends AbstractAdapter implements INetworkInitCallbackLis
         IronLog.ADAPTER_CALLBACK.verbose();
 
         mInitState = InitState.INIT_STATE_SUCCESS;
-
-        // set consent
-        if (mConsentCollectingUserData != null) {
-            setConsent(mConsentCollectingUserData);
-        }
-
-        // set ccpa
-        if (mCCPACollectingUserData != null) {
-            setCCPAValue(mCCPACollectingUserData);
-        }
-
-        // set age restriction
-        if (mAgeRestrictionData != null) {
-            setAgeRestrictionValue(mAgeRestrictionData);
-        }
 
         //iterate over all the adapter instances and report init success
         for (INetworkInitCallbackListener adapter : initCallbackListeners) {
@@ -555,10 +537,14 @@ class AppLovinAdapter extends AbstractAdapter implements INetworkInitCallbackLis
                 try {
                     // create ad view
                     FrameLayout.LayoutParams layoutParams = getBannerLayoutParams(banner.getSize());
-                    AppLovinAdView adView = new AppLovinAdView(mAppLovinSdk, bannerSize, ContextProvider.getInstance().getApplicationContext());
-
                     // create banner listener
                     AppLovinBannerListener applovinListener = new AppLovinBannerListener(AppLovinAdapter.this, listener, zoneId, layoutParams);
+
+                    // create ad view
+                    AppLovinAdView adView = new AppLovinAdView(mAppLovinSdk, bannerSize, ContextProvider.getInstance().getApplicationContext());
+                    adView.setAdDisplayListener(applovinListener);
+                    adView.setAdClickListener(applovinListener);
+                    adView.setAdViewEventListener(applovinListener);
 
                     // add to maps
                     mZoneIdToBannerAd.put(zoneId, adView);
@@ -643,16 +629,6 @@ class AppLovinAdapter extends AbstractAdapter implements INetworkInitCallbackLis
 
     //region Legal
     @Override
-    protected void setConsent(boolean consent) {
-        if (mWasInitCalled.get()) {
-            IronLog.ADAPTER_API.verbose("consent = " + consent);
-            AppLovinPrivacySettings.setHasUserConsent(consent, ContextProvider.getInstance().getApplicationContext());
-        } else {
-            mConsentCollectingUserData = consent;
-        }
-    }
-
-    @Override
     protected void setMetaData(String key, List<String> values) {
         if (values.isEmpty()) {
             return;
@@ -663,28 +639,30 @@ class AppLovinAdapter extends AbstractAdapter implements INetworkInitCallbackLis
         IronLog.ADAPTER_API.verbose("key = " + key + ", value = " + value);
 
         if (MetaDataUtils.isValidCCPAMetaData(key, value)) {
-            mCCPACollectingUserData = MetaDataUtils.getMetaDataBooleanValue(value);
+            setCCPAValue(MetaDataUtils.getMetaDataBooleanValue(value));
         } else {
             String formattedValue = MetaDataUtils.formatValueForType(value, MetaData.MetaDataValueTypes.META_DATA_VALUE_BOOLEAN);
 
             if (MetaDataUtils.isValidMetaData(key, META_DATA_APPLOVIN_AGE_RESTRICTION_KEY, formattedValue)) {
-                mAgeRestrictionData = MetaDataUtils.getMetaDataBooleanValue(formattedValue);
+                setAgeRestrictionValue(MetaDataUtils.getMetaDataBooleanValue(formattedValue));
             }
         }
     }
 
+    @Override
+    protected void setConsent(boolean consent) {
+        IronLog.ADAPTER_API.verbose("consent = " + consent);
+        AppLovinPrivacySettings.setHasUserConsent(consent, ContextProvider.getInstance().getApplicationContext());
+    }
+
     private void setAgeRestrictionValue(final boolean value) {
-        if (mWasInitCalled.get()) {
             IronLog.ADAPTER_API.verbose("value = " + value);
             AppLovinPrivacySettings.setIsAgeRestrictedUser(value, ContextProvider.getInstance().getApplicationContext());
-        }
     }
 
     private void setCCPAValue(final boolean value) {
-        if (mWasInitCalled.get()) {
             IronLog.ADAPTER_API.verbose("value = " + value);
             AppLovinPrivacySettings.setDoNotSell(value, ContextProvider.getInstance().getApplicationContext());
-        }
     }
 
     //endregion

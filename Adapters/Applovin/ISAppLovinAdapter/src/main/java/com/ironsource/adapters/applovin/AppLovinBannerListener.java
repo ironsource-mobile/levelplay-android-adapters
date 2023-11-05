@@ -47,7 +47,7 @@ public class AppLovinBannerListener implements AppLovinAdLoadListener, AppLovinA
             return;
         }
 
-        if (mAdapter == null || mAdapter.get() == null) {
+        if (mAdapter.get() == null) {
             IronLog.INTERNAL.verbose("adapter is null");
             return;
         }
@@ -68,7 +68,6 @@ public class AppLovinBannerListener implements AppLovinAdLoadListener, AppLovinA
             public void run() {
                 adView.renderAd(appLovinAd);
                 mListener.onBannerAdLoaded(adView, mBannerLayout);
-                mListener.onBannerAdShown();
             }
         });
     }
@@ -89,7 +88,7 @@ public class AppLovinBannerListener implements AppLovinAdLoadListener, AppLovinA
             return;
         }
 
-        if (mAdapter == null || mAdapter.get() == null) {
+        if (mAdapter.get() == null) {
             IronLog.INTERNAL.verbose("adapter is null");
             return;
         }
@@ -109,6 +108,7 @@ public class AppLovinBannerListener implements AppLovinAdLoadListener, AppLovinA
     @Override
     public void adDisplayed(AppLovinAd appLovinAd) {
         IronLog.ADAPTER_CALLBACK.verbose("zoneId = " + mZoneId);
+        mListener.onBannerAdShown();
     }
 
     /**
