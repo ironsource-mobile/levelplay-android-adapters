@@ -52,8 +52,7 @@ android {
 
  dependencies {
     implementation 'com.ironsource.sdk:mediationsdk:7.5.2'
-//    implementation 'com.vungle:vungle-ads:7.0.0'
-     implementation 'com.github.vungle:vng-android-sdk:7.1.0-QA3'
+     implementation 'com.github.vungle:vng-android-sdk:7.1.0-RC1'
      implementation 'org.jetbrains:annotations:15.0'
 
  }
