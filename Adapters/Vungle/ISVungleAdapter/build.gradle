@@ -52,7 +52,7 @@ android {
 
  dependencies {
     implementation 'com.ironsource.sdk:mediationsdk:7.5.2'
-     implementation 'com.github.vungle:vng-android-sdk:7.1.0-RC1'
+     implementation 'com.github.vungle:vng-android-sdk:7.1.0-RC2'
      implementation 'org.jetbrains:annotations:15.0'
 
  }
