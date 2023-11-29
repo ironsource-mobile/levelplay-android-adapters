@@ -106,8 +106,7 @@ class VungleAdapter(providerName: String) : AbstractAdapter(providerName),
             mInitState = InitState.INIT_STATE_IN_PROGRESS
 
             VungleAds.setIntegrationName(
-                VungleAds.WrapperFramework.ironsource,
-                BuildConfig.VERSION_NAME.replace('.', '_')
+                VungleAds.WrapperFramework.ironsource, BuildConfig.VERSION_NAME
             )
 
             // init SDK
