@@ -8,7 +8,7 @@ import static com.google.android.gms.ads.nativead.NativeAdOptions.ADCHOICES_TOP_
 import android.text.TextUtils;
 
 import androidx.annotation.NonNull;
-
+import com.google.android.gms.ads.AdFormat;
 import com.google.android.gms.ads.AdLoader;
 import com.google.android.gms.ads.nativead.NativeAd;
 import com.google.android.gms.ads.nativead.NativeAdOptions;
@@ -19,6 +19,7 @@ import com.ironsource.mediationsdk.adapter.AbstractNativeAdAdapter;
 import com.ironsource.mediationsdk.adunit.adapter.utility.AdOptionsPosition;
 import com.ironsource.mediationsdk.adunit.adapter.utility.NativeAdProperties;
 import com.ironsource.mediationsdk.ads.nativead.interfaces.NativeAdSmashListener;
+import com.ironsource.mediationsdk.bidding.BiddingDataCallback;
 import com.ironsource.mediationsdk.logger.IronLog;
 import com.ironsource.mediationsdk.logger.IronSourceError;
 import com.ironsource.mediationsdk.utils.ErrorBuilder;
@@ -37,15 +38,25 @@ public class AdMobNativeAdAdapter extends AbstractNativeAdAdapter<AdMobAdapter> 
         super(adapter);
     }
 
+    public void initNativeAds(String appKey, String userId, @NonNull JSONObject config, @NonNull NativeAdSmashListener listener) {
+        initNativeAdsInternal(config, listener);
+    }
+
     @Override
-    public void initNativeAds(String appKey, String userId, @NonNull final JSONObject config, @NonNull final NativeAdSmashListener listener) {
+    public void initNativeAdForBidding(String appKey, String userId, @NonNull JSONObject config, @NonNull NativeAdSmashListener listener) {
+        initNativeAdsInternal(config, listener);
+    }
+
+    public void initNativeAdsInternal(@NonNull final JSONObject config, @NonNull final NativeAdSmashListener listener) {
         final String adUnitIdKey = getAdapter().getAdUnitIdKey();
         final String adUnitId = getConfigStringValueFromKey(config, adUnitIdKey);
+
         if (TextUtils.isEmpty(adUnitId)) {
             IronSourceError error = ErrorBuilder.buildInitFailedError(getAdUnitIdMissingErrorString(adUnitIdKey), IronSourceConstants.NATIVE_AD_UNIT);
             listener.onNativeAdInitFailed(error);
             return;
         }
+
         IronLog.ADAPTER_API.verbose("adUnitId = " + adUnitId);
         mSmashListener = listener;
 
@@ -81,6 +92,15 @@ public class AdMobNativeAdAdapter extends AbstractNativeAdAdapter<AdMobAdapter> 
 
     @Override
     public void loadNativeAd(@NonNull final JSONObject config, final JSONObject adData, @NonNull final NativeAdSmashListener listener) {
+        loadNativeAdInternal(config, adData, null, listener);
+    }
+
+    @Override
+    public void loadNativeAdForBidding(@NonNull JSONObject config, JSONObject adData, String serverData, @NonNull NativeAdSmashListener listener) {
+        loadNativeAdInternal(config, adData, serverData, listener);
+    }
+
+    public void loadNativeAdInternal(@NonNull final JSONObject config, final JSONObject adData, final String serverData, @NonNull final NativeAdSmashListener listener) {
         final String adUnitIdKey = getAdapter().getAdUnitIdKey();
         final String adUnitId = getConfigStringValueFromKey(config, adUnitIdKey);
 
@@ -99,7 +119,7 @@ public class AdMobNativeAdAdapter extends AbstractNativeAdAdapter<AdMobAdapter> 
                                     .setAdChoicesPlacement(getAdChoicesPosition(adOptionsPosition))
                                     .build())
                             .build();
-                    adLoader.loadAd(getAdapter().createAdRequest(adData, null));
+                    adLoader.loadAd(getAdapter().createAdRequest(adData, serverData));
                 } catch (Exception e) {
                     IronSourceError error = ErrorBuilder.buildLoadFailedError("AdMobAdapter loadNativeAd exception " + e.getMessage());
                     listener.onNativeAdLoadFailed(error);
@@ -132,6 +152,11 @@ public class AdMobNativeAdAdapter extends AbstractNativeAdAdapter<AdMobAdapter> 
                 }
             }
         });
+    }
+
+    @Override
+    public void collectNativeAdBiddingData(@NonNull JSONObject config, JSONObject adData, @NonNull BiddingDataCallback biddingDataCallback) {
+        getAdapter().collectBiddingData(biddingDataCallback, AdFormat.NATIVE, null);
     }
 
     private int getAdChoicesPosition(AdOptionsPosition adOptionsPosition) {
