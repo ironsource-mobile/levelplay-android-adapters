@@ -129,6 +129,10 @@ class PangleAdapter(providerName: String) : AbstractAdapter(providerName),
         return getAdapterSDKVersion()
     }
 
+    override fun isUsingActivityBeforeImpression(adUnit: IronSource.AD_UNIT): Boolean {
+        return false
+    }
+
     //endregion
 
     //region Initializations methods and callbacks
