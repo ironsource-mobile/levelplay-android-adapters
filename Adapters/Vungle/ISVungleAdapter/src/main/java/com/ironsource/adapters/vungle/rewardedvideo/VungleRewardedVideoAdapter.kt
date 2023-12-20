@@ -221,6 +221,9 @@ class VungleRewardedVideoAdapter(adapter: VungleAdapter) :
             return
         }
         val vungleRewardedVideo = mPlacementToRewardedVideoAd[placementId]
+        adapter.dynamicUserId?.let {
+            vungleRewardedVideo?.setUserId(it)
+        }
         IronLog.ADAPTER_API.verbose("showRewardedVideo vungle ad $placementId")
         postOnUIThread{
                 vungleRewardedVideo?.play()
