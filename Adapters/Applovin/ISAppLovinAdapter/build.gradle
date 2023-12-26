@@ -1,7 +1,7 @@
 apply plugin: 'com.android.library'
 
 ext {
-    adapterVersion = '4.3.40'
+    adapterVersion = '4.3.41'
 }
 
 def getGitHash = { ->
@@ -20,12 +20,12 @@ repositories {
 }
 
 android {
-    compileSdkVersion 30
+    compileSdkVersion 33
     buildToolsVersion "30.0.3"
 
     defaultConfig {
         minSdkVersion 16
-        targetSdkVersion 30
+        targetSdkVersion 33
         versionCode 1
         versionName adapterVersion
         buildConfigField "String", "GitHash", "\"${getGitHash()}\""
@@ -48,8 +48,8 @@ android {
 }
 
  dependencies {
-     implementation 'com.ironsource.sdk:mediationsdk:7.5.2'
-     implementation 'com.applovin:applovin-sdk:11.11.3'
+     implementation 'com.ironsource.sdk:mediationsdk:7.6.1'
+     implementation 'com.applovin:applovin-sdk:12.1.0'
      implementation 'org.jetbrains:annotations:16.0.2'
  }
 
