@@ -31,6 +31,7 @@ import com.ironsource.mediationsdk.metadata.MetaDataUtils;
 import org.jetbrains.annotations.NotNull;
 import org.json.JSONObject;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -67,6 +68,8 @@ public class AdMobAdapter extends AbstractAdapter {
     private static Integer mCoppaValue = null;
     private static Integer mEuValue = null;
     private static String mRatingValue = "";
+    private static String mContentMappingURLValue = "";
+    private static List<String> mNeighboringContentMappingURLValue = new ArrayList<>();
 
     // handle init callback for all adapter instances
     private static final HashSet<INetworkInitCallbackListener> initCallbackListeners = new HashSet<>();
@@ -95,6 +98,7 @@ public class AdMobAdapter extends AbstractAdapter {
         String ADMOB_TFCD_KEY = "admob_tfcd";
         String ADMOB_TFUA_KEY = "admob_tfua";
         String ADMOB_MAX_RATING_KEY = "admob_maxcontentrating";
+        String ADMOB_CONTENT_MAPPING_KEY = "google_content_mapping";
     }
 
     //region Adapter Methods
@@ -230,6 +234,13 @@ public class AdMobAdapter extends AbstractAdapter {
             return;
         }
 
+        if (values.size() > 1 && key.equalsIgnoreCase(AdMobMetaDataFlags.ADMOB_CONTENT_MAPPING_KEY)){
+            // multiple URL
+            mNeighboringContentMappingURLValue = values;
+            IronLog.ADAPTER_API.verbose("key = " + key + ", values = " + values);
+            return;
+        }
+
         // this is a list of 1 value.
         String value = values.get(0);
         IronLog.ADAPTER_API.verbose("key = " + key + ", value = " + value);
@@ -272,6 +283,10 @@ public class AdMobAdapter extends AbstractAdapter {
             case AdMobMetaDataFlags.ADMOB_MAX_RATING_KEY:
                 mRatingValue = getAdMobRatingValue(formattedValue);
                 IronLog.ADAPTER_API.verbose("key = " + key + ", ratingValue = " + mRatingValue);
+
+            case AdMobMetaDataFlags.ADMOB_CONTENT_MAPPING_KEY:
+                mContentMappingURLValue = value;
+                IronLog.ADAPTER_API.verbose("key = " + key + ", contentMappingValue = " + mContentMappingURLValue);
                 break;
         }
 
@@ -365,6 +380,18 @@ public class AdMobAdapter extends AbstractAdapter {
                 IronLog.ADAPTER_API.verbose("mCCPAValue = " + mCCPAValue);
                 extras.putInt("rdp", mCCPAValue ? 1 : 0);
             }
+        }
+
+        //handle single content mapping for ad request
+        if(!TextUtils.isEmpty(mContentMappingURLValue)){
+            IronLog.ADAPTER_API.verbose("mContentMappingURLValue = " + mContentMappingURLValue);
+            builder.setContentUrl(mContentMappingURLValue);
+        }
+
+        //handle neighboring content mapping for ad request
+        if(!mNeighboringContentMappingURLValue.isEmpty()){
+            IronLog.ADAPTER_API.verbose("mNeighboringContentMappingURLValue = " + mNeighboringContentMappingURLValue);
+            builder.setNeighboringContentUrls(mNeighboringContentMappingURLValue);
         }
 
         builder.addNetworkExtrasBundle(com.google.ads.mediation.admob.AdMobAdapter.class, extras);
