@@ -792,6 +792,31 @@ class ChartboostAdapter extends AbstractAdapter implements INetworkInitCallbackL
         return chartboostBanner;
     }
 
+    @Override
+    public void destroyBanner(JSONObject config) {
+        final String locationId = config.optString(AD_LOCATION);
+        IronLog.ADAPTER_API.verbose("locationId = " + locationId);
+
+        Banner banner = mLocationIdToBannerAd.get(locationId);
+
+        if (banner != null) {
+            // destroy banner
+            banner.detach();
+
+            // remove banner view from map
+            mLocationIdToBannerAd.remove(locationId);
+
+            // remove banner layout from map
+            mLocationIdToBannerLayout.remove(locationId);
+
+            // remove banner listener from map
+            mLocationIdToBannerListener.remove(locationId);
+
+            // remove banner ad listener from map
+            mLocationIdToBannerAdListener.remove(locationId);
+        }
+    }
+
     private Mediation getMediation() {
         if (mMediationInfo == null) {
             mMediationInfo = new Mediation(MEDIATION_NAME, IronSourceUtils.getSDKVersion() , VERSION);
@@ -826,7 +851,6 @@ class ChartboostAdapter extends AbstractAdapter implements INetworkInitCallbackL
             mLocationIdToBannerListener.clear();
             mLocationIdToBannerAdListener.clear();
             mLocationIdToBannerLayout.clear();
-            mLocationIdToBannerAd.clear();
         }
     }
     //endregion
