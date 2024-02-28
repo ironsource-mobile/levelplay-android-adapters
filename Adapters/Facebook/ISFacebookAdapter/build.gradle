@@ -52,6 +52,7 @@ android {
  dependencies {
      implementation 'com.ironsource.sdk:mediationsdk:7.5.0'
      implementation 'com.facebook.android:audience-network-sdk:6.16.0'
+     implementation 'com.facebook.infer.annotation:infer-annotation:0.18.0'
      implementation 'org.jetbrains:annotations:16.0.2'
 }
 
