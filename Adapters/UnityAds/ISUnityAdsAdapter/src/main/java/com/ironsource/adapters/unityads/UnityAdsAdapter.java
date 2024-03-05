@@ -113,6 +113,8 @@ class UnityAdsAdapter extends AbstractAdapter implements IUnityAdsInitialization
 
     final private Object mUnityAdsStorageLock = new Object();
 
+    private boolean isAdsGateway = false;
+
     //region Adapter Methods
     public static UnityAdsAdapter startAdapter(String providerName) {
         return new UnityAdsAdapter(providerName);
@@ -189,13 +191,17 @@ class UnityAdsAdapter extends AbstractAdapter implements IUnityAdsInitialization
                 mediationMetaData.commit();
             }
 
-            setUnityAdsMetaData(ADS_GATEWAY_ENABLED, config.optBoolean(ADS_GATEWAY_ENABLED, false));
+            isAdsGateway = config.optBoolean(ADS_GATEWAY_ENABLED, false);
+
+            setUnityAdsMetaData(ADS_GATEWAY_ENABLED, isAdsGateway);
 
             UnityAds.setDebugMode(isAdaptersDebugEnabled());
             UnityAds.initialize(ContextProvider.getInstance().getApplicationContext(), gameId, false, this);
 
             // trying to fetch async token for the first load
-            getAsyncToken();
+            if (!isAdsGateway) {
+                getAsyncToken();
+            }
         }
     }
 
@@ -811,15 +817,19 @@ class UnityAdsAdapter extends AbstractAdapter implements IUnityAdsInitialization
     //In case this method is called before the init we will try using the token that was received asynchronically
     private Map<String, Object> getBiddingData() {
         String bidderToken;
-        if (InitState.INIT_STATE_SUCCESS == mInitState) {
+        if (isAdsGateway) {
             bidderToken = UnityAds.getToken();
-        } else if (!TextUtils.isEmpty(asyncToken)) {
-            bidderToken = asyncToken;
-            // Fetching a fresh async token for the next load
-            getAsyncToken();
         } else {
-            IronLog.INTERNAL.verbose("returning null as token since init did not finish successfully and async token did not return");
-            return null;
+            if (InitState.INIT_STATE_SUCCESS == mInitState) {
+                bidderToken = UnityAds.getToken();
+            } else if (!TextUtils.isEmpty(asyncToken)) {
+                bidderToken = asyncToken;
+                // Fetching a fresh async token for the next load
+                getAsyncToken();
+            } else {
+                IronLog.INTERNAL.verbose("returning null as token since init did not finish successfully and async token did not return");
+                return null;
+            }
         }
 
         String returnedToken = (!TextUtils.isEmpty(bidderToken)) ? bidderToken : "";
