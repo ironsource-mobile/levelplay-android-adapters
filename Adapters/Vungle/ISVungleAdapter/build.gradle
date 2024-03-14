@@ -2,7 +2,7 @@ apply plugin: 'com.android.library'
 apply plugin: 'kotlin-android'
 
 ext {
-    adapterVersion = '4.3.23'
+    adapterVersion = '4.3.24'
 }
 
 def getGitHash = { ->
