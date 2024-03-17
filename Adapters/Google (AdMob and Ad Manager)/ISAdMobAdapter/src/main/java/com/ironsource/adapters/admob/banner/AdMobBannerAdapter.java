@@ -275,6 +275,13 @@ public class AdMobBannerAdapter extends AbstractBannerAdapter<AdMobAdapter> {
         getAdapter().collectBiddingData(biddingDataCallback, AdFormat.BANNER, extras);
     }
 
+    @Override
+    public int getAdaptiveHeight(int width) {
+        int height = getAdaptiveBannerSize(width).getHeight();
+        IronLog.ADAPTER_API.verbose("height - " + height + " for width - " + width);
+        return height;
+    }
+
     public AdSize getAdSize(ISBannerSize selectedBannerSize, boolean isLargeScreen) {
         AdSize adSize;
         switch (selectedBannerSize.getDescription()) {
@@ -304,13 +311,31 @@ public class AdMobBannerAdapter extends AbstractBannerAdapter<AdMobAdapter> {
                 adSize = null;
         }
 
-        if (selectedBannerSize.isAdaptive() && adSize != null) {
-            AdSize adaptiveSize = AdSize.getCurrentOrientationAnchoredAdaptiveBannerAdSize(ContextProvider.getInstance().getApplicationContext(), adSize.getWidth());
-            IronLog.INTERNAL.verbose("original height - " + adSize.getHeight() + " adaptive height - " + adaptiveSize.getHeight());
-            return adaptiveSize;
+        try {
+            if (selectedBannerSize.isAdaptive() && adSize != null) {
+                AdSize adaptiveSize = getAdaptiveBannerSize(selectedBannerSize.containerParams.getWidth());
+
+                IronLog.INTERNAL.verbose(
+                        "default height - " + adSize.getHeight() +
+                                " adaptive height - " + adaptiveSize.getHeight() +
+                                " container height - " + selectedBannerSize.containerParams.getHeight() +
+                                " default width - " + adSize.getWidth() +
+                                " container width - " + selectedBannerSize.containerParams.getWidth());
+
+                return adaptiveSize;
+            }
+        } catch (Exception e) {
+            IronLog.INTERNAL.error("containerParams is not supported");
         }
 
         return adSize;
+    }
+
+    @NotNull
+    private static AdSize getAdaptiveBannerSize(int width) {
+        return AdSize.getCurrentOrientationAnchoredAdaptiveBannerAdSize(
+                ContextProvider.getInstance().getApplicationContext(),
+                width);
     }
 
     private boolean isNativeBannerSizeSupported(ISBannerSize size, boolean isLargeScreen) {

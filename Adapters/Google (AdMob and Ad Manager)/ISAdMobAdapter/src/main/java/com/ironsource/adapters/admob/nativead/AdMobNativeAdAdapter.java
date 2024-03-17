@@ -38,6 +38,7 @@ public class AdMobNativeAdAdapter extends AbstractNativeAdAdapter<AdMobAdapter> 
         super(adapter);
     }
 
+    @Override
     public void initNativeAds(String appKey, String userId, @NonNull JSONObject config, @NonNull NativeAdSmashListener listener) {
         initNativeAdsInternal(config, listener);
     }
@@ -90,7 +91,6 @@ public class AdMobNativeAdAdapter extends AbstractNativeAdAdapter<AdMobAdapter> 
         }
     }
 
-    @Override
     public void loadNativeAd(@NonNull final JSONObject config, final JSONObject adData, @NonNull final NativeAdSmashListener listener) {
         loadNativeAdInternal(config, adData, null, listener);
     }

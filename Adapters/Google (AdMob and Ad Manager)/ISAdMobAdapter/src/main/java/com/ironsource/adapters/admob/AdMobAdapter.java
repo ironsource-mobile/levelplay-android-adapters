@@ -283,7 +283,7 @@ public class AdMobAdapter extends AbstractAdapter {
             case AdMobMetaDataFlags.ADMOB_MAX_RATING_KEY:
                 mRatingValue = getAdMobRatingValue(formattedValue);
                 IronLog.ADAPTER_API.verbose("key = " + key + ", ratingValue = " + mRatingValue);
-
+                break;
             case AdMobMetaDataFlags.ADMOB_CONTENT_MAPPING_KEY:
                 mContentMappingURLValue = value;
                 IronLog.ADAPTER_API.verbose("key = " + key + ", contentMappingValue = " + mContentMappingURLValue);
