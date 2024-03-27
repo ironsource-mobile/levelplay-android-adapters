@@ -102,7 +102,7 @@ class UnityAdsAdapter extends AbstractAdapter implements IUnityAdsInitialization
     private final String UNITYADS_METADATA_COPPA_KEY = "unityads_coppa";
     private final String GAME_DESIGNATION = "mode";
     private final String MIXED_AUDIENCE = "mixed";
-    private final String ADS_GATEWAY_ENABLED = "adsGateway";
+    private final String ADS_GATEWAY_ENABLED = "adsGatewayV2";
 
     // UnityAds asynchronous token
     private static String asyncToken = null;
