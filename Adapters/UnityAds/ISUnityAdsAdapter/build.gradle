@@ -2,7 +2,7 @@ apply plugin: 'com.android.library'
 apply plugin: 'com.android.library'
 
 ext {
-    adapterVersion = '4.3.37'
+    adapterVersion = '4.3.38'
 }
 
 def getGitHash = { ->
@@ -33,6 +33,7 @@ android {
         versionName adapterVersion
         buildConfigField "String", "GitHash", "\"${getGitHash()}\""
         buildConfigField("String","VERSION_NAME","\"${defaultConfig.versionName}\"")
+        multiDexEnabled true
     }
     
     buildTypes {
@@ -52,8 +53,9 @@ android {
 }
 
  dependencies {
-    implementation 'com.ironsource.sdk:mediationsdk:7.9.0'
-    implementation 'com.unity3d.ads:unity-ads:4.10.0'
+    implementation 'com.ironsource.sdk:mediationsdk:8.0.0'
+    implementation 'com.unity3d.ads:unity-ads:4.11.2'
+     implementation 'com.android.support:multidex:1.0.3'
 
 }
 
