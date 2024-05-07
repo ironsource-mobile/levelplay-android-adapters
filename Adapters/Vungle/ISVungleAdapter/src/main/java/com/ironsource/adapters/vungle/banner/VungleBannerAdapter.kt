@@ -181,20 +181,22 @@ class VungleBannerAdapter(adapter: VungleAdapter) :
     }
 
     override fun destroyBanner(config: JSONObject) {
-        val placementId = config.optString(VungleAdapter.PLACEMENT_ID)
-        IronLog.ADAPTER_API.verbose("placementId = $placementId")
+        postOnUIThread {
+            val placementId = config.optString(VungleAdapter.PLACEMENT_ID)
+            IronLog.ADAPTER_API.verbose("placementId = $placementId")
 
-        // get Vungle banner from map
-        mPlacementToBannerAd[placementId]?.let { vungleBanner ->
-            IronLog.ADAPTER_API.verbose(
-                "destroyBanner Vungle ad, with ${VungleAdapter.PLACEMENT_ID} - $placementId"
-            )
+            // get Vungle banner from map
+            mPlacementToBannerAd[placementId]?.let { vungleBanner ->
+                IronLog.ADAPTER_API.verbose(
+                    "destroyBanner Vungle ad, with ${VungleAdapter.PLACEMENT_ID} - $placementId"
+                )
 
-            // destroy banner
-            vungleBanner.finishAd()
+                // destroy banner
+                vungleBanner.finishAd()
 
-            // remove banner obj from the map
-            mPlacementToBannerAd.remove(placementId)
+                // remove banner obj from the map
+                mPlacementToBannerAd.remove(placementId)
+            }
         }
     }
 
