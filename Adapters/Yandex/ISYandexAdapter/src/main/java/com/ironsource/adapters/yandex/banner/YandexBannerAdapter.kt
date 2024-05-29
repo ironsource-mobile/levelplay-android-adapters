@@ -127,6 +127,7 @@ class YandexBannerAdapter (adapter: YandexAdapter) :
 
         val adRequest: AdRequest = AdRequest.Builder()
             .setBiddingData(serverData)
+            .setParameters(adapter.getConfigParams()) // Please pass these params in AdRequest
             .build()
         bannerAdView.setBannerAdEventListener(mYandexAdListener)
 

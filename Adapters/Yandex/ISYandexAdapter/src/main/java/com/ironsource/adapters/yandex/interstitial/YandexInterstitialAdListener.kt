@@ -44,6 +44,8 @@ class YandexInterstitialAdListener(
 
     override fun onAdImpression(impressionData: ImpressionData?) {
         IronLog.ADAPTER_CALLBACK.verbose()
+        // Yandex SDK provide ::onAdShown callback for the ad opening event
+        // Is this actually the correct place to call ::onInterstitialAdOpened and ::onInterstitialAdShowSucceeded?
         mListener.onInterstitialAdOpened()
         mListener.onInterstitialAdShowSucceeded()
     }

@@ -2,7 +2,7 @@ apply plugin: 'com.android.library'
 apply plugin: 'kotlin-android'
 
 ext {
-    adapterVersion = '4.3.0'
+    adapterVersion = '4.3.0' // We recommend using the version based on the Yandex SDK version like '7.0.1.0' or '7.0.1'
 }
 
 def getGitHash = { ->
@@ -71,5 +71,3 @@ task createAAR(type: Copy,group:'buildTasks') {
         fileName.replace('release', adapterVersion)
     }
 }
-
-

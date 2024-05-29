@@ -102,6 +102,8 @@ AbstractInterstitialAdapter<YandexAdapter>(adapter) {
         val adUnitIdKey = YandexAdapter.getAdUnitIdKey()
         val adUnitId = getConfigStringValueFromKey(config, adUnitIdKey)
 
+        // If a single adapter instance is used for multiple ad requests
+        // a loader can be created only once to improve performance
         val interstitialAdLoader = InterstitialAdLoader(ContextProvider.getInstance().applicationContext).apply {
             setAdLoadListener(mYandexAdListener)
         }
@@ -110,6 +112,7 @@ AbstractInterstitialAdapter<YandexAdapter>(adapter) {
 
         val adRequest: AdRequestConfiguration = AdRequestConfiguration.Builder(adUnitId)
             .setBiddingData(serverData)
+            .setParameters(adapter.getConfigParams()) // Please pass these params in AdRequestConfiguration
             .build()
 
         postOnUIThread {
