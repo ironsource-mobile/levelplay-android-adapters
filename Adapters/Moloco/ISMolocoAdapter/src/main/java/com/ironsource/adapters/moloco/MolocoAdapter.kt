@@ -199,7 +199,6 @@ class MolocoAdapter(providerName: String) : AbstractAdapter(providerName),
         }
     }
 
-    // TODO - verify with product
     override fun setConsent(consent: Boolean) {
         IronLog.ADAPTER_API.verbose("consent = $consent")
         val privacy = MolocoPrivacy.PrivacySettings(isUserConsent = consent, isAgeRestrictedUser = null, isDoNotSell = null)

@@ -1,7 +1,6 @@
 package com.ironsource.adapters.moloco.rewardedvideo
 
 import com.ironsource.adapters.moloco.MolocoAdapter
-import com.ironsource.environment.ContextProvider
 import com.ironsource.mediationsdk.IronSource
 import com.ironsource.mediationsdk.adapter.AbstractRewardedVideoAdapter
 import com.ironsource.mediationsdk.bidding.BiddingDataCallback
@@ -109,7 +108,7 @@ class MolocoRewardedVideoAdapter(adapter: MolocoAdapter) :
         mAdListener = rewardedVideoAdListener
         val adUnitIdKey = MolocoAdapter.getAdUnitIdKey()
         val adUnitId = getConfigStringValueFromKey(config, adUnitIdKey)
-        mAd = Moloco.createRewardedInterstitial(ContextProvider.getInstance().currentActiveActivity, adUnitId)
+        mAd = Moloco.createRewardedInterstitial(adUnitId)
         mAd?.load(serverData, mAdListener)
     }
 

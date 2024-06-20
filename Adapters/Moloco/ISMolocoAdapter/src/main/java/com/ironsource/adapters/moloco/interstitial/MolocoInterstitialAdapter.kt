@@ -1,7 +1,6 @@
 package com.ironsource.adapters.moloco.interstitial
 
 import com.ironsource.adapters.moloco.MolocoAdapter
-import com.ironsource.environment.ContextProvider
 import com.ironsource.mediationsdk.IronSource
 import com.ironsource.mediationsdk.adapter.AbstractInterstitialAdapter
 import com.ironsource.mediationsdk.bidding.BiddingDataCallback
@@ -113,7 +112,7 @@ class MolocoInterstitialAdapter(adapter: MolocoAdapter) :
 
         val adUnitIdKey = MolocoAdapter.getAdUnitIdKey()
         val adUnitId = getConfigStringValueFromKey(config, adUnitIdKey)
-        mAd = Moloco.createInterstitial(ContextProvider.getInstance().currentActiveActivity, adUnitId)
+        mAd = Moloco.createInterstitial(adUnitId)
         mAd?.load(serverData, mAdListener)
     }
 

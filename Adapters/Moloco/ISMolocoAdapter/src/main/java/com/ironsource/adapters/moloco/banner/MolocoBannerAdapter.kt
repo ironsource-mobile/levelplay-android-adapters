@@ -1,6 +1,5 @@
 package com.ironsource.adapters.moloco.banner
 
-import android.app.Activity
 import android.content.Context
 import android.view.Gravity
 import android.widget.FrameLayout
@@ -18,7 +17,6 @@ import com.ironsource.mediationsdk.utils.ErrorBuilder
 import com.ironsource.mediationsdk.utils.IronSourceConstants
 import com.moloco.sdk.publisher.Banner
 import com.moloco.sdk.publisher.Moloco
-import com.moloco.sdk.xenoss.sdkdevkit.android.adrenderer.m
 import org.json.JSONObject
 
 class MolocoBannerAdapter(adapter: MolocoAdapter) :
@@ -131,8 +129,7 @@ class MolocoBannerAdapter(adapter: MolocoAdapter) :
         mContainer = FrameLayout(ContextProvider.getInstance().currentActiveActivity)
         val adUnitIdKey = MolocoAdapter.getAdUnitIdKey()
         val adUnitId = getConfigStringValueFromKey(config, adUnitIdKey)
-        mAdView = createBannerWithSize(ContextProvider.getInstance().currentActiveActivity, banner.size, adUnitId)
-//        mAdView = Moloco.createBanner(ContextProvider.getInstance().currentActiveActivity, adUnitId)
+        mAdView = createBannerWithSize(banner.size, adUnitId)
         val molocoBannerAdListener = MolocoBannerAdListener(listener, layoutParams, mAdView)
         mAdListener = molocoBannerAdListener
         mAdView?.adShowListener = mAdListener
@@ -172,10 +169,12 @@ class MolocoBannerAdapter(adapter: MolocoAdapter) :
     // region Helpers
 
     private fun destroyBannerViewAd() {
-        mContainer?.removeView(mAdView)
-        mAdView?.destroy()
-        mContainer = null
-        mAdView = null
+        postOnUIThread {
+            mContainer?.removeView(mAdView)
+            mAdView?.destroy()
+            mContainer = null
+            mAdView = null
+        }
     }
 
     private fun createBannerLayoutParams(context : Context, size: ISBannerSize): FrameLayout.LayoutParams {
@@ -199,11 +198,11 @@ class MolocoBannerAdapter(adapter: MolocoAdapter) :
         return layoutParams
     }
 
-    private fun createBannerWithSize(activity: Activity, size: ISBannerSize, adUnitId: String) : Banner?  {
+    private fun createBannerWithSize(size: ISBannerSize, adUnitId: String) : Banner?  {
         when (size.description) {
-            "BANNER" ->  mAdView = Moloco.createBanner(activity, adUnitId)
-            "LEADERBOARD" -> mAdView = Moloco.createBannerTablet(activity, adUnitId)
-            "RECTANGLE" -> mAdView = Moloco.createMREC(activity, adUnitId)
+            "BANNER" ->  mAdView = Moloco.createBanner(adUnitId)
+            "LEADERBOARD" -> mAdView = Moloco.createBannerTablet(adUnitId)
+            "RECTANGLE" -> mAdView = Moloco.createMREC(adUnitId)
         }
         return mAdView
     }
