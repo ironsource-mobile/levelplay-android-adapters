@@ -47,7 +47,7 @@ class YandexAdapter(providerName: String) : AbstractAdapter(providerName),
         private const val GitHash: String = BuildConfig.GitHash
 
         // Yandex keys
-        private const val MEDIATION_NAME: String = "ironSource"
+        private const val MEDIATION_NAME: String = "ironSource" // We recommend using only lowercase like "ironsource"
         private const val APP_ID_KEY: String = "appId"
         private const val AD_UNIT_ID_KEY: String = "adUnitId"
 
@@ -157,10 +157,18 @@ class YandexAdapter(providerName: String) : AbstractAdapter(providerName),
         MobileAds.setUserConsent(consent)
     }
 
+    override fun setMetaData(p0: String?, p1: MutableList<String>?) {
+        super.setMetaData(p0, p1)
+        // Yandex SDK supports COPPA using MobileAds::setAgeRestrictedUser
+        // Please use it if you have that information
+    }
+
     //endregion
 
     // region Helpers
     fun collectBiddingData(biddingDataCallback: BiddingDataCallback, bidderTokenRequest: BidderTokenRequestConfiguration) {
+
+        // This check is not necessary, the SDK will be initialized automatically if it has not already been
         if (mInitState != InitState.INIT_STATE_SUCCESS) {
             val error = "returning null as token since init isn't completed"
             IronLog.INTERNAL.verbose(error)

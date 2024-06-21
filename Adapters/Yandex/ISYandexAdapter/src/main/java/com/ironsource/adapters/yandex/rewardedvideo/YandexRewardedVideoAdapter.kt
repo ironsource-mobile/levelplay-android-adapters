@@ -102,6 +102,9 @@ class YandexRewardedVideoAdapter(adapter: YandexAdapter) :
 
         val adUnitIdKey = YandexAdapter.getAdUnitIdKey()
         val adUnitId = config.optString(adUnitIdKey)
+
+        // If a single adapter instance is used for multiple ad requests
+        // a loader can be created only once to improve performance
         val rewardedVideoAdLoader = RewardedAdLoader(ContextProvider.getInstance().applicationContext).apply {
             setAdLoadListener(mYandexAdListener)
         }
@@ -110,6 +113,7 @@ class YandexRewardedVideoAdapter(adapter: YandexAdapter) :
 
         val adRequest: AdRequestConfiguration = AdRequestConfiguration.Builder(adUnitId)
             .setBiddingData(serverData)
+            .setParameters(adapter.getConfigParams()) // Please pass these params in AdRequestConfiguration
             .build()
 
         postOnUIThread {
@@ -156,6 +160,7 @@ class YandexRewardedVideoAdapter(adapter: YandexAdapter) :
 
     override fun releaseMemory(adUnit: IronSource.AD_UNIT, config: JSONObject?) {
         IronLog.INTERNAL.verbose("adUnit = $adUnit")
+        // Is this check only required for RewardedVideo? Why it absent in other formats?
         if (adUnit == IronSource.AD_UNIT.REWARDED_VIDEO) {
             destroyRewardedVideoAd()
             mYandexAdListener = null
