@@ -13,6 +13,8 @@ import com.ironsource.mediationsdk.LoadWhileShowSupportState
 import com.ironsource.mediationsdk.bidding.BiddingDataCallback
 import com.ironsource.mediationsdk.logger.IronLog
 import com.ironsource.mediationsdk.logger.IronSourceError
+import com.ironsource.mediationsdk.metadata.MetaData
+import com.ironsource.mediationsdk.metadata.MetaDataUtils
 import com.ironsource.mediationsdk.utils.IronSourceUtils
 import com.yandex.mobile.ads.common.AdRequestError
 import com.yandex.mobile.ads.common.BidderTokenLoadListener
@@ -47,9 +49,12 @@ class YandexAdapter(providerName: String) : AbstractAdapter(providerName),
         private const val GitHash: String = BuildConfig.GitHash
 
         // Yandex keys
-        private const val MEDIATION_NAME: String = "ironSource"
+        private const val MEDIATION_NAME: String = "ironsource"
         private const val APP_ID_KEY: String = "appId"
         private const val AD_UNIT_ID_KEY: String = "adUnitId"
+
+        // Meta data flags
+        private const val META_DATA_YANDEX_COPPA_KEY = "Yandex_COPPA"
 
         // Handle init callback for all adapter instances
         private val mWasInitCalled: AtomicBoolean = AtomicBoolean(false)
@@ -152,9 +157,31 @@ class YandexAdapter(providerName: String) : AbstractAdapter(providerName),
 
     //region legal
 
+    override fun setMetaData(key: String, values: List<String>) {
+        if (values.isEmpty()) {
+            return
+        }
+
+        // This is a list of 1 value
+        val value = values[0]
+        IronLog.ADAPTER_API.verbose("key = $key, value = $value")
+        val formattedValue: String = MetaDataUtils.formatValueForType(value, MetaData.MetaDataValueTypes.META_DATA_VALUE_BOOLEAN)
+
+        when {
+            MetaDataUtils.isValidMetaData(key, META_DATA_YANDEX_COPPA_KEY, formattedValue) -> {
+                setCOPPAValue(MetaDataUtils.getMetaDataBooleanValue(formattedValue))
+            }
+        }
+    }
+
     override fun setConsent(consent: Boolean) {
         IronLog.ADAPTER_API.verbose("consent = $consent")
         MobileAds.setUserConsent(consent)
+    }
+
+    private fun setCOPPAValue(value: Boolean) {
+        IronLog.ADAPTER_API.verbose("isCoppa = $value")
+        MobileAds.setAgeRestrictedUser(value)
     }
 
     //endregion

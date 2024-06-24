@@ -110,6 +110,7 @@ AbstractInterstitialAdapter<YandexAdapter>(adapter) {
 
         val adRequest: AdRequestConfiguration = AdRequestConfiguration.Builder(adUnitId)
             .setBiddingData(serverData)
+            .setParameters(adapter.getConfigParams())
             .build()
 
         postOnUIThread {

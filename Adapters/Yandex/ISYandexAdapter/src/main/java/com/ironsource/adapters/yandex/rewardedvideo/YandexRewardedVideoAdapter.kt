@@ -110,6 +110,7 @@ class YandexRewardedVideoAdapter(adapter: YandexAdapter) :
 
         val adRequest: AdRequestConfiguration = AdRequestConfiguration.Builder(adUnitId)
             .setBiddingData(serverData)
+            .setParameters(adapter.getConfigParams())
             .build()
 
         postOnUIThread {
@@ -156,11 +157,9 @@ class YandexRewardedVideoAdapter(adapter: YandexAdapter) :
 
     override fun releaseMemory(adUnit: IronSource.AD_UNIT, config: JSONObject?) {
         IronLog.INTERNAL.verbose("adUnit = $adUnit")
-        if (adUnit == IronSource.AD_UNIT.REWARDED_VIDEO) {
             destroyRewardedVideoAd()
             mYandexAdListener = null
             mSmashListener = null
-        }
     }
 
     //endregion
