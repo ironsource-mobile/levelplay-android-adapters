@@ -23,9 +23,10 @@ class MolocoBannerAdapter(adapter: MolocoAdapter) :
     AbstractBannerAdapter<MolocoAdapter>(adapter) {
 
     private var mListener : BannerSmashListener? = null
-    private var mAdListener : MolocoBannerAdListener? = null
+    private var mAdLoadListener : MolocoBannerAdLoadListener? = null
+    private var mAdShowListener : MolocoBannerAdShowListener? = null
     private var mAdView: Banner? = null
-    private var mContainer : FrameLayout? = null
+    private var mContainer: FrameLayout? = null
 
     //region Banner API
 
@@ -72,6 +73,7 @@ class MolocoBannerAdapter(adapter: MolocoAdapter) :
             MolocoAdapter.Companion.InitState.INIT_STATE_SUCCESS -> {
                 listener.onBannerInitSuccess()
             }
+
             MolocoAdapter.Companion.InitState.INIT_STATE_FAILED -> {
                 listener.onBannerInitFailed(
                     ErrorBuilder.buildInitFailedError(
@@ -81,6 +83,7 @@ class MolocoBannerAdapter(adapter: MolocoAdapter) :
                 )
 
             }
+
             MolocoAdapter.Companion.InitState.INIT_STATE_NONE,
             MolocoAdapter.Companion.InitState.INIT_STATE_IN_PROGRESS -> {
                 adapter.initSdk(appKey)
@@ -124,17 +127,12 @@ class MolocoBannerAdapter(adapter: MolocoAdapter) :
         }
 
         val context = ContextProvider.getInstance().applicationContext
-        val layoutParams = createBannerLayoutParams(context,banner.size)
+        val layoutParams = createBannerLayoutParams(context, banner.size)
 
         mContainer = FrameLayout(ContextProvider.getInstance().currentActiveActivity)
         val adUnitIdKey = MolocoAdapter.getAdUnitIdKey()
         val adUnitId = getConfigStringValueFromKey(config, adUnitIdKey)
-        mAdView = createBannerWithSize(banner.size, adUnitId)
-        val molocoBannerAdListener = MolocoBannerAdListener(listener, layoutParams, mAdView)
-        mAdListener = molocoBannerAdListener
-        mAdView?.adShowListener = mAdListener
-        mContainer?.addView(mAdView)
-        mAdView?.load(serverData,mAdListener)
+        createBannerWithSize(banner.size, adUnitId, listener, layoutParams, serverData)
     }
 
     override fun destroyBanner(config: JSONObject) {
@@ -160,7 +158,8 @@ class MolocoBannerAdapter(adapter: MolocoAdapter) :
     ) {
         IronLog.INTERNAL.verbose()
         destroyBannerViewAd()
-        mAdListener = null
+        mAdLoadListener = null
+        mAdShowListener = null
         mListener = null
     }
 
@@ -177,17 +176,22 @@ class MolocoBannerAdapter(adapter: MolocoAdapter) :
         }
     }
 
-    private fun createBannerLayoutParams(context : Context, size: ISBannerSize): FrameLayout.LayoutParams {
+    private fun createBannerLayoutParams(
+        context: Context,
+        size: ISBannerSize
+    ): FrameLayout.LayoutParams {
         var layoutParams: FrameLayout.LayoutParams = FrameLayout.LayoutParams(0, 0)
         when (size.description) {
             "BANNER" -> layoutParams = FrameLayout.LayoutParams(
                 AdapterUtils.dpToPixels(context, 320),
                 AdapterUtils.dpToPixels(context, 50)
             )
+
             "LEADERBOARD" -> layoutParams = FrameLayout.LayoutParams(
                 AdapterUtils.dpToPixels(context, 728),
                 AdapterUtils.dpToPixels(context, 90)
             )
+
             "RECTANGLE" -> layoutParams = FrameLayout.LayoutParams(
                 AdapterUtils.dpToPixels(context, 300),
                 AdapterUtils.dpToPixels(context, 250)
@@ -198,13 +202,41 @@ class MolocoBannerAdapter(adapter: MolocoAdapter) :
         return layoutParams
     }
 
-    private fun createBannerWithSize(size: ISBannerSize, adUnitId: String) : Banner?  {
-        when (size.description) {
-            "BANNER" ->  mAdView = Moloco.createBanner(adUnitId)
-            "LEADERBOARD" -> mAdView = Moloco.createBannerTablet(adUnitId)
-            "RECTANGLE" -> mAdView = Moloco.createMREC(adUnitId)
+    private fun handleBannerCreation(
+        adView: Banner?,
+        listener: BannerSmashListener,
+        layoutParams: FrameLayout.LayoutParams,
+        serverData: String
+    ) {
+        adView?.let {
+            mAdView = it
+            mAdLoadListener = MolocoBannerAdLoadListener(listener, layoutParams, mAdView)
+            mAdShowListener = MolocoBannerAdShowListener(listener)
+            mAdView?.apply {
+                adShowListener = mAdShowListener
+                mContainer?.addView(this)
+                load(serverData, mAdLoadListener)
+            }
+        } ?: listener.onBannerAdLoadFailed(
+            ErrorBuilder.buildLoadFailedError(MolocoAdapter.INVALID_CONFIGURATION)
+        )
+    }
+
+    private fun createBannerWithSize(
+        size: ISBannerSize,
+        adUnitId: String,
+        listener: BannerSmashListener,
+        layoutParams: FrameLayout.LayoutParams,
+        serverData: String,
+        createCallback: (Banner?) -> Unit = { adView ->
+            handleBannerCreation(adView, listener, layoutParams, serverData)
         }
-        return mAdView
+    ) {
+        when (size.description) {
+            "BANNER" -> Moloco.createBanner(adUnitId, createCallback)
+            "LEADERBOARD" -> Moloco.createBannerTablet(adUnitId, createCallback)
+            "RECTANGLE" -> Moloco.createMREC(adUnitId, createCallback)
+        }
     }
 
     //endregion

@@ -50,6 +50,8 @@ class MolocoAdapter(providerName: String) : AbstractAdapter(providerName),
         // Meta data flags
         private const val META_DATA_MOLOCO_COPPA_KEY = "Moloco_COPPA"
 
+        const val INVALID_CONFIGURATION = "invalid configuration"
+
         // Handle init callback for all adapter instances
         private val mWasInitCalled: AtomicBoolean = AtomicBoolean(false)
         private var mInitState: InitState = InitState.INIT_STATE_NONE

@@ -17,7 +17,8 @@ class MolocoRewardedVideoAdapter(adapter: MolocoAdapter) :
     AbstractRewardedVideoAdapter<MolocoAdapter>(adapter) {
 
     private var mListener : RewardedVideoSmashListener? = null
-    private var mAdListener : MolocoRewardedVideoAdListener? = null
+    private var mAdLoadListener : MolocoRewardedVideoAdLoadListener? = null
+    private var mAdShowListener : MolocoRewardedVideoAdShowListener? = null
     private var mAd: RewardedInterstitialAd? = null
 
     override fun initRewardedVideoWithCallback(
@@ -104,12 +105,20 @@ class MolocoRewardedVideoAdapter(adapter: MolocoAdapter) :
             return
         }
 
-        val rewardedVideoAdListener = MolocoRewardedVideoAdListener(listener, WeakReference(this))
-        mAdListener = rewardedVideoAdListener
+        val rewardedVideoAdListener = MolocoRewardedVideoAdLoadListener(listener, WeakReference(this))
+        mAdLoadListener = rewardedVideoAdListener
         val adUnitIdKey = MolocoAdapter.getAdUnitIdKey()
         val adUnitId = getConfigStringValueFromKey(config, adUnitIdKey)
-        mAd = Moloco.createRewardedInterstitial(adUnitId)
-        mAd?.load(serverData, mAdListener)
+        Moloco.createRewardedInterstitial(adUnitId) { rewardedAd ->
+            rewardedAd?.let {
+                mAd = it
+                mAd?.load(serverData, mAdLoadListener)
+            } ?: listener.onRewardedVideoLoadFailed(
+                ErrorBuilder.buildLoadFailedError(
+                    MolocoAdapter.INVALID_CONFIGURATION
+                )
+            )
+        }
     }
 
     override fun showRewardedVideo(config: JSONObject, listener: RewardedVideoSmashListener) {
@@ -122,7 +131,9 @@ class MolocoRewardedVideoAdapter(adapter: MolocoAdapter) :
                 )
             )
         } else {
-            mAd?.show(mAdListener)
+            val rewardedAdShowListener = MolocoRewardedVideoAdShowListener(listener, WeakReference(this))
+            mAdShowListener = rewardedAdShowListener
+            mAd?.show(mAdShowListener)
         }
 
     }
@@ -144,7 +155,8 @@ class MolocoRewardedVideoAdapter(adapter: MolocoAdapter) :
     override fun releaseMemory(adUnit: IronSource.AD_UNIT, config: JSONObject?) {
         IronLog.INTERNAL.verbose()
         destroyRewardedVideoAd()
-        mAdListener = null
+        mAdLoadListener = null
+        mAdShowListener = null
         mListener = null
         }
 

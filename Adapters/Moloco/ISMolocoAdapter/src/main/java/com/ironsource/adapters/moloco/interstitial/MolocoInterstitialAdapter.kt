@@ -17,7 +17,8 @@ class MolocoInterstitialAdapter(adapter: MolocoAdapter) :
     AbstractInterstitialAdapter<MolocoAdapter>(adapter) {
 
     private var mListener : InterstitialSmashListener? = null
-    private var mAdListener : MolocoInterstitialAdListener? = null
+    private var mAdLoadListener : MolocoInterstitialAdLoadListener? = null
+    private var mAdShowListener : MolocoInterstitialAdShowListener? = null
     private var mAd: InterstitialAd? = null
 
     //regin Interstitial API
@@ -107,13 +108,20 @@ class MolocoInterstitialAdapter(adapter: MolocoAdapter) :
             return
         }
 
-        val interstitialAdListener = MolocoInterstitialAdListener(listener, WeakReference(this))
-        mAdListener = interstitialAdListener
+        val interstitialAdLoadListener = MolocoInterstitialAdLoadListener(listener, WeakReference(this))
+        mAdLoadListener = interstitialAdLoadListener
 
         val adUnitIdKey = MolocoAdapter.getAdUnitIdKey()
         val adUnitId = getConfigStringValueFromKey(config, adUnitIdKey)
-        mAd = Moloco.createInterstitial(adUnitId)
-        mAd?.load(serverData, mAdListener)
+        Moloco.createInterstitial(adUnitId) { interstitialAd ->
+            interstitialAd?.let {
+                mAd = it
+                mAd?.load(serverData, mAdLoadListener)
+            } ?: listener.onInterstitialAdLoadFailed(
+                ErrorBuilder.buildLoadFailedError(MolocoAdapter.INVALID_CONFIGURATION
+                )
+            )
+        }
     }
 
     override fun showInterstitial(
@@ -129,7 +137,9 @@ class MolocoInterstitialAdapter(adapter: MolocoAdapter) :
                 )
             )
         } else {
-            mAd?.show(mAdListener)
+            val interstitialAdShowListener = MolocoInterstitialAdShowListener(listener, WeakReference(this))
+            mAdShowListener = interstitialAdShowListener
+            mAd?.show(mAdShowListener)
         }
     }
 
@@ -151,9 +161,9 @@ class MolocoInterstitialAdapter(adapter: MolocoAdapter) :
 
     override fun releaseMemory(adUnit: IronSource.AD_UNIT, config: JSONObject?) {
         IronLog.INTERNAL.verbose()
-            destroyInterstitialAd()
-        mAdListener = null
-        mListener = null
+        destroyInterstitialAd()
+        mAdLoadListener = null
+        mAdShowListener = null
     }
 
     //end region
