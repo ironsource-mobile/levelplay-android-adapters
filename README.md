@@ -15,8 +15,8 @@ Follow these steps to build your Android project with LevelPlay adapters:
 3. Run "./gradlew createAAR" in command line or the task createAAR
 
 ## Contact Us
-For any question please contact us [here](https://ironsrc.formtitan.com/knowledge-center#/). 
+For any question please contact us [here](https://ironsrc.formtitan.com/knowledge-center#/)
 
 ## License
-The license can be viewed [here](https://github.com/ironsource-mobile/levelplay-android-adapters/blob/master/LICENSE).
+The license can be viewed [here](https://github.com/ironsource-mobile/levelplay-android-adapters/blob/master/LICENSE)
 
