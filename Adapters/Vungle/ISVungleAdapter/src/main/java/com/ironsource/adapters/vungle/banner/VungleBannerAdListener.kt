@@ -1,35 +1,39 @@
 package com.ironsource.adapters.vungle.banner
 
+import android.view.Gravity
 import android.widget.FrameLayout
 import com.ironsource.adapters.vungle.VungleAdapter
+import com.ironsource.environment.ContextProvider
+import com.ironsource.mediationsdk.AdapterUtils
 import com.ironsource.mediationsdk.logger.IronLog
 import com.ironsource.mediationsdk.logger.IronSourceError
 import com.ironsource.mediationsdk.sdk.BannerSmashListener
 import com.ironsource.mediationsdk.utils.ErrorBuilder
-import com.vungle.ads.BannerAd
 import com.vungle.ads.BannerAdListener
 import com.vungle.ads.BaseAd
+import com.vungle.ads.VungleBannerView
 import com.vungle.ads.VungleError
 
 class VungleBannerAdListener(
     private val mListener: BannerSmashListener,
-    private val mPlacementId: String,
-    private val mLayoutParams: FrameLayout.LayoutParams,
+    private val bannerView: VungleBannerView
 ) : BannerAdListener {
 
     /**
      * Called to indicate that an ad was loaded and it can now be shown.
      *
-     * @param baseAd Represents the [VungleBannerAd] ad which was loaded
+     * @param baseAd Represents the [VungleBannerView] ad which was loaded
      */
     override fun onAdLoaded(baseAd: BaseAd) {
         IronLog.ADAPTER_CALLBACK.verbose("placementId = " + baseAd.placementId)
-        (baseAd as? BannerAd)?.getBannerView()?.let { bannerView ->
-            mListener.onBannerAdLoaded(bannerView, mLayoutParams)
-        } ?: run {
-            IronLog.ADAPTER_CALLBACK.error("banner view is null")
-            mListener.onBannerAdLoadFailed(ErrorBuilder.buildLoadFailedError("Vungle LoadBanner failed - banner view is null"))
-        }
+
+        val context = ContextProvider.getInstance().applicationContext
+        val layoutParams = FrameLayout.LayoutParams(
+            AdapterUtils.dpToPixels(context, bannerView.getAdViewSize().width),
+            AdapterUtils.dpToPixels(context, bannerView.getAdViewSize().height),
+            Gravity.CENTER
+        )
+        mListener.onBannerAdLoaded(bannerView, layoutParams)
     }
 
     /**
@@ -55,7 +59,7 @@ class VungleBannerAdListener(
      * @param baseAd - Banner instance
      */
     override fun onAdStart(baseAd: BaseAd) {
-        IronLog.ADAPTER_CALLBACK.verbose("placementId = $mPlacementId")
+        IronLog.ADAPTER_CALLBACK.verbose("placementId = ${baseAd.placementId}")
     }
 
     /**
@@ -64,7 +68,7 @@ class VungleBannerAdListener(
      * @param baseAd - BannerView instance
      */
     override fun onAdImpression(baseAd: BaseAd) {
-        IronLog.ADAPTER_CALLBACK.verbose("${VungleAdapter.PLACEMENT_ID} = $mPlacementId")
+        IronLog.ADAPTER_CALLBACK.verbose("${VungleAdapter.PLACEMENT_ID} = ${baseAd.placementId}")
         mListener.onBannerAdShown()
     }
 
@@ -84,7 +88,7 @@ class VungleBannerAdListener(
      * @param baseAd - BannerView instance
      */
     override fun onAdClicked(baseAd: BaseAd) {
-        IronLog.ADAPTER_CALLBACK.verbose("placementId = $mPlacementId")
+        IronLog.ADAPTER_CALLBACK.verbose("placementId = ${baseAd.placementId}")
         mListener.onBannerAdClicked()
     }
 
@@ -94,16 +98,16 @@ class VungleBannerAdListener(
      * @param baseAd - Banner instance
      */
     override fun onAdEnd(baseAd: BaseAd) {
-        IronLog.ADAPTER_CALLBACK.verbose("placementId = $mPlacementId")
+        IronLog.ADAPTER_CALLBACK.verbose("placementId = ${baseAd.placementId}")
     }
 
     /**
      * Called to indicate that the user may leave the application on account of interacting with the ad.
      *
-     * @param baseAd Represents the [VungleBannerAd] ad
+     * @param baseAd Represents the [VungleBannerView] ad
      */
     override fun onAdLeftApplication(baseAd: BaseAd) {
-        IronLog.ADAPTER_CALLBACK.verbose("placementId = $mPlacementId")
+        IronLog.ADAPTER_CALLBACK.verbose("placementId = ${baseAd.placementId}")
         mListener.onBannerAdLeftApplication()
     }
 
