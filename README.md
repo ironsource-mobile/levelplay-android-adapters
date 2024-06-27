@@ -18,5 +18,5 @@ Follow these steps to build your Android project with LevelPlay adapters:
 For any question please contact us [here](https://ironsrc.formtitan.com/knowledge-center#/). 
 
 ## License
-https://developers.is.com/ironsource-mobile/general/ironsource-platform-online-terms-conditions/ 
+The license can be viewed [here](https://github.com/ironsource-mobile/levelplay-android-adapters/blob/master/LICENSE).
 
