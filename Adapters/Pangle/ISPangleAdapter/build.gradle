@@ -1,7 +1,7 @@
 apply plugin: 'com.android.library'
 apply plugin: 'kotlin-android'
 ext {
-    adapterVersion = '4.3.26'
+    adapterVersion = '4.3.27'
 }
 
 def getGitHash = { ->
@@ -30,7 +30,7 @@ android {
     buildToolsVersion "30.0.3"
 
     defaultConfig {
-        minSdkVersion 16
+        minSdkVersion 19
         targetSdkVersion 33
         versionCode 1
         versionName adapterVersion
@@ -55,8 +55,8 @@ android {
 }
 
  dependencies {
-     implementation 'com.ironsource.sdk:mediationsdk:7.9.0'
-     implementation 'com.pangle.global:ads-sdk:5.8.0.8'
+     implementation 'com.ironsource.sdk:mediationsdk:8.2.1'
+     implementation 'com.pangle.global:ads-sdk:6.1.0.6'
      implementation 'com.google.android.gms:play-services-ads-identifier:17.1.0'
  }
 
