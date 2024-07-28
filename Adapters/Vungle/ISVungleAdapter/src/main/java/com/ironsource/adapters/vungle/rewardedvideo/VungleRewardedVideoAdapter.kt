@@ -172,7 +172,7 @@ class VungleRewardedVideoAdapter(adapter: VungleAdapter) :
     ) {
         val placementId = config.optString(VungleAdapter.PLACEMENT_ID)
         IronLog.ADAPTER_API.verbose("placementId = $placementId")
-        loadRewardedVideoInternal(placementId, listener, serverData);
+        loadRewardedVideoInternal(placementId, listener, serverData)
     }
 
     override fun loadRewardedVideo(
