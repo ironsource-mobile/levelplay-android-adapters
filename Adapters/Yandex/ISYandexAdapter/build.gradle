@@ -2,7 +2,7 @@ apply plugin: 'com.android.library'
 apply plugin: 'kotlin-android'
 
 ext {
-    adapterVersion = '4.3.1'
+    adapterVersion = '4.3.2'
 }
 
 def getGitHash = { ->
@@ -26,7 +26,7 @@ android {
     buildToolsVersion "30.0.3"
 
     defaultConfig {
-        minSdkVersion 16
+        minSdkVersion 21
         targetSdkVersion 33
         versionCode 1
         versionName adapterVersion
@@ -51,8 +51,8 @@ android {
 }
 
  dependencies {
-    implementation 'com.ironsource.sdk:mediationsdk:8.1.0'
-    implementation 'com.yandex.android:mobileads:7.1.0'
+    implementation 'com.ironsource.sdk:mediationsdk:8.2.1'
+    implementation 'com.yandex.android:mobileads:7.2.0'
  }
 
 task sourcesJar(type: Jar) {
