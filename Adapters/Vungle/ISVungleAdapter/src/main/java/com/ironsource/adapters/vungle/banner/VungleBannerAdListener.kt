@@ -25,7 +25,7 @@ class VungleBannerAdListener(
      * @param baseAd Represents the [VungleBannerView] ad which was loaded
      */
     override fun onAdLoaded(baseAd: BaseAd) {
-        IronLog.ADAPTER_CALLBACK.verbose("placementId = " + baseAd.placementId)
+        IronLog.ADAPTER_CALLBACK.verbose("placementId = " + baseAd.placementId + " adview size=${bannerView.getAdViewSize()}")
 
         val context = ContextProvider.getInstance().applicationContext
         val layoutParams = FrameLayout.LayoutParams(
