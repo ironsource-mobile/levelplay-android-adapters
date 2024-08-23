@@ -10,6 +10,7 @@ import com.facebook.ads.AdOptionsView;
 import com.facebook.ads.MediaView;
 import com.facebook.ads.NativeAd;
 import com.facebook.ads.NativeAdLayout;
+import com.ironsource.adapters.facebook.FacebookAdapter;
 import com.ironsource.mediationsdk.ads.nativead.LevelPlayMediaView;
 import com.ironsource.mediationsdk.ads.nativead.internal.NativeAdViewHolder;
 import com.ironsource.mediationsdk.adunit.adapter.internal.nativead.AdapterNativeAdViewBinder;
@@ -42,23 +43,32 @@ public class FacebookNativeAdViewBinder extends AdapterNativeAdViewBinder {
 
         NativeAdViewHolder nativeAdViewHolder = getNativeAdViewHolder();
 
-        viewsToRegister.add(nativeAdViewHolder.getTitleView());
-        viewsToRegister.add(nativeAdViewHolder.getAdvertiserView());
-        viewsToRegister.add(nativeAdViewHolder.getIconView());
-        viewsToRegister.add(nativeAdViewHolder.getBodyView());
 
-        LevelPlayMediaView levelPlayMediaView = nativeAdViewHolder.getMediaView();
-        MediaView facebookMediaView = new MediaView(context);
-        if (levelPlayMediaView != null) {
-            levelPlayMediaView.addView(facebookMediaView);
-        }
-        viewsToRegister.add(nativeAdViewHolder.getCallToActionView());
+        if (nativeAdViewHolder.getTitleView() != null)
+            viewsToRegister.add(nativeAdViewHolder.getTitleView());
+        if (nativeAdViewHolder.getAdvertiserView() != null)
+            viewsToRegister.add(nativeAdViewHolder.getAdvertiserView());
+        if (nativeAdViewHolder.getIconView() != null)
+            viewsToRegister.add(nativeAdViewHolder.getIconView());
+        if (nativeAdViewHolder.getBodyView() != null)
+            viewsToRegister.add(nativeAdViewHolder.getBodyView());
+        if (nativeAdViewHolder.getCallToActionView() != null)
+            viewsToRegister.add(nativeAdViewHolder.getCallToActionView());
 
-        mNativeAdLayout.addView(nativeAdView);
-        viewsToRegister.add(nativeAdView);
-        View adOptions = new AdOptionsView(context, mNativeAd, mNativeAdLayout);
-        mNativeAdLayout.addView(adOptions, getAdOptionsLayoutParams());
-        mNativeAd.registerViewForInteraction(nativeAdView, facebookMediaView, viewsToRegister);
+        FacebookAdapter.postOnUIThread(new Runnable() {
+            @Override
+            public void run() {
+                LevelPlayMediaView levelPlayMediaView = nativeAdViewHolder.getMediaView();
+                MediaView facebookMediaView = new MediaView(context);
+                if (levelPlayMediaView != null) {
+                    levelPlayMediaView.addView(facebookMediaView);
+                }
+                View adOptions = new AdOptionsView(context, mNativeAd, mNativeAdLayout);
+                mNativeAdLayout.addView(adOptions, getAdOptionsLayoutParams());
+                mNativeAdLayout.addView(nativeAdView);
+                mNativeAd.registerViewForInteraction(nativeAdView, facebookMediaView, viewsToRegister);
+            }
+        });
     }
 
     private FrameLayout.LayoutParams getAdOptionsLayoutParams() {

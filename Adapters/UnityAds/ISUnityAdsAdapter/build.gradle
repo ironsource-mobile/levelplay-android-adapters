@@ -2,7 +2,7 @@ apply plugin: 'com.android.library'
 apply plugin: 'com.android.library'
 
 ext {
-    adapterVersion = '4.3.38'
+    adapterVersion = '4.3.42'
 }
 
 def getGitHash = { ->
@@ -53,8 +53,8 @@ android {
 }
 
  dependencies {
-    implementation 'com.ironsource.sdk:mediationsdk:8.0.0'
-    implementation 'com.unity3d.ads:unity-ads:4.11.2'
+    implementation 'com.ironsource.sdk:mediationsdk:8.2.1'
+    implementation 'com.unity3d.ads:unity-ads:4.12.2'
      implementation 'com.android.support:multidex:1.0.3'
 
 }

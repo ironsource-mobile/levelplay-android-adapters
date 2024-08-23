@@ -19,6 +19,7 @@ import com.bytedance.sdk.openadsdk.api.reward.PAGRewardedRequest
 import com.ironsource.environment.ContextProvider
 import com.ironsource.mediationsdk.*
 import com.ironsource.mediationsdk.IronSource.AD_UNIT
+import com.ironsource.mediationsdk.bidding.BiddingDataCallback
 import com.ironsource.mediationsdk.logger.IronLog
 import com.ironsource.mediationsdk.metadata.MetaDataUtils
 import com.ironsource.mediationsdk.sdk.BannerSmashListener
@@ -393,8 +394,12 @@ class PangleAdapter(providerName: String) : AbstractAdapter(providerName),
                 (mSlotIdToRewardedVideoAdAvailability[slotId] == true))
     }
 
-    override fun getRewardedVideoBiddingData(config: JSONObject?, adData: JSONObject?): MutableMap<String, Any>? {
-        return getBiddingData()
+    override fun collectRewardedVideoBiddingData(
+        config: JSONObject,
+        adData: JSONObject?,
+        biddingDataCallback: BiddingDataCallback
+    ) {
+        collectBiddingData(biddingDataCallback, config)
     }
 
     //endregion
@@ -509,8 +514,12 @@ class PangleAdapter(providerName: String) : AbstractAdapter(providerName),
                 (mSlotIdToInterstitialAdAvailability[slotId] == true))
     }
 
-    override fun getInterstitialBiddingData(config: JSONObject?, adData: JSONObject?): MutableMap<String, Any>? {
-        return getBiddingData()
+    override fun collectInterstitialBiddingData(
+        config: JSONObject,
+        adData: JSONObject?,
+        biddingDataCallback: BiddingDataCallback
+    ) {
+        collectBiddingData(biddingDataCallback, config)
     }
 
     //endregion
@@ -602,8 +611,12 @@ class PangleAdapter(providerName: String) : AbstractAdapter(providerName),
         }
     }
 
-    override fun getBannerBiddingData(config: JSONObject?, adData: JSONObject?): MutableMap<String, Any>? {
-        return getBiddingData()
+    override fun collectBannerBiddingData(
+        config: JSONObject,
+        adData: JSONObject?,
+        biddingDataCallback: BiddingDataCallback
+    ) {
+        collectBiddingData(biddingDataCallback, config)
     }
 
     //endregion
@@ -824,23 +837,26 @@ class PangleAdapter(providerName: String) : AbstractAdapter(providerName),
         }
     }
 
-    private fun getBiddingData(): MutableMap<String, Any>? {
+    private fun collectBiddingData(biddingDataCallback: BiddingDataCallback, config: JSONObject) {
+        val slotId = config.optString(SLOT_ID_KEY)
         if (mInitState == InitState.INIT_STATE_FAILED) {
-            IronLog.INTERNAL.error("returning null as token since init is not successful")
-            return null
+            val error = "returning null as token since init is not successful"
+            IronLog.INTERNAL.verbose(error)
+            biddingDataCallback.onFailure("$error - Pangle")
+            return
         }
-
-        val ret: MutableMap<String, Any> = HashMap()
-        var bidderToken = PAGSdk.getBiddingToken()
-
-        if (bidderToken.isNullOrEmpty()) {
-            bidderToken = ""
+        PAGSdk.getBiddingToken(slotId) { bidToken ->
+            if (!bidToken.isNullOrEmpty()) {
+                IronLog.ADAPTER_API.verbose("token = $bidToken")
+                mutableMapOf<String, Any>()
+                    .apply { put("token", bidToken) }
+                    .let { biddingDataCallback.onSuccess(it) }
+            } else {
+                biddingDataCallback.onFailure("Failed to receive token - Pangle")
+            }
         }
-
-        IronLog.ADAPTER_API.verbose("token = $bidderToken")
-        ret["token"] = bidderToken
-        return ret
     }
 
     //endregion
+
 }

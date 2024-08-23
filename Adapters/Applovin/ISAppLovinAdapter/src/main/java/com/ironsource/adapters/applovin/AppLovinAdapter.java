@@ -16,6 +16,7 @@ import com.applovin.sdk.AppLovinMediationProvider;
 import com.applovin.sdk.AppLovinPrivacySettings;
 import com.applovin.sdk.AppLovinSdk;
 import com.applovin.sdk.AppLovinSdkConfiguration;
+import com.applovin.sdk.AppLovinSdkInitializationConfiguration;
 import com.applovin.sdk.AppLovinSdkSettings;
 import com.ironsource.environment.ContextProvider;
 import com.ironsource.mediationsdk.AbstractAdapter;
@@ -93,6 +94,7 @@ class AppLovinAdapter extends AbstractAdapter implements INetworkInitCallbackLis
 
     // AppLovin sdk instance
     private static AppLovinSdk mAppLovinSdk;
+    private static AppLovinSdkSettings mAppLovinSettings;
 
     // Region Adapter Methods
 
@@ -164,31 +166,32 @@ class AppLovinAdapter extends AbstractAdapter implements INetworkInitCallbackLis
 
         if (mWasInitCalled.compareAndSet(false, true)) {
             IronLog.ADAPTER_API.verbose("sdkKey = " + sdkKey);
+            Context context = ContextProvider.getInstance().getApplicationContext();
 
             mInitState = InitState.INIT_STATE_IN_PROGRESS;
 
-            // get sdk setting
-            AppLovinSdkSettings appLovinSdkSettings = getAppLovinSDKSetting();
-
+            // create AppLovin sdk configuration
+            AppLovinSdkInitializationConfiguration initConfig = AppLovinSdkInitializationConfiguration.builder(sdkKey, context)
+                    .setMediationProvider(AppLovinMediationProvider.IRONSOURCE)
+                    .build();
             // create AppLovin sdk instance
-            mAppLovinSdk = AppLovinSdk.getInstance(sdkKey, appLovinSdkSettings, ContextProvider.getInstance().getApplicationContext());
+            mAppLovinSdk = AppLovinSdk.getInstance(context);
 
-            // set ironSource as mediation
-            mAppLovinSdk.setMediationProvider(AppLovinMediationProvider.IRONSOURCE);
-
-            // set user ID
+            AppLovinSdkSettings settings = mAppLovinSdk.getSettings();
+            settings.setVerboseLogging(isAdaptersDebugEnabled());
             if (!TextUtils.isEmpty(userId)) {
                 IronLog.ADAPTER_API.verbose("setUserIdentifier to " + userId);
-                mAppLovinSdk.setUserIdentifier(userId);
+                settings.setUserIdentifier(userId);
             }
+            mAppLovinSettings = settings;
 
             // init AppLovin sdk
-            mAppLovinSdk.initializeSdk(new AppLovinSdk.SdkInitializationListener() {
+            mAppLovinSdk.initialize(initConfig, new AppLovinSdk.SdkInitializationListener() {
                 // AppLovin's initialization callback currently doesn't give any indication to initialization failure.
                 // Once this callback is called we will treat the initialization as successful
                 @Override
-                public void onSdkInitialized(AppLovinSdkConfiguration appLovinSdkConfiguration) {
-                   initializationSuccess();
+                public void onSdkInitialized(final AppLovinSdkConfiguration sdkConfig) {
+                    initializationSuccess();
                 }
             });
         }
@@ -231,7 +234,8 @@ class AppLovinAdapter extends AbstractAdapter implements INetworkInitCallbackLis
     }
 
     @Override
-    public void onNetworkInitCallbackFailed(String error) { }
+    public void onNetworkInitCallbackFailed(String error) {
+    }
 
     //endregion
 
@@ -265,12 +269,7 @@ class AppLovinAdapter extends AbstractAdapter implements INetworkInitCallbackLis
         switch (mInitState) {
             case INIT_STATE_NONE:
             case INIT_STATE_IN_PROGRESS: {
-                postOnUIThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        initSdk(sdkKey, userId);
-                    }
-                });
+                postOnUIThread(() -> initSdk(sdkKey, userId));
             }
             break;
             case INIT_STATE_SUCCESS:
@@ -305,12 +304,7 @@ class AppLovinAdapter extends AbstractAdapter implements INetworkInitCallbackLis
         switch (mInitState) {
             case INIT_STATE_NONE:
             case INIT_STATE_IN_PROGRESS: {
-                postOnUIThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        initSdk(sdkKey, userId);
-                    }
-                });
+                postOnUIThread(() -> initSdk(sdkKey, userId));
             }
             break;
             case INIT_STATE_SUCCESS:
@@ -358,7 +352,7 @@ class AppLovinAdapter extends AbstractAdapter implements INetworkInitCallbackLis
         if (isRewardedVideoAvailable(config)) {
 
             if (!TextUtils.isEmpty(getDynamicUserId())) {
-                mAppLovinSdk.setUserIdentifier(getDynamicUserId());
+                mAppLovinSettings.setUserIdentifier(getDynamicUserId());
             }
 
             AppLovinIncentivizedInterstitial rewardedVideoAd = mZoneIdToRewardedVideoAd.get(zoneId);
@@ -407,12 +401,7 @@ class AppLovinAdapter extends AbstractAdapter implements INetworkInitCallbackLis
         switch (mInitState) {
             case INIT_STATE_NONE:
             case INIT_STATE_IN_PROGRESS: {
-                postOnUIThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        initSdk(sdkKey, userId);
-                    }
-                });
+                postOnUIThread(() -> initSdk(sdkKey, userId));
             }
             break;
             case INIT_STATE_SUCCESS:
@@ -433,7 +422,7 @@ class AppLovinAdapter extends AbstractAdapter implements INetworkInitCallbackLis
         // load interstitial
         if (!zoneId.equals(DEFAULT_ZONE_ID)) {
             mAppLovinSdk.getAdService().loadNextAdForZoneId(zoneId, interstitialListener);
-        } else { 
+        } else {
             mAppLovinSdk.getAdService().loadNextAd(AppLovinAdSize.INTERSTITIAL, interstitialListener);
         }
     }
@@ -447,7 +436,7 @@ class AppLovinAdapter extends AbstractAdapter implements INetworkInitCallbackLis
             AppLovinAd interstitialAd = mZoneIdToInterstitialAd.get(zoneId);
             AppLovinInterstitialListener interstitialListener = mZoneIdToAppLovinInterstitialListener.get(zoneId);
 
-            AppLovinInterstitialAdDialog interstitialAdDialog = AppLovinInterstitialAd.create(mAppLovinSdk, ContextProvider.getInstance().getCurrentActiveActivity());
+            AppLovinInterstitialAdDialog interstitialAdDialog = AppLovinInterstitialAd.create(mAppLovinSdk, ContextProvider.getInstance().getApplicationContext());
 
             interstitialAdDialog.setAdClickListener(interstitialListener);
             interstitialAdDialog.setAdDisplayListener(interstitialListener);
@@ -496,12 +485,7 @@ class AppLovinAdapter extends AbstractAdapter implements INetworkInitCallbackLis
         switch (mInitState) {
             case INIT_STATE_NONE:
             case INIT_STATE_IN_PROGRESS: {
-                postOnUIThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        initSdk(sdkKey, userId);
-                    }
-                });
+                postOnUIThread(() -> initSdk(sdkKey, userId));
             }
             break;
             case INIT_STATE_SUCCESS:
@@ -531,38 +515,34 @@ class AppLovinAdapter extends AbstractAdapter implements INetworkInitCallbackLis
             return;
         }
 
-        postOnUIThread(new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    // create ad view
-                    FrameLayout.LayoutParams layoutParams = getBannerLayoutParams(banner.getSize());
-                    // create banner listener
-                    AppLovinBannerListener applovinListener = new AppLovinBannerListener(AppLovinAdapter.this, listener, zoneId, layoutParams);
+        postOnUIThread(() -> {
+            try {
+                // create ad view
+                FrameLayout.LayoutParams layoutParams = getBannerLayoutParams(banner.getSize());
+                // create banner listener
+                AppLovinBannerListener applovinListener = new AppLovinBannerListener(AppLovinAdapter.this, listener, zoneId, layoutParams);
+                // create ad view
+                AppLovinAdView adView = new AppLovinAdView(mAppLovinSdk, bannerSize, ContextProvider.getInstance().getApplicationContext());
+                adView.setAdDisplayListener(applovinListener);
+                adView.setAdClickListener(applovinListener);
+                adView.setAdViewEventListener(applovinListener);
 
-                    // create ad view
-                    AppLovinAdView adView = new AppLovinAdView(mAppLovinSdk, bannerSize, ContextProvider.getInstance().getApplicationContext());
-                    adView.setAdDisplayListener(applovinListener);
-                    adView.setAdClickListener(applovinListener);
-                    adView.setAdViewEventListener(applovinListener);
+                // add to maps
+                mZoneIdToBannerAd.put(zoneId, adView);
+                mZoneIdToBannerLayout.put(zoneId, layoutParams);
+                mZoneIdToAppLovinBannerListener.put(zoneId, applovinListener);
+                mZoneIdToBannerSize.put(zoneId, bannerSize);
 
-                    // add to maps
-                    mZoneIdToBannerAd.put(zoneId, adView);
-                    mZoneIdToBannerLayout.put(zoneId, layoutParams);
-                    mZoneIdToAppLovinBannerListener.put(zoneId, applovinListener);
-                    mZoneIdToBannerSize.put(zoneId, bannerSize);
-
-                    // load ad
-                    if (!zoneId.equals(DEFAULT_ZONE_ID)) {
-                        mAppLovinSdk.getAdService().loadNextAdForZoneId(zoneId, applovinListener);
-                    } else {
-                        mAppLovinSdk.getAdService().loadNextAd(bannerSize, applovinListener);
-                    }
-
-                } catch (Exception e) {
-                    IronSourceError error = ErrorBuilder.buildLoadFailedError(getProviderName() + " loadBanner exception " + e.getMessage());
-                    listener.onBannerAdLoadFailed(error);
+                // load ad
+                if (!zoneId.equals(DEFAULT_ZONE_ID)) {
+                    mAppLovinSdk.getAdService().loadNextAdForZoneId(zoneId, applovinListener);
+                } else {
+                    mAppLovinSdk.getAdService().loadNextAd(bannerSize, applovinListener);
                 }
+
+            } catch (Exception e) {
+                IronSourceError error = ErrorBuilder.buildLoadFailedError(getProviderName() + " loadBanner exception " + e.getMessage());
+                listener.onBannerAdLoadFailed(error);
             }
         });
     }
@@ -572,18 +552,15 @@ class AppLovinAdapter extends AbstractAdapter implements INetworkInitCallbackLis
         final String zoneId = getZoneId(config);
         final AppLovinAdView adView = mZoneIdToBannerAd.get(zoneId);
 
-        postOnUIThread(new Runnable() {
-            @Override
-            public void run() {
-                if (adView != null) {
-                    adView.destroy();
-                }
-
-                mZoneIdToBannerAd.remove(zoneId);
-                mZoneIdToBannerLayout.remove(zoneId);
-                mZoneIdToAppLovinBannerListener.remove(zoneId);
-                mZoneIdToBannerSize.remove(zoneId);
+        postOnUIThread(() -> {
+            if (adView != null) {
+                adView.destroy();
             }
+
+            mZoneIdToBannerAd.remove(zoneId);
+            mZoneIdToBannerLayout.remove(zoneId);
+            mZoneIdToAppLovinBannerListener.remove(zoneId);
+            mZoneIdToBannerSize.remove(zoneId);
         });
     }
 
@@ -608,18 +585,15 @@ class AppLovinAdapter extends AbstractAdapter implements INetworkInitCallbackLis
             mZoneIdToInterstitialSmashListener.clear();
 
         } else if (adUnit == IronSource.AD_UNIT.BANNER) {
-            postOnUIThread(new Runnable() {
-                @Override
-                public void run() {
-                    for (AppLovinAdView adView : mZoneIdToBannerAd.values()) {
-                        adView.destroy();
-                    }
-
-                    mZoneIdToAppLovinBannerListener.clear();
-                    mZoneIdToBannerSmashListener.clear();
-                    mZoneIdToBannerLayout.clear();
-                    mZoneIdToBannerAd.clear();
+            postOnUIThread(() -> {
+                for (AppLovinAdView adView : mZoneIdToBannerAd.values()) {
+                    adView.destroy();
                 }
+
+                mZoneIdToAppLovinBannerListener.clear();
+                mZoneIdToBannerSmashListener.clear();
+                mZoneIdToBannerLayout.clear();
+                mZoneIdToBannerAd.clear();
             });
 
         }
@@ -628,6 +602,7 @@ class AppLovinAdapter extends AbstractAdapter implements INetworkInitCallbackLis
     //endregion
 
     //region Legal
+
     @Override
     protected void setMetaData(String key, List<String> values) {
         if (values.isEmpty()) {
@@ -656,13 +631,13 @@ class AppLovinAdapter extends AbstractAdapter implements INetworkInitCallbackLis
     }
 
     private void setAgeRestrictionValue(final boolean value) {
-            IronLog.ADAPTER_API.verbose("value = " + value);
-            AppLovinPrivacySettings.setIsAgeRestrictedUser(value, ContextProvider.getInstance().getApplicationContext());
+        IronLog.ADAPTER_API.verbose("value = " + value);
+        AppLovinPrivacySettings.setIsAgeRestrictedUser(value, ContextProvider.getInstance().getApplicationContext());
     }
 
     private void setCCPAValue(final boolean value) {
-            IronLog.ADAPTER_API.verbose("value = " + value);
-            AppLovinPrivacySettings.setDoNotSell(value, ContextProvider.getInstance().getApplicationContext());
+        IronLog.ADAPTER_API.verbose("value = " + value);
+        AppLovinPrivacySettings.setDoNotSell(value, ContextProvider.getInstance().getApplicationContext());
     }
 
     //endregion
@@ -724,12 +699,6 @@ class AppLovinAdapter extends AbstractAdapter implements INetworkInitCallbackLis
         return layoutParams;
     }
 
-    private AppLovinSdkSettings getAppLovinSDKSetting() {
-        AppLovinSdkSettings appLovinSdkSettings = new AppLovinSdkSettings(ContextProvider.getInstance().getApplicationContext());
-        appLovinSdkSettings.setVerboseLogging(isAdaptersDebugEnabled());
-        return appLovinSdkSettings;
-    }
-
     private String getZoneId(JSONObject config) {
         return !TextUtils.isEmpty(config.optString(ZONE_ID)) ? config.optString(ZONE_ID) : DEFAULT_ZONE_ID;
     }
@@ -777,6 +746,3 @@ class AppLovinAdapter extends AbstractAdapter implements INetworkInitCallbackLis
 
     //endregion
 }
-
-
-

@@ -2,7 +2,7 @@ apply plugin: 'com.android.library'
 apply plugin: 'com.android.library'
 
 ext {
-    adapterVersion = '4.3.15'
+    adapterVersion = '4.3.16'
 }
 
 def getGitHash = { ->
@@ -27,12 +27,13 @@ android {
     buildToolsVersion "30.0.3"
 
     defaultConfig {
-        minSdkVersion 16
+        minSdkVersion 19
         targetSdkVersion 33
         versionCode 1
         versionName adapterVersion
         buildConfigField "String", "GitHash", "\"${getGitHash()}\""
         buildConfigField("String","VERSION_NAME","\"${defaultConfig.versionName}\"")
+        multiDexEnabled true
     }
     
     buildTypes {
@@ -52,8 +53,8 @@ android {
 }
 
  dependencies {
-     implementation 'com.ironsource.sdk:mediationsdk:7.7.0'
-     implementation 'com.chartboost:chartboost-sdk:9.6.1'
+     implementation 'com.ironsource.sdk:mediationsdk:8.2.1'
+     implementation 'com.chartboost:chartboost-sdk:9.7.0'
      // Chartboost Dependencies
      implementation 'androidx.appcompat:appcompat:1.6.1'
  }

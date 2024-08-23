@@ -250,7 +250,9 @@ class VungleBannerAdapter(adapter: VungleAdapter) :
 
         if (adUnit == IronSource.AD_UNIT.BANNER) {
             mPlacementToBannerAd.values.forEach{bannerAd ->
-                bannerAd.finishAd()
+                postOnUIThread {
+                    bannerAd.finishAd()
+                }
             }
             mBannerPlacementToListenerMap.clear()
             mPlacementToBannerAd.clear()

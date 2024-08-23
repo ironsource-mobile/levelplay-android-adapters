@@ -2,7 +2,7 @@ apply plugin: 'com.android.library'
 apply plugin: 'kotlin-android'
 
 ext {
-    adapterVersion = '4.3.6'
+    adapterVersion = '4.3.8'
 }
 
 def getGitHash = { ->
@@ -29,9 +29,10 @@ android {
     buildToolsVersion "30.0.3"
 
     defaultConfig {
-        minSdkVersion 16
+        minSdkVersion 21
         targetSdkVersion 33
         versionCode 1
+        multiDexEnabled true
         versionName adapterVersion
         buildConfigField "String", "GitHash", "\"${getGitHash()}\""
         buildConfigField("String","VERSION_NAME","\"${defaultConfig.versionName}\"")
@@ -54,9 +55,10 @@ android {
 }
 
  dependencies {
-    implementation 'com.ironsource.sdk:mediationsdk:7.9.0'
-    implementation "io.bidmachine:ads:2.5.2"
+    implementation 'com.ironsource.sdk:mediationsdk:8.2.1'
+    implementation "io.bidmachine:ads:3.0.0"
     implementation 'com.google.android.gms:play-services-ads-identifier:17.1.0'
+     implementation 'com.android.support:multidex:1.0.3'
  }
 
 task sourcesJar(type: Jar) {
