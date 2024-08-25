@@ -26,7 +26,6 @@ class MolocoBannerAdapter(adapter: MolocoAdapter) :
     private var mAdLoadListener : MolocoBannerAdLoadListener? = null
     private var mAdShowListener : MolocoBannerAdShowListener? = null
     private var mAdView: Banner? = null
-    private var mContainer: FrameLayout? = null
 
     //region Banner API
 
@@ -129,7 +128,6 @@ class MolocoBannerAdapter(adapter: MolocoAdapter) :
         val context = ContextProvider.getInstance().applicationContext
         val layoutParams = createBannerLayoutParams(context, banner.size)
 
-        mContainer = FrameLayout(ContextProvider.getInstance().currentActiveActivity)
         val adUnitIdKey = MolocoAdapter.getAdUnitIdKey()
         val adUnitId = getConfigStringValueFromKey(config, adUnitIdKey)
         createBannerWithSize(banner.size, adUnitId, listener, layoutParams, serverData)
@@ -169,9 +167,7 @@ class MolocoBannerAdapter(adapter: MolocoAdapter) :
 
     private fun destroyBannerViewAd() {
         postOnUIThread {
-            mContainer?.removeView(mAdView)
             mAdView?.destroy()
-            mContainer = null
             mAdView = null
         }
     }
@@ -209,12 +205,10 @@ class MolocoBannerAdapter(adapter: MolocoAdapter) :
         serverData: String
     ) {
         adView?.let {
-            mAdView = it
-            mAdLoadListener = MolocoBannerAdLoadListener(listener, layoutParams, mAdView)
+            mAdLoadListener = MolocoBannerAdLoadListener(listener, layoutParams, it)
             mAdShowListener = MolocoBannerAdShowListener(listener)
             mAdView?.apply {
                 adShowListener = mAdShowListener
-                mContainer?.addView(this)
                 load(serverData, mAdLoadListener)
             }
         } ?: listener.onBannerAdLoadFailed(
