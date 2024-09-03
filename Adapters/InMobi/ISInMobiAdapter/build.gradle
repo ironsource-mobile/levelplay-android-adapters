@@ -1,7 +1,7 @@
 apply plugin: 'com.android.library'
 apply plugin: 'kotlin-android'
 ext {
-    adapterVersion = '4.3.25'
+    adapterVersion = '4.3.26'
 }
 
 def getGitHash = { ->
@@ -27,7 +27,7 @@ android {
 
     defaultConfig {
         minSdkVersion 19
-        targetSdkVersion 33
+        targetSdkVersion 34
         versionCode 1
         versionName adapterVersion
         buildConfigField "String", "GitHash", "\"${getGitHash()}\""
@@ -51,8 +51,8 @@ android {
 }
 
  dependencies {
-     implementation 'com.ironsource.sdk:mediationsdk:8.2.1'
-     implementation 'com.inmobi.monetization:inmobi-ads-kotlin:10.7.5'
+     implementation 'com.ironsource.sdk:mediationsdk:8.3.0'
+     implementation 'com.inmobi.monetization:inmobi-ads-kotlin:10.7.7'
  }
 
 task sourcesJar(type: Jar) {
