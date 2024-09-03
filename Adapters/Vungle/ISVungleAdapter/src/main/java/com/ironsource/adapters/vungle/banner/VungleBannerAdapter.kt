@@ -83,24 +83,7 @@ class VungleBannerAdapter(adapter: VungleAdapter) :
         //add to banner listener map
         mBannerPlacementToListenerMap[placementId] = listener
 
-        when (adapter.getInitState()) {
-            VungleAdapter.Companion.InitState.INIT_STATE_SUCCESS -> {
-                listener.onBannerInitSuccess()
-            }
-
-            VungleAdapter.Companion.InitState.INIT_STATE_FAILED -> {
-                listener.onBannerInitFailed(
-                    ErrorBuilder.buildInitFailedError(
-                        "Vungle SDK init failed",
-                        IronSourceConstants.BANNER_AD_UNIT
-                    )
-                )
-            }
-
-            else -> {
-                adapter.initSDK(ContextProvider.getInstance().applicationContext, appId)
-            }
-        }
+        adapter.initSDK(ContextProvider.getInstance().applicationContext, appId)
     }
 
     override fun onNetworkInitCallbackSuccess() {

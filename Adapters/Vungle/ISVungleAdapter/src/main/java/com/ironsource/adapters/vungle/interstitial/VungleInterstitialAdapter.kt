@@ -74,25 +74,7 @@ class VungleInterstitialAdapter(adapter: VungleAdapter) :
         //add to interstitial listener map
         mInterstitialPlacementToListenerMap[placementId] = listener
 
-        when (adapter.getInitState()) {
-            VungleAdapter.Companion.InitState.INIT_STATE_SUCCESS -> {
-                listener.onInterstitialInitSuccess()
-            }
-
-            VungleAdapter.Companion.InitState.INIT_STATE_FAILED -> {
-                // call listener init failed
-                listener.onInterstitialInitFailed(
-                    ErrorBuilder.buildInitFailedError(
-                        "Vungle SDK Init Failed",
-                        IronSourceConstants.INTERSTITIAL_AD_UNIT
-                    )
-                )
-            }
-
-            else -> {
-                adapter.initSDK(ContextProvider.getInstance().applicationContext, appId)
-            }
-        }
+        adapter.initSDK(ContextProvider.getInstance().applicationContext, appId)
     }
 
     override fun onNetworkInitCallbackSuccess() {

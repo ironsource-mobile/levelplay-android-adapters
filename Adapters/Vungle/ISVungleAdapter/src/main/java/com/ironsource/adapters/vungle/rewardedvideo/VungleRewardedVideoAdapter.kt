@@ -71,25 +71,7 @@ class VungleRewardedVideoAdapter(adapter: VungleAdapter) :
         // add placement to init callback map
         mRewardedVideoPlacementIdsForInitCallbacks.add(placementId)
 
-        when (adapter.getInitState()) {
-            VungleAdapter.Companion.InitState.INIT_STATE_SUCCESS -> {
-                listener.onRewardedVideoInitSuccess()
-            }
-
-            VungleAdapter.Companion.InitState.INIT_STATE_FAILED -> {
-                // call listener init failed
-                listener.onRewardedVideoInitFailed(
-                    ErrorBuilder.buildInitFailedError(
-                        "Vungle SDK Init Failed",
-                        IronSourceConstants.REWARDED_VIDEO_AD_UNIT
-                    )
-                )
-            }
-
-            else -> {
-                adapter.initSDK(ContextProvider.getInstance().applicationContext, appId)
-            }
-        }
+        adapter.initSDK(ContextProvider.getInstance().applicationContext, appId)
     }
 
     override fun onNetworkInitCallbackSuccess() {
@@ -143,25 +125,7 @@ class VungleRewardedVideoAdapter(adapter: VungleAdapter) :
         // add listener to map
         mRewardedVideoPlacementToListenerMap[placementId] = listener
 
-        // notify listener about init state
-        when (VungleAdapter.mInitState) {
-            VungleAdapter.Companion.InitState.INIT_STATE_SUCCESS -> {
-                IronLog.ADAPTER_API.verbose("initRewardedVideo: load rv $placementId")
-                // call load rewarded video
-                loadRewardedVideoInternal(placementId, listener, null)
-            }
-
-            VungleAdapter.Companion.InitState.INIT_STATE_FAILED -> {
-                IronLog.ADAPTER_API.verbose("initRewardedVideo - onRewardedVideoAvailabilityChanged(false)")
-
-                // set availability false
-                listener.onRewardedVideoAvailabilityChanged(false)
-            }
-
-            else -> {
-                adapter.initSDK(ContextProvider.getInstance().applicationContext, appId)
-            }
-        }
+        adapter.initSDK(ContextProvider.getInstance().applicationContext, appId)
     }
 
     override fun loadRewardedVideoForBidding(

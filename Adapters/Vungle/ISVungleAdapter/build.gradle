@@ -33,7 +33,7 @@ android {
         buildConfigField "String", "GitHash", "\"${getGitHash()}\""
         buildConfigField("String","VERSION_NAME","\"${defaultConfig.versionName}\"")
     }
-    
+
     buildTypes {
         debug{
             minifyEnabled false
@@ -50,11 +50,11 @@ android {
     }
 }
 
- dependencies {
+dependencies {
     implementation 'com.ironsource.sdk:mediationsdk:8.2.1'
-    implementation 'com.vungle:vungle-ads:7.4.0'
+    implementation 'com.vungle:vungle-ads:7.4.1'
 
- }
+}
 
 task sourcesJar(type: Jar) {
     archiveClassifier = 'sources'
@@ -72,5 +72,3 @@ task createAAR(type: Copy,group:'buildTasks') {
         fileName.replace('release', adapterVersion)
     }
 }
-
-
