@@ -13,11 +13,12 @@ import com.ironsource.mediationsdk.LoadWhileShowSupportState
 import com.ironsource.mediationsdk.logger.IronLog
 import com.ironsource.mediationsdk.metadata.MetaData
 import com.ironsource.mediationsdk.metadata.MetaDataUtils
+import com.vungle.ads.InitializationListener
 import com.vungle.ads.VungleAds
+import com.vungle.ads.VungleError
 import com.vungle.ads.VunglePrivacySettings.setCCPAStatus
 import com.vungle.ads.VunglePrivacySettings.setCOPPAStatus
 import com.vungle.ads.VunglePrivacySettings.setGDPRStatus
-import java.util.concurrent.atomic.AtomicBoolean
 
 
 class VungleAdapter(providerName: String) : AbstractAdapter(providerName),
@@ -31,6 +32,11 @@ class VungleAdapter(providerName: String) : AbstractAdapter(providerName),
         // The network's capability to load a Rewarded Video ad while another Rewarded Video ad
         // of that network is showing
         mLWSSupportState = LoadWhileShowSupportState.LOAD_WHILE_SHOW_BY_INSTANCE
+
+        // Set network SDK name and version
+        VungleAds.setIntegrationName(
+            VungleAds.WrapperFramework.ironsource, BuildConfig.VERSION_NAME
+        )
     }
 
     companion object {
@@ -50,21 +56,6 @@ class VungleAdapter(providerName: String) : AbstractAdapter(providerName),
 
         // Publisher-controlled consent policy version
         private const val META_DATA_VUNGLE_CONSENT_MESSAGE_VERSION = "1.0.0"
-
-        // Indicates whether init was called once- prevents from perform additional init
-        private var isInitiated = AtomicBoolean(false)
-
-        internal var mInitState = InitState.INIT_STATE_NONE
-
-        // Handle init callback for all adapter instances for each init that was called
-        internal val initCallbackListeners = HashSet<INetworkInitCallbackListener>()
-
-        enum class InitState {
-            INIT_STATE_NONE,
-            INIT_STATE_IN_PROGRESS,
-            INIT_STATE_SUCCESS,
-            INIT_STATE_FAILED
-        }
 
         @JvmStatic
         fun startAdapter(providerName: String): VungleAdapter = VungleAdapter(providerName)
@@ -93,30 +84,23 @@ class VungleAdapter(providerName: String) : AbstractAdapter(providerName),
     //region Initializations methods and callbacks
 
     fun initSDK(context: Context, appID: String) {
-        // add self to init delegates only when init not finished yet
-        if (mInitState == InitState.INIT_STATE_NONE ||
-            mInitState == InitState.INIT_STATE_IN_PROGRESS
-        ) {
-            initCallbackListeners.add(this)
+        if(VungleAds.isInitialized()) {
+            onNetworkInitCallbackSuccess()
+            return
         }
 
-        if (isInitiated.compareAndSet(false, true)) {
-            IronLog.ADAPTER_API.verbose("appId = $appID")
-            // set init in progress
-            mInitState = InitState.INIT_STATE_IN_PROGRESS
+        VungleAds.init(
+            context,
+            appID,
+            object : InitializationListener {
+                override fun onSuccess() {
+                    onNetworkInitCallbackSuccess()
+                }
 
-            VungleAds.setIntegrationName(
-                VungleAds.WrapperFramework.ironsource, BuildConfig.VERSION_NAME
-            )
-
-            // init SDK
-            val initListener = VungleInitListener()
-            VungleAds.init(context, appID, initListener)
-        }
-    }
-
-    fun getInitState(): InitState {
-        return mInitState
+                override fun onError(vungleError: VungleError) {
+                    onNetworkInitCallbackFailed(vungleError.message)
+                }
+            })
     }
 
     //endregion
@@ -154,12 +138,8 @@ class VungleAdapter(providerName: String) : AbstractAdapter(providerName),
     }
 
     private fun setCOPPAValue(value: Boolean) {
-        if (mInitState == InitState.INIT_STATE_NONE) {
-            IronLog.ADAPTER_API.verbose("coppa = $value")
-            setCOPPAStatus(value)
-        } else {
-            IronLog.INTERNAL.verbose("COPPA value can be set only before the initialization of Vungle")
-        }
+        IronLog.ADAPTER_API.verbose("coppa = $value")
+        setCOPPAStatus(value)
     }
 
     override fun setConsent(consent: Boolean) {
@@ -171,7 +151,7 @@ class VungleAdapter(providerName: String) : AbstractAdapter(providerName),
 
     //region Helpers
 
-    fun getBiddingData(): MutableMap<String?, Any?>? {
+    fun getBiddingData(): MutableMap<String?, Any?> {
         val ret: MutableMap<String?, Any?> = HashMap()
         val bidderToken: String? =
             VungleAds.getBiddingToken(ContextProvider.getInstance().applicationContext)
