@@ -68,7 +68,7 @@ class AppLovinAdapter extends AbstractAdapter implements INetworkInitCallbackLis
     protected final CopyOnWriteArraySet<String> mRewardedVideoZoneIdsForInitCallbacks;
 
     // Interstitial maps
-    protected final ConcurrentHashMap<String, AppLovinAd> mZoneIdToInterstitialAd;
+    protected static final ConcurrentHashMap<String, AppLovinAd> mZoneIdToInterstitialAd = new ConcurrentHashMap<>();
     protected final ConcurrentHashMap<String, InterstitialSmashListener> mZoneIdToInterstitialSmashListener;
     protected final ConcurrentHashMap<String, AppLovinInterstitialListener> mZoneIdToAppLovinInterstitialListener;
     protected final ConcurrentHashMap<String, Boolean> mZoneIdToInterstitialAdReadyStatus;
@@ -84,7 +84,8 @@ class AppLovinAdapter extends AbstractAdapter implements INetworkInitCallbackLis
     private enum InitState {
         INIT_STATE_NONE,
         INIT_STATE_IN_PROGRESS,
-        INIT_STATE_SUCCESS
+        INIT_STATE_SUCCESS,
+        INIT_STATE_FAILED
     }
 
     // Handle init callback for all adapter instances
@@ -114,7 +115,6 @@ class AppLovinAdapter extends AbstractAdapter implements INetworkInitCallbackLis
 
         // Interstitial
         mZoneIdToAppLovinInterstitialListener = new ConcurrentHashMap<>();
-        mZoneIdToInterstitialAd = new ConcurrentHashMap<>();
         mZoneIdToInterstitialSmashListener = new ConcurrentHashMap<>();
         mZoneIdToInterstitialAdReadyStatus = new ConcurrentHashMap<>();
 
@@ -170,10 +170,17 @@ class AppLovinAdapter extends AbstractAdapter implements INetworkInitCallbackLis
 
             mInitState = InitState.INIT_STATE_IN_PROGRESS;
 
-            // create AppLovin sdk configuration
-            AppLovinSdkInitializationConfiguration initConfig = AppLovinSdkInitializationConfiguration.builder(sdkKey, context)
-                    .setMediationProvider(AppLovinMediationProvider.IRONSOURCE)
-                    .build();
+            AppLovinSdkInitializationConfiguration initConfig;
+            try {
+                // Create AppLovin sdk configuration
+                initConfig = AppLovinSdkInitializationConfiguration.builder(sdkKey, context)
+                        .setMediationProvider(AppLovinMediationProvider.IRONSOURCE)
+                        .build();
+            } catch (Throwable t) {
+                initializationFailure(t.getMessage());
+                return;
+            }
+
             // create AppLovin sdk instance
             mAppLovinSdk = AppLovinSdk.getInstance(context);
 
@@ -210,15 +217,30 @@ class AppLovinAdapter extends AbstractAdapter implements INetworkInitCallbackLis
         initCallbackListeners.clear();
     }
 
+    private void initializationFailure(String message) {
+        IronLog.ADAPTER_CALLBACK.verbose();
+
+        mInitState = InitState.INIT_STATE_FAILED;
+
+        //iterate over all the adapter instances and report init failed
+        for (INetworkInitCallbackListener adapter : initCallbackListeners) {
+            adapter.onNetworkInitCallbackFailed("AppLovin sdk init failed - " + message);
+        }
+
+        initCallbackListeners.clear();
+    }
+
     @Override
     public void onNetworkInitCallbackSuccess() {
         // Rewarded Video
         for (String zoneId : mZoneIdToRewardedVideoSmashListener.keySet()) {
             RewardedVideoSmashListener listener = mZoneIdToRewardedVideoSmashListener.get(zoneId);
-            if (mRewardedVideoZoneIdsForInitCallbacks.contains(zoneId)) {
-                listener.onRewardedVideoInitSuccess();
-            } else {
-                loadRewardedVideoInternal(zoneId, listener);
+            if (listener != null) {
+                if (mRewardedVideoZoneIdsForInitCallbacks.contains(zoneId)) {
+                    listener.onRewardedVideoInitSuccess();
+                } else {
+                    loadRewardedVideoInternal(zoneId, listener);
+                }
             }
         }
 
@@ -235,6 +257,27 @@ class AppLovinAdapter extends AbstractAdapter implements INetworkInitCallbackLis
 
     @Override
     public void onNetworkInitCallbackFailed(String error) {
+        // Rewarded Video
+        for (String zoneId : mZoneIdToRewardedVideoSmashListener.keySet()) {
+            RewardedVideoSmashListener listener = mZoneIdToRewardedVideoSmashListener.get(zoneId);
+            if (listener != null) {
+                if (mRewardedVideoZoneIdsForInitCallbacks.contains(zoneId)) {
+                    listener.onRewardedVideoInitFailed(ErrorBuilder.buildInitFailedError(error, IronSourceConstants.REWARDED_VIDEO_AD_UNIT));
+                } else {
+                    listener.onRewardedVideoAvailabilityChanged(false);
+                }
+            }
+        }
+
+        // Interstitial
+        for (InterstitialSmashListener listener : mZoneIdToInterstitialSmashListener.values()) {
+            listener.onInterstitialInitFailed(ErrorBuilder.buildInitFailedError(error, IronSourceConstants.INTERSTITIAL_AD_UNIT));
+        }
+
+        // Banner
+        for (BannerSmashListener listener : mZoneIdToBannerSmashListener.values()) {
+            listener.onBannerInitFailed(ErrorBuilder.buildInitFailedError(error, IronSourceConstants.BANNER_AD_UNIT));
+        }
     }
 
     //endregion
@@ -419,6 +462,14 @@ class AppLovinAdapter extends AbstractAdapter implements INetworkInitCallbackLis
 
         mZoneIdToAppLovinInterstitialListener.put(zoneId, interstitialListener);
 
+        // Handle case where an interstitial ad is already loaded with the same zoneId
+        if(mZoneIdToInterstitialAd.containsKey(zoneId)) {
+            String errorMessage = "AppLovin can't load multiple interstitial ads for the same zoneId - " + zoneId + ", skipping load attempt since there is a loaded interstitial ad for this zoneId";
+            IronLog.INTERNAL.info(errorMessage);
+            listener.onInterstitialAdLoadFailed(ErrorBuilder.buildLoadFailedError(errorMessage));
+            return;
+        }
+
         // load interstitial
         if (!zoneId.equals(DEFAULT_ZONE_ID)) {
             mAppLovinSdk.getAdService().loadNextAdForZoneId(zoneId, interstitialListener);
@@ -445,6 +496,8 @@ class AppLovinAdapter extends AbstractAdapter implements INetworkInitCallbackLis
 
             mZoneIdToInterstitialAdReadyStatus.put(zoneId, false);
         } else {
+            // Remove the ad object to enable other interstitial ad to be loaded
+            mZoneIdToInterstitialAd.remove(zoneId);
             listener.onInterstitialAdShowFailed(ErrorBuilder.buildNoAdsToShowError(IronSourceConstants.INTERSTITIAL_AD_UNIT));
         }
     }

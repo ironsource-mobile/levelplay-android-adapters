@@ -35,7 +35,7 @@ public class AppLovinInterstitialListener implements AppLovinAdLoadListener, App
     public void adReceived(AppLovinAd appLovinAd) {
         IronLog.ADAPTER_CALLBACK.verbose("zoneId = " + mZoneId);
 
-        if (mAdapter == null || mAdapter.get() == null) {
+        if (mListener == null) {
             IronLog.INTERNAL.verbose("listener is null");
             return;
         }
@@ -45,7 +45,7 @@ public class AppLovinInterstitialListener implements AppLovinAdLoadListener, App
             return;
         }
 
-        mAdapter.get().mZoneIdToInterstitialAd.put(mZoneId, appLovinAd);
+        AppLovinAdapter.mZoneIdToInterstitialAd.put(mZoneId, appLovinAd);
         mAdapter.get().mZoneIdToInterstitialAdReadyStatus.put(mZoneId, true);
         mListener.onInterstitialAdReady();
     }
@@ -66,7 +66,7 @@ public class AppLovinInterstitialListener implements AppLovinAdLoadListener, App
             return;
         }
 
-        if (mAdapter.get() == null) {
+        if (mAdapter == null || mAdapter.get() == null) {
             IronLog.INTERNAL.verbose("adapter is null");
             return;
         }
@@ -74,6 +74,7 @@ public class AppLovinInterstitialListener implements AppLovinAdLoadListener, App
         int adapterErrorCode = errorCode == AppLovinErrorCodes.NO_FILL ? IronSourceError.ERROR_IS_LOAD_NO_FILL : errorCode;
         IronSourceError ironSourceError = new IronSourceError(adapterErrorCode, mAdapter.get().getErrorString(errorCode));
 
+        removeAdFromMap();
         mAdapter.get().mZoneIdToInterstitialAdReadyStatus.put(mZoneId, false);
         mListener.onInterstitialAdLoadFailed(ironSourceError);
     }
@@ -105,11 +106,6 @@ public class AppLovinInterstitialListener implements AppLovinAdLoadListener, App
     @Override
     public void videoPlaybackBegan(AppLovinAd ad) {
         IronLog.ADAPTER_CALLBACK.verbose("zoneId = " + mZoneId);
-
-        if (mListener == null) {
-            IronLog.INTERNAL.verbose("listener is null");
-            return;
-        }
     }
 
     /**
@@ -159,6 +155,13 @@ public class AppLovinInterstitialListener implements AppLovinAdLoadListener, App
             return;
         }
 
+        removeAdFromMap();
         mListener.onInterstitialAdClosed();
+    }
+
+    private void removeAdFromMap() {
+        if (AppLovinAdapter.mZoneIdToInterstitialAd.containsKey(mZoneId) && AppLovinAdapter.mZoneIdToInterstitialAd.get(mZoneId) != null) {
+            AppLovinAdapter.mZoneIdToInterstitialAd.remove(mZoneId);
+        }
     }
 }
