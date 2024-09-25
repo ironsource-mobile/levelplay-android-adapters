@@ -2,7 +2,7 @@ apply plugin: 'com.android.library'
 apply plugin: 'kotlin-android'
 
 ext {
-    adapterVersion = '4.3.25'
+    adapterVersion = '4.3.26'
 }
 
 def getGitHash = { ->
@@ -51,8 +51,8 @@ android {
 }
 
  dependencies {
-    implementation 'com.ironsource.sdk:mediationsdk:8.2.1'
-    implementation 'com.vungle:vungle-ads:7.4.0'
+    implementation 'com.ironsource.sdk:mediationsdk:8.3.0'
+    implementation 'com.vungle:vungle-ads:7.4.1'
 
  }
 
