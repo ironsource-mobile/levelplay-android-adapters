@@ -215,7 +215,7 @@ class YandexAdapter(providerName: String) : AbstractAdapter(providerName),
     fun getConfigParams(): Map<String, String> {
         return mapOf(
             "adapter_version" to VERSION,
-            "adapter_network" to MEDIATION_NAME,
+            "adapter_network_name" to MEDIATION_NAME,
             "adapter_network_sdk_version" to IronSourceUtils.getSDKVersion()
         )
     }
