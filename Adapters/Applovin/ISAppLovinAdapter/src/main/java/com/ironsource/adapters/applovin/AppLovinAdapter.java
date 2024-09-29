@@ -58,9 +58,6 @@ class AppLovinAdapter extends AbstractAdapter implements INetworkInitCallbackLis
     private static final String DEFAULT_ZONE_ID = "defaultZoneId";
     private static final String SDK_KEY = "sdkKey";
 
-    // Meta data flags
-    private static final String META_DATA_APPLOVIN_AGE_RESTRICTION_KEY = "AppLovin_AgeRestrictedUser";
-
     // Rewarded video collections
     protected final ConcurrentHashMap<String, AppLovinIncentivizedInterstitial> mZoneIdToRewardedVideoAd;
     protected final ConcurrentHashMap<String, RewardedVideoSmashListener> mZoneIdToRewardedVideoSmashListener;
@@ -668,12 +665,6 @@ class AppLovinAdapter extends AbstractAdapter implements INetworkInitCallbackLis
 
         if (MetaDataUtils.isValidCCPAMetaData(key, value)) {
             setCCPAValue(MetaDataUtils.getMetaDataBooleanValue(value));
-        } else {
-            String formattedValue = MetaDataUtils.formatValueForType(value, MetaData.MetaDataValueTypes.META_DATA_VALUE_BOOLEAN);
-
-            if (MetaDataUtils.isValidMetaData(key, META_DATA_APPLOVIN_AGE_RESTRICTION_KEY, formattedValue)) {
-                setAgeRestrictionValue(MetaDataUtils.getMetaDataBooleanValue(formattedValue));
-            }
         }
     }
 
@@ -681,11 +672,6 @@ class AppLovinAdapter extends AbstractAdapter implements INetworkInitCallbackLis
     protected void setConsent(boolean consent) {
         IronLog.ADAPTER_API.verbose("consent = " + consent);
         AppLovinPrivacySettings.setHasUserConsent(consent, ContextProvider.getInstance().getApplicationContext());
-    }
-
-    private void setAgeRestrictionValue(final boolean value) {
-        IronLog.ADAPTER_API.verbose("value = " + value);
-        AppLovinPrivacySettings.setIsAgeRestrictedUser(value, ContextProvider.getInstance().getApplicationContext());
     }
 
     private void setCCPAValue(final boolean value) {
