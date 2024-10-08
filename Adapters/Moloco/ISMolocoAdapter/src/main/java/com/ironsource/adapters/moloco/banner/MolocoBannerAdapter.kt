@@ -72,7 +72,6 @@ class MolocoBannerAdapter(adapter: MolocoAdapter) :
             MolocoAdapter.Companion.InitState.INIT_STATE_SUCCESS -> {
                 listener.onBannerInitSuccess()
             }
-
             MolocoAdapter.Companion.InitState.INIT_STATE_FAILED -> {
                 listener.onBannerInitFailed(
                     ErrorBuilder.buildInitFailedError(
@@ -82,7 +81,6 @@ class MolocoBannerAdapter(adapter: MolocoAdapter) :
                 )
 
             }
-
             MolocoAdapter.Companion.InitState.INIT_STATE_NONE,
             MolocoAdapter.Companion.InitState.INIT_STATE_IN_PROGRESS -> {
                 adapter.initSdk(appKey)
@@ -126,10 +124,11 @@ class MolocoBannerAdapter(adapter: MolocoAdapter) :
         }
 
         val context = ContextProvider.getInstance().applicationContext
-        val layoutParams = createBannerLayoutParams(context, banner.size)
+        val layoutParams = createBannerLayoutParams(context,banner.size)
 
         val adUnitIdKey = MolocoAdapter.getAdUnitIdKey()
         val adUnitId = getConfigStringValueFromKey(config, adUnitIdKey)
+
         createBannerWithSize(banner.size, adUnitId, listener, layoutParams, serverData)
     }
 
@@ -172,22 +171,17 @@ class MolocoBannerAdapter(adapter: MolocoAdapter) :
         }
     }
 
-    private fun createBannerLayoutParams(
-        context: Context,
-        size: ISBannerSize
-    ): FrameLayout.LayoutParams {
+    private fun createBannerLayoutParams(context : Context, size: ISBannerSize): FrameLayout.LayoutParams {
         var layoutParams: FrameLayout.LayoutParams = FrameLayout.LayoutParams(0, 0)
         when (size.description) {
             "BANNER" -> layoutParams = FrameLayout.LayoutParams(
                 AdapterUtils.dpToPixels(context, 320),
                 AdapterUtils.dpToPixels(context, 50)
             )
-
             "LEADERBOARD" -> layoutParams = FrameLayout.LayoutParams(
                 AdapterUtils.dpToPixels(context, 728),
                 AdapterUtils.dpToPixels(context, 90)
             )
-
             "RECTANGLE" -> layoutParams = FrameLayout.LayoutParams(
                 AdapterUtils.dpToPixels(context, 300),
                 AdapterUtils.dpToPixels(context, 250)
@@ -205,6 +199,7 @@ class MolocoBannerAdapter(adapter: MolocoAdapter) :
         serverData: String
     ) {
         adView?.let {
+            mAdView = it
             mAdLoadListener = MolocoBannerAdLoadListener(listener, layoutParams, it)
             mAdShowListener = MolocoBannerAdShowListener(listener)
             mAdView?.apply {
@@ -227,9 +222,9 @@ class MolocoBannerAdapter(adapter: MolocoAdapter) :
         }
     ) {
         when (size.description) {
-            "BANNER" -> Moloco.createBanner(adUnitId, createCallback)
-            "LEADERBOARD" -> Moloco.createBannerTablet(adUnitId, createCallback)
-            "RECTANGLE" -> Moloco.createMREC(adUnitId, createCallback)
+            "BANNER" -> Moloco.createBanner(adUnitId, null, createCallback)
+            "LEADERBOARD" -> Moloco.createBannerTablet(adUnitId, null, createCallback)
+            "RECTANGLE" -> Moloco.createMREC(adUnitId, null, createCallback)
         }
     }
 
