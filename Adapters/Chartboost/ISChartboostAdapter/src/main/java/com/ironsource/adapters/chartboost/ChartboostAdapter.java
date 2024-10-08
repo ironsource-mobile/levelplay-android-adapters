@@ -799,22 +799,27 @@ class ChartboostAdapter extends AbstractAdapter implements INetworkInitCallbackL
 
         Banner banner = mLocationIdToBannerAd.get(locationId);
 
-        if (banner != null) {
-            // destroy banner
-            banner.detach();
+        postOnUIThread(new Runnable() {
+            @Override
+            public void run() {
+                if (banner != null) {
+                    // destroy banner
+                    banner.detach();
 
-            // remove banner view from map
-            mLocationIdToBannerAd.remove(locationId);
+                    // remove banner view from map
+                    mLocationIdToBannerAd.remove(locationId);
 
-            // remove banner layout from map
-            mLocationIdToBannerLayout.remove(locationId);
+                    // remove banner layout from map
+                    mLocationIdToBannerLayout.remove(locationId);
 
-            // remove banner listener from map
-            mLocationIdToBannerListener.remove(locationId);
+                    // remove banner listener from map
+                    mLocationIdToBannerListener.remove(locationId);
 
-            // remove banner ad listener from map
-            mLocationIdToBannerAdListener.remove(locationId);
-        }
+                    // remove banner ad listener from map
+                    mLocationIdToBannerAdListener.remove(locationId);
+                }
+            }
+        });
     }
 
     private Mediation getMediation() {
@@ -844,13 +849,18 @@ class ChartboostAdapter extends AbstractAdapter implements INetworkInitCallbackL
 
         } else if (adUnit == IronSource.AD_UNIT.BANNER) {
             // release banner ads
-            for (Banner banner : mLocationIdToBannerAd.values()) {
-                banner.detach();
-            }
-            mLocationIdToBannerAd.clear();
-            mLocationIdToBannerListener.clear();
-            mLocationIdToBannerAdListener.clear();
-            mLocationIdToBannerLayout.clear();
+            postOnUIThread(new Runnable() {
+                @Override
+                public void run() {
+                    for (Banner banner : mLocationIdToBannerAd.values()) {
+                        banner.detach();
+                    }
+                    mLocationIdToBannerAd.clear();
+                    mLocationIdToBannerListener.clear();
+                    mLocationIdToBannerAdListener.clear();
+                    mLocationIdToBannerLayout.clear();
+                }
+            });
         }
     }
     //endregion
