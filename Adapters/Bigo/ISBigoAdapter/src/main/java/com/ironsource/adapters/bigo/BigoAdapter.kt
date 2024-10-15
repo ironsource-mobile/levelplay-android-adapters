@@ -26,7 +26,6 @@ class BigoAdapter(providerName: String) : AbstractAdapter(providerName),
         setRewardedVideoAdapter(BigoRewardedVideoAdapter(this))
         setInterstitialAdapter(BigoInterstitialAdapter(this))
         setBannerAdapter(BigoBannerAdapter(this))
-//        setNativeAdAdapter(BigoNativeAdAdapter(this))
 
         // The network's capability to load a Rewarded Video ad while another Rewarded Video ad of that network is showing
         mLWSSupportState = LoadWhileShowSupportState.LOAD_WHILE_SHOW_BY_INSTANCE
@@ -42,9 +41,6 @@ class BigoAdapter(providerName: String) : AbstractAdapter(providerName),
         const val SLOT_ID = "slotId"
         private const val APP_ID = "appId"
         private const val NETWORK_NAME: String = "Bigo"
-
-        // Meta data flags
-//        private const val META_DATA_BIGO_COPPA_KEY = "LevelPlay_ChildDirected"
 
         // Handle init callback for all adapter instances
         private val mWasInitCalled: AtomicBoolean = AtomicBoolean(false)
@@ -164,17 +160,10 @@ class BigoAdapter(providerName: String) : AbstractAdapter(providerName),
         // This is a list of 1 value
         val value = values[0]
         IronLog.ADAPTER_API.verbose("key = $key, value = $value")
-//        val formattedValue: String = MetaDataUtils.formatValueForType(value, MetaData.MetaDataValueTypes.META_DATA_VALUE_BOOLEAN)
-
         when {
             MetaDataUtils.isValidCCPAMetaData(key, value) -> {
                 setCCPAValue(MetaDataUtils.getMetaDataBooleanValue(value))
             }
-
-//            MetaDataUtils.isValidMetaData(key, META_DATA_BIGO_COPPA_KEY, formattedValue) -> {
-//                setCOPPAValue(MetaDataUtils.getMetaDataBooleanValue(formattedValue))
-//            }
-
         }
     }
 
@@ -184,17 +173,11 @@ class BigoAdapter(providerName: String) : AbstractAdapter(providerName),
             ContextProvider.getInstance().applicationContext, ConsentOptions.GDPR, consent)
     }
 
-    private fun setCCPAValue(ccpa: Boolean) {
-        IronLog.ADAPTER_API.verbose("ccpa = $ccpa")
+    private fun setCCPAValue(doNotSell: Boolean) {
+        IronLog.ADAPTER_API.verbose("ccpa = $doNotSell")
         BigoAdSdk.setUserConsent(
-            ContextProvider.getInstance().applicationContext, ConsentOptions.CCPA, ccpa)
+            ContextProvider.getInstance().applicationContext, ConsentOptions.CCPA, !doNotSell)
     }
-
-//    private fun setCOPPAValue(value: Boolean) {
-//        IronLog.ADAPTER_API.verbose("isCoppa = $value")
-//        val context = ContextProvider.getInstance().applicationContext
-//        BigoAdSdk.setUserConsent(context, ConsentOptions.COPPA, true)
-//    }
 
     //endregion
 
