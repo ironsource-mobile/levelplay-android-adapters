@@ -2,7 +2,7 @@ apply plugin: 'com.android.library'
 apply plugin: 'kotlin-android'
 
 ext {
-    adapterVersion = '4.3.1'
+    adapterVersion = '4.3.2'
 }
 
 def getGitHash = { ->
@@ -51,8 +51,8 @@ android {
 }
 
  dependencies {
-    implementation 'com.ironsource.sdk:mediationsdk:8.3.0'
-    implementation 'com.mobilefuse.sdk:mobilefuse-sdk-core:1.7.6'
+    implementation 'com.ironsource.sdk:mediationsdk:8.4.0'
+    implementation 'com.mobilefuse.sdk:mobilefuse-sdk-core:1.8.0'
  }
 
 task sourcesJar(type: Jar) {
