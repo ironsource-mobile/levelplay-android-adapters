@@ -130,26 +130,31 @@ public class AdMobBannerAdapter extends AbstractBannerAdapter<AdMobAdapter> {
                     if (isNative) {
                         loadNativeBanner(banner, listener, adUnitId, adRequest, config);
                     } else {
-                        //get banner size
-                        final AdSize size = getAdSize(banner.getSize(), AdapterUtils.isLargeScreen(ContextProvider.getInstance().getApplicationContext()));
-
-                        if (size == null) {
+                        if(banner == null) {
+                            IronLog.INTERNAL.verbose("banner is null");
                             listener.onBannerAdLoadFailed(ErrorBuilder.unsupportedBannerSize(getAdapter().getProviderName()));
-                            return;
+                        } else{
+                            //get banner size
+                            final AdSize size = getAdSize(banner.getSize(), AdapterUtils.isLargeScreen(ContextProvider.getInstance().getApplicationContext()));
+
+                            if (size == null) {
+                                listener.onBannerAdLoadFailed(ErrorBuilder.unsupportedBannerSize(getAdapter().getProviderName()));
+                                return;
+                            }
+
+                            AdView adView = new AdView(ContextProvider.getInstance().getApplicationContext());
+                            adView.setAdSize(size);
+                            adView.setAdUnitId(adUnitId);
+                            AdMobBannerAdListener adMobBannerAdListener = new AdMobBannerAdListener(listener, adUnitId, adView);
+
+                            adView.setAdListener(adMobBannerAdListener);
+
+                            //add banner ad to map
+                            mAdUnitIdToBannerAd.put(adUnitId, adView);
+
+                            IronLog.ADAPTER_API.verbose("loadAd");
+                            adView.loadAd(adRequest);
                         }
-
-                        AdView adView = new AdView(ContextProvider.getInstance().getApplicationContext());
-                        adView.setAdSize(size);
-                        adView.setAdUnitId(adUnitId);
-                        AdMobBannerAdListener adMobBannerAdListener = new AdMobBannerAdListener(listener, adUnitId, adView);
-
-                        adView.setAdListener(adMobBannerAdListener);
-
-                        //add banner ad to map
-                        mAdUnitIdToBannerAd.put(adUnitId, adView);
-
-                        IronLog.ADAPTER_API.verbose("loadAd");
-                        adView.loadAd(adRequest);
                     }
                 } catch (Exception e) {
                     IronSourceError error = ErrorBuilder.buildLoadFailedError("AdMobAdapter loadBanner exception " + e.getMessage());
