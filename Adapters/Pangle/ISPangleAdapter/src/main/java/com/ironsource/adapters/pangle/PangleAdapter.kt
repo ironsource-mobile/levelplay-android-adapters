@@ -586,6 +586,11 @@ class PangleAdapter(providerName: String) : AbstractAdapter(providerName),
         bannerRequest.adString = serverData
 
         postOnUIThread {
+            if(banner == null){
+                IronLog.INTERNAL.error("banner is null")
+                listener.onBannerAdLoadFailed(ErrorBuilder.buildNoConfigurationAvailableError("banner is null"))
+                return@postOnUIThread
+            }
             PAGBannerAd.loadAd(slotId, bannerRequest, bannerAdListener)
         }
     }
