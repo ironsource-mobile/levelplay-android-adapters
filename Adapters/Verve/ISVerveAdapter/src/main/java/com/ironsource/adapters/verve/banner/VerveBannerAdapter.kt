@@ -101,9 +101,6 @@ class VerveBannerAdapter(adapter: VerveAdapter) :
                 Gravity.CENTER
         )
 
-        val zoneIdKey = VerveAdapter.getZoneIdKey()
-        val zoneId = getConfigStringValueFromKey(config, zoneIdKey)
-
         val bannerAdView = HyBidAdView(
             context,
             bannerSize
@@ -121,10 +118,13 @@ class VerveBannerAdapter(adapter: VerveAdapter) :
 
         mAdListener = bannerAdListener
         bannerAdView.setMediation(true)
-        bannerAdView.load(
-            zoneId,
-            bannerAdListener
-        )
+
+        postOnUIThread {
+            bannerAdView.renderAd(
+                serverData,
+                bannerAdListener
+            )
+        }
     }
 
     override fun destroyBanner(config: JSONObject) {
