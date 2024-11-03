@@ -567,6 +567,11 @@ class AppLovinAdapter extends AbstractAdapter implements INetworkInitCallbackLis
 
         postOnUIThread(() -> {
             try {
+                if(banner == null){
+                    IronLog.INTERNAL.verbose("banner is null");
+                    listener.onBannerAdLoadFailed(ErrorBuilder.unsupportedBannerSize(getProviderName()));
+                    return;
+                }
                 // create ad view
                 FrameLayout.LayoutParams layoutParams = getBannerLayoutParams(banner.getSize());
                 // create banner listener
