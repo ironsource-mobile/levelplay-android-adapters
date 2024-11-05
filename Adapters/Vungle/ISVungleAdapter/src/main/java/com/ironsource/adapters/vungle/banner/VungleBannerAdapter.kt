@@ -9,6 +9,7 @@ import com.ironsource.mediationsdk.ISBannerSize
 import com.ironsource.mediationsdk.IronSource
 import com.ironsource.mediationsdk.IronSourceBannerLayout
 import com.ironsource.mediationsdk.adapter.AbstractBannerAdapter
+import com.ironsource.mediationsdk.bidding.BiddingDataCallback
 import com.ironsource.mediationsdk.logger.IronLog
 import com.ironsource.mediationsdk.sdk.BannerSmashListener
 import com.ironsource.mediationsdk.utils.ErrorBuilder
@@ -215,10 +216,13 @@ class VungleBannerAdapter(adapter: VungleAdapter) :
         }
     }
 
-    override fun getBannerBiddingData(
+    override fun collectBannerBiddingData(
         config: JSONObject,
-        adData: JSONObject?
-    ): MutableMap<String?, Any?>? = adapter.getBiddingData()
+        adData: JSONObject?,
+        biddingDataCallback: BiddingDataCallback
+    ) {
+        adapter.getBiddingData(biddingDataCallback)
+    }
 
     //region memory handling
 
