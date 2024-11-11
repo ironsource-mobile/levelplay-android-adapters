@@ -186,6 +186,19 @@ class MolocoBannerAdapter(adapter: MolocoAdapter) :
                 AdapterUtils.dpToPixels(context, 300),
                 AdapterUtils.dpToPixels(context, 250)
             )
+            "SMART" -> {
+                layoutParams = if (AdapterUtils.isLargeScreen(context)) {
+                    FrameLayout.LayoutParams(
+                        AdapterUtils.dpToPixels(context, 728),
+                        AdapterUtils.dpToPixels(context, 90)
+                    )
+                } else {
+                    FrameLayout.LayoutParams(
+                        AdapterUtils.dpToPixels(context, 320),
+                        AdapterUtils.dpToPixels(context, 50)
+                    )
+                }
+            }
         }
         // set gravity
         layoutParams.gravity = Gravity.CENTER
@@ -225,6 +238,12 @@ class MolocoBannerAdapter(adapter: MolocoAdapter) :
             "BANNER" -> Moloco.createBanner(adUnitId, null, createCallback)
             "LEADERBOARD" -> Moloco.createBannerTablet(adUnitId, null, createCallback)
             "RECTANGLE" -> Moloco.createMREC(adUnitId, null, createCallback)
+            "SMART" -> if (AdapterUtils.isLargeScreen(ContextProvider.getInstance().applicationContext)) {
+                Moloco.createBannerTablet(adUnitId, null, createCallback)
+            } else {
+                Moloco.createBanner(adUnitId, null, createCallback)
+            }
+            else -> Moloco.createBanner(adUnitId, null, createCallback)
         }
     }
 
