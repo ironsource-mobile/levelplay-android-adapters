@@ -132,6 +132,11 @@ class YandexBannerAdapter (adapter: YandexAdapter) :
         bannerAdView.setBannerAdEventListener(mYandexAdListener)
 
         postOnUIThread {
+            if (banner == null) {
+                IronLog.INTERNAL.verbose("banner is null")
+                listener.onBannerAdLoadFailed(ErrorBuilder.unsupportedBannerSize(adapter.providerName))
+                return@postOnUIThread
+            }
             bannerAdView.loadAd(adRequest)
         }
     }
