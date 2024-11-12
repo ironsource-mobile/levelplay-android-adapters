@@ -4,6 +4,7 @@ import com.ironsource.adapters.vungle.VungleAdapter
 import com.ironsource.environment.ContextProvider
 import com.ironsource.mediationsdk.IronSource
 import com.ironsource.mediationsdk.adapter.AbstractRewardedVideoAdapter
+import com.ironsource.mediationsdk.bidding.BiddingDataCallback
 import com.ironsource.mediationsdk.logger.IronLog
 import com.ironsource.mediationsdk.sdk.RewardedVideoSmashListener
 import com.ironsource.mediationsdk.utils.ErrorBuilder
@@ -256,10 +257,13 @@ class VungleRewardedVideoAdapter(adapter: VungleAdapter) :
         mPlacementToRewardedVideoAd[placementId] = rewardedVideoAd
     }
 
-    override fun getRewardedVideoBiddingData(
+    override fun collectRewardedVideoBiddingData(
         config: JSONObject,
-        adData: JSONObject?
-    ): MutableMap<String?, Any?>? = adapter.getBiddingData()
+        adData: JSONObject?,
+        biddingDataCallback: BiddingDataCallback
+    ) {
+        adapter.getBiddingData(biddingDataCallback)
+    }
 
     //region memory handling
 

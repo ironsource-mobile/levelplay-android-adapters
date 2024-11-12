@@ -10,9 +10,11 @@ import com.ironsource.mediationsdk.INetworkInitCallbackListener
 import com.ironsource.mediationsdk.IntegrationData
 import com.ironsource.mediationsdk.IronSource
 import com.ironsource.mediationsdk.LoadWhileShowSupportState
+import com.ironsource.mediationsdk.bidding.BiddingDataCallback
 import com.ironsource.mediationsdk.logger.IronLog
 import com.ironsource.mediationsdk.metadata.MetaData
 import com.ironsource.mediationsdk.metadata.MetaDataUtils
+import com.vungle.ads.BidTokenCallback
 import com.vungle.ads.VungleAds
 import com.vungle.ads.VunglePrivacySettings.setCCPAStatus
 import com.vungle.ads.VunglePrivacySettings.setCOPPAStatus
@@ -171,17 +173,24 @@ class VungleAdapter(providerName: String) : AbstractAdapter(providerName),
 
     //region Helpers
 
-    fun getBiddingData(): MutableMap<String?, Any?>? {
-        val ret: MutableMap<String?, Any?> = HashMap()
-        val bidderToken: String? =
-            VungleAds.getBiddingToken(ContextProvider.getInstance().applicationContext)
-        val returnedToken = bidderToken?.takeIf { it.isNotEmpty() } ?: ""
-        val sdkVersion = coreSDKVersion
-        IronLog.ADAPTER_API.verbose("sdkVersion = $sdkVersion, token = $returnedToken")
-        ret["sdkVersion"] = sdkVersion
-        ret["token"] = returnedToken
-        return ret
+    fun getBiddingData(biddingDataCallback: BiddingDataCallback) {
+        VungleAds.getBiddingToken(ContextProvider.getInstance().applicationContext,
+            object : BidTokenCallback {
 
+                override fun onBidTokenCollected(bidToken: String) {
+                    val ret: MutableMap<String?, Any?> = HashMap()
+                    val sdkVersion = coreSDKVersion
+                    IronLog.ADAPTER_API.verbose("sdkVersion = $sdkVersion, token = $bidToken")
+                    ret["sdkVersion"] = sdkVersion
+                    ret["token"] = bidToken
+                    biddingDataCallback.onSuccess(ret)
+                }
+
+                override fun onBidTokenError(errorMessage: String) {
+                    IronLog.ADAPTER_API.error("error = $errorMessage")
+                    biddingDataCallback.onFailure(errorMessage)
+                }
+            })
     }
 
     //endregion
