@@ -4,6 +4,7 @@ import com.ironsource.adapters.vungle.VungleAdapter
 import com.ironsource.environment.ContextProvider
 import com.ironsource.mediationsdk.IronSource
 import com.ironsource.mediationsdk.adapter.AbstractInterstitialAdapter
+import com.ironsource.mediationsdk.bidding.BiddingDataCallback
 import com.ironsource.mediationsdk.logger.IronLog
 import com.ironsource.mediationsdk.sdk.InterstitialSmashListener
 import com.ironsource.mediationsdk.utils.ErrorBuilder
@@ -197,14 +198,13 @@ class VungleInterstitialAdapter(adapter: VungleAdapter) :
         mPlacementIdToAdAvailability[placementId] = isAvailable
     }
 
-    internal fun setInterstitialAd(placementId: String, interstitialAd: InterstitialAd) {
-        mPlacementToInterstitialAd[placementId] = interstitialAd
-    }
-
-    override fun getInterstitialBiddingData(
+    override fun collectInterstitialBiddingData(
         config: JSONObject,
-        adData: JSONObject?
-    ): MutableMap<String?, Any?>? = adapter.getBiddingData()
+        adData: JSONObject?,
+        biddingDataCallback: BiddingDataCallback
+    ) {
+        adapter.collectBiddingData(biddingDataCallback)
+    }
 
     //region memory handling
 

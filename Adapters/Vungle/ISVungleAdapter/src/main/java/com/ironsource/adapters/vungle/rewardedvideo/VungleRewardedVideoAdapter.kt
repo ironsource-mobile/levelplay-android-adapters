@@ -4,6 +4,7 @@ import com.ironsource.adapters.vungle.VungleAdapter
 import com.ironsource.environment.ContextProvider
 import com.ironsource.mediationsdk.IronSource
 import com.ironsource.mediationsdk.adapter.AbstractRewardedVideoAdapter
+import com.ironsource.mediationsdk.bidding.BiddingDataCallback
 import com.ironsource.mediationsdk.logger.IronLog
 import com.ironsource.mediationsdk.sdk.RewardedVideoSmashListener
 import com.ironsource.mediationsdk.utils.ErrorBuilder
@@ -14,7 +15,6 @@ import org.json.JSONObject
 import java.lang.ref.WeakReference
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.CopyOnWriteArraySet
-
 
 class VungleRewardedVideoAdapter(adapter: VungleAdapter) :
     AbstractRewardedVideoAdapter<VungleAdapter>(adapter) {
@@ -226,7 +226,7 @@ class VungleRewardedVideoAdapter(adapter: VungleAdapter) :
         }
         IronLog.ADAPTER_API.verbose("showRewardedVideo vungle ad $placementId")
         postOnUIThread{
-                vungleRewardedVideo?.play()
+            vungleRewardedVideo?.play()
         }
         setRewardedVideoAdAvailability(placementId, false)
     }
@@ -252,14 +252,13 @@ class VungleRewardedVideoAdapter(adapter: VungleAdapter) :
         mPlacementIdToAdAvailability[placementId] = isAvailable
     }
 
-    internal fun setRewardedVideoAd(placementId: String, rewardedVideoAd: RewardedAd) {
-        mPlacementToRewardedVideoAd[placementId] = rewardedVideoAd
-    }
-
-    override fun getRewardedVideoBiddingData(
+    override fun collectRewardedVideoBiddingData(
         config: JSONObject,
-        adData: JSONObject?
-    ): MutableMap<String?, Any?>? = adapter.getBiddingData()
+        adData: JSONObject?,
+        biddingDataCallback: BiddingDataCallback
+    ) {
+        adapter.collectBiddingData(biddingDataCallback)
+    }
 
     //region memory handling
 

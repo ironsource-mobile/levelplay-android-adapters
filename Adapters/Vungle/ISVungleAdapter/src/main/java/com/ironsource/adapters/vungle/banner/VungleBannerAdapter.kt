@@ -1,7 +1,5 @@
 package com.ironsource.adapters.vungle.banner
 
-import android.view.Gravity
-import android.widget.FrameLayout
 import com.ironsource.adapters.vungle.VungleAdapter
 import com.ironsource.environment.ContextProvider
 import com.ironsource.mediationsdk.AdapterUtils
@@ -9,12 +7,13 @@ import com.ironsource.mediationsdk.ISBannerSize
 import com.ironsource.mediationsdk.IronSource
 import com.ironsource.mediationsdk.IronSourceBannerLayout
 import com.ironsource.mediationsdk.adapter.AbstractBannerAdapter
+import com.ironsource.mediationsdk.bidding.BiddingDataCallback
 import com.ironsource.mediationsdk.logger.IronLog
 import com.ironsource.mediationsdk.sdk.BannerSmashListener
 import com.ironsource.mediationsdk.utils.ErrorBuilder
 import com.ironsource.mediationsdk.utils.IronSourceConstants
-import com.vungle.ads.BannerAd
-import com.vungle.ads.BannerAdSize
+import com.vungle.ads.VungleAdSize
+import com.vungle.ads.VungleBannerView
 import org.json.JSONObject
 import java.util.concurrent.ConcurrentHashMap
 
@@ -22,7 +21,7 @@ class VungleBannerAdapter(adapter: VungleAdapter) :
     AbstractBannerAdapter<VungleAdapter>(adapter) {
     private val mBannerPlacementToListenerMap: ConcurrentHashMap<String, BannerSmashListener> =
         ConcurrentHashMap()
-    private val mPlacementToBannerAd: ConcurrentHashMap<String, BannerAd> =
+    private val mPlacementToBannerAd: ConcurrentHashMap<String, VungleBannerView> =
         ConcurrentHashMap()
 
     //endregion
@@ -159,22 +158,16 @@ class VungleBannerAdapter(adapter: VungleAdapter) :
             listener.onBannerAdLoadFailed(ErrorBuilder.unsupportedBannerSize(adapter.providerName))
             return
         }
-        val context = ContextProvider.getInstance().applicationContext
-        val layoutParams = FrameLayout.LayoutParams(
-            AdapterUtils.dpToPixels(context, bannerSize.width),
-            AdapterUtils.dpToPixels(context, bannerSize.height),
-            Gravity.CENTER
-        )
-        val vungleBannerAdListener = VungleBannerAdListener(listener, placementId, layoutParams)
 
-        val vungleBanner = BannerAd(
+        val vungleBanner = VungleBannerView(
             ContextProvider.getInstance().applicationContext,
             placementId,
             bannerSize
         ).apply {
 
-            adListener = vungleBannerAdListener
+            adListener = VungleBannerAdListener(listener, placementId, this)
         }
+
         mPlacementToBannerAd[placementId] = vungleBanner
         IronLog.ADAPTER_API.verbose("bannerSize = $bannerSize")
         vungleBanner.load(serverData)
@@ -190,35 +183,70 @@ class VungleBannerAdapter(adapter: VungleAdapter) :
                 IronLog.ADAPTER_API.verbose(
                     "destroyBanner Vungle ad, with ${VungleAdapter.PLACEMENT_ID} - $placementId"
                 )
-
                 // destroy banner
                 vungleBanner.finishAd()
-
                 // remove banner obj from the map
                 mPlacementToBannerAd.remove(placementId)
             }
         }
     }
 
-    private fun getBannerSize(bannerSize: ISBannerSize): BannerAdSize? {
-        return when (bannerSize.description) {
-            "BANNER", "LARGE" -> BannerAdSize.BANNER
-            "RECTANGLE" -> BannerAdSize.VUNGLE_MREC
+    override fun getAdaptiveHeight(width: Int): Int {
+        val context = ContextProvider.getInstance().applicationContext
+        val height = VungleAdSize.getAdSizeWithWidth(context, width).height
+
+        IronLog.ADAPTER_API.verbose("height - $height for width - $width")
+        return height
+    }
+
+    private fun getBannerSize(bannerSize: ISBannerSize): VungleAdSize? {
+        val vungleAdSize = when (bannerSize.description) {
+            "BANNER", "LARGE" -> VungleAdSize.BANNER
+            "RECTANGLE" -> VungleAdSize.MREC
             "SMART" ->
                 (if (AdapterUtils.isLargeScreen(ContextProvider.getInstance().applicationContext)) {
-                    BannerAdSize.BANNER_LEADERBOARD
+                    VungleAdSize.BANNER_LEADERBOARD
                 } else {
-                    BannerAdSize.BANNER
+                    VungleAdSize.BANNER
                 })
+
+            "CUSTOM" -> VungleAdSize.getAdSizeWithWidthAndHeight(
+                bannerSize.width,
+                bannerSize.height
+            )
 
             else -> null
         }
+
+        try {
+            if (bannerSize.isAdaptive && vungleAdSize != null) {
+                val adaptiveSize = VungleAdSize.getAdSizeWithWidthAndHeight(
+                    bannerSize.width,
+                    0
+                )
+
+                IronLog.ADAPTER_API.warning("default height - ${vungleAdSize.height} " +
+                        " adaptive height - " + adaptiveSize.height +
+                        " container height - ${bannerSize.containerParams.height} " +
+                        " default width - ${vungleAdSize.width} " +
+                        " container width - ${bannerSize.containerParams.width}")
+
+                return adaptiveSize
+            }
+        } catch (e: Exception) {
+            IronLog.INTERNAL.error("containerParams is not supported")
+        }
+
+        return vungleAdSize
     }
 
-    override fun getBannerBiddingData(
+    override fun collectBannerBiddingData(
         config: JSONObject,
-        adData: JSONObject?
-    ): MutableMap<String?, Any?>? = adapter.getBiddingData()
+        adData: JSONObject?,
+        biddingDataCallback: BiddingDataCallback
+    ) {
+        adapter.collectBiddingData(biddingDataCallback)
+    }
 
     //region memory handling
 
