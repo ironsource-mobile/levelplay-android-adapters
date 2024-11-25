@@ -73,7 +73,7 @@ class BidMachineBannerAdapter(adapter: BidMachineAdapter) :
         if (banner == null) {
             IronLog.INTERNAL.verbose("banner is null");
             listener.onBannerAdLoadFailed(ErrorBuilder.unsupportedBannerSize(adapter.providerName));
-            return;
+            return
         }
 
         val bannerSize = getBannerSize(banner.size)
@@ -101,6 +101,11 @@ class BidMachineBannerAdapter(adapter: BidMachineAdapter) :
             .build()
 
         postOnUIThread {
+            if (banner == null) {
+                IronLog.INTERNAL.verbose("banner is null");
+                listener.onBannerAdLoadFailed(ErrorBuilder.unsupportedBannerSize(adapter.providerName));
+                return@postOnUIThread
+            }
             bannerView.load(mBannerRequest)
         }
     }
