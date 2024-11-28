@@ -166,8 +166,13 @@ class OguryBannerAdapter(adapter: OguryAdapter) :
         }
 
         return when (bannerSize.description) {
-            "BANNER" -> OguryBannerAdSize.SMALL_BANNER_320x50
-            "RECTANGLE" -> OguryBannerAdSize.MPU_300x250
+            ISBannerSize.BANNER.description -> OguryBannerAdSize.SMALL_BANNER_320x50
+            ISBannerSize.RECTANGLE.description -> OguryBannerAdSize.MPU_300x250
+            ISBannerSize.SMART.description -> if (AdapterUtils.isLargeScreen(ContextProvider.getInstance().applicationContext)) {
+                null
+            } else {
+                OguryBannerAdSize.SMALL_BANNER_320x50
+            }
             else -> null
         }
     }
