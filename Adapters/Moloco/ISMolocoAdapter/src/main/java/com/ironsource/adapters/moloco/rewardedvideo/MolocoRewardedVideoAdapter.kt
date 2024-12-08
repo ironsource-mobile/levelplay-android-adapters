@@ -5,6 +5,7 @@ import com.ironsource.mediationsdk.IronSource
 import com.ironsource.mediationsdk.adapter.AbstractRewardedVideoAdapter
 import com.ironsource.mediationsdk.bidding.BiddingDataCallback
 import com.ironsource.mediationsdk.logger.IronLog
+import com.ironsource.mediationsdk.logger.IronSourceError
 import com.ironsource.mediationsdk.sdk.RewardedVideoSmashListener
 import com.ironsource.mediationsdk.utils.ErrorBuilder
 import com.ironsource.mediationsdk.utils.IronSourceConstants
@@ -109,15 +110,23 @@ class MolocoRewardedVideoAdapter(adapter: MolocoAdapter) :
         mAdLoadListener = rewardedVideoAdListener
         val adUnitIdKey = MolocoAdapter.getAdUnitIdKey()
         val adUnitId = getConfigStringValueFromKey(config, adUnitIdKey)
-        Moloco.createRewardedInterstitial(adUnitId) { rewardedAd ->
-            rewardedAd?.let {
-                mAd = it
-                mAd?.load(serverData, mAdLoadListener)
-            } ?: listener.onRewardedVideoLoadFailed(
-                ErrorBuilder.buildLoadFailedError(
-                    MolocoAdapter.INVALID_CONFIGURATION
+        Moloco.createRewardedInterstitial(adUnitId) { rewardedAd, error ->
+            if(error != null){
+                mListener?.onRewardedVideoLoadFailed(
+                    IronSourceError(error.errorCode,error.description)
                 )
-            )
+            } else {
+                rewardedAd?.let { ad ->
+                    mAd = ad
+                    mAd?.load(serverData, mAdLoadListener)
+                } ?: run {
+                    listener.onRewardedVideoLoadFailed(
+                        ErrorBuilder.buildLoadFailedError(
+                            MolocoAdapter.INVALID_CONFIGURATION
+                        )
+                    )
+                }
+            }
         }
     }
 

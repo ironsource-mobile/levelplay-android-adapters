@@ -20,6 +20,7 @@ import com.moloco.sdk.publisher.Initialization
 import com.moloco.sdk.publisher.MediationInfo
 import com.moloco.sdk.publisher.Moloco
 import com.moloco.sdk.publisher.MolocoAdError
+import com.moloco.sdk.publisher.MolocoBidTokenListener
 import com.moloco.sdk.publisher.init.MolocoInitParams
 import com.moloco.sdk.publisher.privacy.MolocoPrivacy
 import java.util.concurrent.atomic.AtomicBoolean
@@ -230,8 +231,7 @@ class MolocoAdapter(providerName: String) : AbstractAdapter(providerName),
             return
         }
         Moloco.bidRequestEndpoint
-        Moloco.getBidToken { bidToken: String, error: MolocoAdError.ErrorType? ->
-            if (error == null) {
+        Moloco.getBidToken(ContextProvider.getInstance().applicationContext) { bidToken, error ->            if (error == null) {
                 val biddingDataMap: MutableMap<String?, Any?> = HashMap()
                 IronLog.ADAPTER_API.verbose("token = $bidToken")
                 biddingDataMap["token"] = bidToken

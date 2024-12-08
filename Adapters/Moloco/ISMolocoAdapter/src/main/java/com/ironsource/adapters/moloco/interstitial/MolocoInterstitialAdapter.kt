@@ -5,11 +5,13 @@ import com.ironsource.mediationsdk.IronSource
 import com.ironsource.mediationsdk.adapter.AbstractInterstitialAdapter
 import com.ironsource.mediationsdk.bidding.BiddingDataCallback
 import com.ironsource.mediationsdk.logger.IronLog
+import com.ironsource.mediationsdk.logger.IronSourceError
 import com.ironsource.mediationsdk.sdk.InterstitialSmashListener
 import com.ironsource.mediationsdk.utils.ErrorBuilder
 import com.ironsource.mediationsdk.utils.IronSourceConstants
 import com.moloco.sdk.publisher.InterstitialAd
 import com.moloco.sdk.publisher.Moloco
+import com.moloco.sdk.publisher.MolocoAdError
 import org.json.JSONObject
 import java.lang.ref.WeakReference
 
@@ -113,14 +115,22 @@ class MolocoInterstitialAdapter(adapter: MolocoAdapter) :
 
         val adUnitIdKey = MolocoAdapter.getAdUnitIdKey()
         val adUnitId = getConfigStringValueFromKey(config, adUnitIdKey)
-        Moloco.createInterstitial(adUnitId) { interstitialAd ->
-            interstitialAd?.let {
-                mAd = it
-                mAd?.load(serverData, mAdLoadListener)
-            } ?: listener.onInterstitialAdLoadFailed(
-                ErrorBuilder.buildLoadFailedError(MolocoAdapter.INVALID_CONFIGURATION
+        Moloco.createInterstitial(adUnitId) { interstitialAd , error ->
+            if (error != null) {
+                mListener?.onInterstitialAdLoadFailed(
+                    IronSourceError(error.errorCode,error.description)
                 )
-            )
+            } else {
+                interstitialAd?.let { ad ->
+                    mAd = ad
+                    mAd?.load(serverData, mAdLoadListener)
+                } ?: run {
+                    listener.onInterstitialAdLoadFailed(
+                        ErrorBuilder.buildLoadFailedError(MolocoAdapter.INVALID_CONFIGURATION
+                        )
+                    )
+                }
+            }
         }
     }
 

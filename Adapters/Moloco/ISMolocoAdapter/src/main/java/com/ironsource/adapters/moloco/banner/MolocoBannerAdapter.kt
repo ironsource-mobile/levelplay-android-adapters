@@ -12,11 +12,13 @@ import com.ironsource.mediationsdk.IronSourceBannerLayout
 import com.ironsource.mediationsdk.adapter.AbstractBannerAdapter
 import com.ironsource.mediationsdk.bidding.BiddingDataCallback
 import com.ironsource.mediationsdk.logger.IronLog
+import com.ironsource.mediationsdk.logger.IronSourceError
 import com.ironsource.mediationsdk.sdk.BannerSmashListener
 import com.ironsource.mediationsdk.utils.ErrorBuilder
 import com.ironsource.mediationsdk.utils.IronSourceConstants
 import com.moloco.sdk.publisher.Banner
 import com.moloco.sdk.publisher.Moloco
+import com.moloco.sdk.publisher.MolocoAdError
 import org.json.JSONObject
 
 class MolocoBannerAdapter(adapter: MolocoAdapter) :
@@ -211,17 +213,19 @@ class MolocoBannerAdapter(adapter: MolocoAdapter) :
         layoutParams: FrameLayout.LayoutParams,
         serverData: String
     ) {
-        adView?.let {
-            mAdView = it
-            mAdLoadListener = MolocoBannerAdLoadListener(listener, layoutParams, it)
+        adView?.let {ad ->
+            mAdView = ad
+            mAdLoadListener = MolocoBannerAdLoadListener(listener, layoutParams, ad)
             mAdShowListener = MolocoBannerAdShowListener(listener)
             mAdView?.apply {
                 adShowListener = mAdShowListener
                 load(serverData, mAdLoadListener)
             }
-        } ?: listener.onBannerAdLoadFailed(
-            ErrorBuilder.buildLoadFailedError(MolocoAdapter.INVALID_CONFIGURATION)
-        )
+        } ?: run {
+            listener.onBannerAdLoadFailed(
+                ErrorBuilder.buildLoadFailedError(MolocoAdapter.INVALID_CONFIGURATION)
+            )
+        }
     }
 
     private fun createBannerWithSize(
@@ -230,8 +234,16 @@ class MolocoBannerAdapter(adapter: MolocoAdapter) :
         listener: BannerSmashListener,
         layoutParams: FrameLayout.LayoutParams,
         serverData: String,
-        createCallback: (Banner?) -> Unit = { adView ->
-            handleBannerCreation(adView, listener, layoutParams, serverData)
+        createCallback: (Banner?, MolocoAdError.AdCreateError?) -> Unit = { adView, error ->
+            if (error != null) {
+                val bannerError: IronSourceError = ErrorBuilder.buildShowFailedError(
+                    error.errorCode.toString(),
+                    error.description
+                )
+                listener.onBannerAdLoadFailed(bannerError)
+            } else {
+                handleBannerCreation(adView, listener, layoutParams, serverData)
+            }
         }
     ) {
         when (size.description) {
