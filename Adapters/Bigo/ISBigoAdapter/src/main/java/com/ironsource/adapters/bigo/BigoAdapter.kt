@@ -13,6 +13,8 @@ import com.ironsource.mediationsdk.LoadWhileShowSupportState
 import com.ironsource.mediationsdk.logger.IronLog
 import com.ironsource.mediationsdk.logger.IronSourceError
 import com.ironsource.mediationsdk.metadata.MetaDataUtils
+import com.ironsource.mediationsdk.utils.IronSourceUtils
+import org.json.JSONObject
 import sg.bigo.ads.BigoAdSdk
 import sg.bigo.ads.ConsentOptions
 import sg.bigo.ads.api.AdConfig
@@ -41,6 +43,19 @@ class BigoAdapter(providerName: String) : AbstractAdapter(providerName),
         const val SLOT_ID = "slotId"
         private const val APP_ID = "appId"
         private const val NETWORK_NAME: String = "Bigo"
+
+        val MEDIATION_INFO: String
+        init {
+            val mediationInfoJSON = JSONObject()
+            try {
+                mediationInfoJSON.putOpt("mediationName", "LevelPlay")
+                mediationInfoJSON.putOpt("mediationVersion", IronSourceUtils.getSDKVersion())
+                mediationInfoJSON.putOpt("adapterVersion", VERSION)
+            } catch (th: Throwable) {
+                IronLog.INTERNAL.error("Error creating mediation info JSON in BigoAdapter $th")
+            }
+            MEDIATION_INFO = mediationInfoJSON.toString()
+        }
 
         // Handle init callback for all adapter instances
         private val mWasInitCalled: AtomicBoolean = AtomicBoolean(false)

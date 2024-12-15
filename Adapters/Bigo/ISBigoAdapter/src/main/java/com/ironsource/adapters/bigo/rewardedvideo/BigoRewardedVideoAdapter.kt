@@ -86,7 +86,9 @@ class BigoRewardedVideoAdapter(adapter: BigoAdapter) :
         mAdListener = rewardedAdListener
 
         val rewardedAdLoader = RewardVideoAdLoader.Builder()
-            .withAdLoadListener(mAdListener).build()
+            .withAdLoadListener(mAdListener)
+            .withExt(BigoAdapter.MEDIATION_INFO)
+            .build()
         mAdLoader = rewardedAdLoader
 
         val rewardedAdRequest =

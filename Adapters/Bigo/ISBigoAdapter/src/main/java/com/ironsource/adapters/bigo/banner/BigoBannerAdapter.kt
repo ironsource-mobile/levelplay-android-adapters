@@ -99,7 +99,9 @@ class BigoBannerAdapter(adapter: BigoAdapter) :
         mAdListener = bannerAdListener
 
         val bannerAdLoader =
-            BannerAdLoader.Builder().withAdLoadListener(mAdListener).build()
+            BannerAdLoader.Builder().withAdLoadListener(mAdListener)
+                .withExt(BigoAdapter.MEDIATION_INFO)
+                .build()
 
         mAdLoader = bannerAdLoader
 

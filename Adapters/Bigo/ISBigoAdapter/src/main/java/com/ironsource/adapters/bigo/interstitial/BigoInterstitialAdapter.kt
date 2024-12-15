@@ -84,7 +84,9 @@ class BigoInterstitialAdapter(adapter: BigoAdapter) :
         mAdListener = interstitialAdListener
 
         val interstitialAdLoader = InterstitialAdLoader.Builder()
-            .withAdLoadListener(mAdListener).build()
+            .withAdLoadListener(mAdListener)
+            .withExt(BigoAdapter.MEDIATION_INFO)
+            .build()
 
         mAdLoader = interstitialAdLoader
 
