@@ -191,14 +191,6 @@ class VungleBannerAdapter(adapter: VungleAdapter) :
         }
     }
 
-    override fun getAdaptiveHeight(width: Int): Int {
-        val context = ContextProvider.getInstance().applicationContext
-        val height = VungleAdSize.getAdSizeWithWidth(context, width).height
-
-        IronLog.ADAPTER_API.verbose("height - $height for width - $width")
-        return height
-    }
-
     private fun getBannerSize(bannerSize: ISBannerSize): VungleAdSize? {
         val vungleAdSize = when (bannerSize.description) {
             "BANNER", "LARGE" -> VungleAdSize.BANNER
@@ -216,25 +208,6 @@ class VungleBannerAdapter(adapter: VungleAdapter) :
             )
 
             else -> null
-        }
-
-        try {
-            if (bannerSize.isAdaptive && vungleAdSize != null) {
-                val adaptiveSize = VungleAdSize.getAdSizeWithWidthAndHeight(
-                    bannerSize.width,
-                    0
-                )
-
-                IronLog.ADAPTER_API.warning("default height - ${vungleAdSize.height} " +
-                        " adaptive height - " + adaptiveSize.height +
-                        " container height - ${bannerSize.containerParams.height} " +
-                        " default width - ${vungleAdSize.width} " +
-                        " container width - ${bannerSize.containerParams.width}")
-
-                return adaptiveSize
-            }
-        } catch (e: Exception) {
-            IronLog.INTERNAL.error("containerParams is not supported")
         }
 
         return vungleAdSize
