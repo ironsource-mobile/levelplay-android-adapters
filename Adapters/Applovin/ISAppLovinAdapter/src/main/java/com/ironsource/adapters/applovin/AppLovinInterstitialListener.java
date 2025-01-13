@@ -45,8 +45,8 @@ public class AppLovinInterstitialListener implements AppLovinAdLoadListener, App
             return;
         }
 
-        AppLovinAdapter.mZoneIdToInterstitialAd.put(mZoneId, appLovinAd);
-        mAdapter.get().mZoneIdToInterstitialAdReadyStatus.put(mZoneId, true);
+        mAdapter.get().addAdToInterstitialAdapter(appLovinAd);
+        mAdapter.get().updateInterstitialAvailability(mZoneId, true);
         mListener.onInterstitialAdReady();
     }
 
@@ -74,8 +74,8 @@ public class AppLovinInterstitialListener implements AppLovinAdLoadListener, App
         int adapterErrorCode = errorCode == AppLovinErrorCodes.NO_FILL ? IronSourceError.ERROR_IS_LOAD_NO_FILL : errorCode;
         IronSourceError ironSourceError = new IronSourceError(adapterErrorCode, mAdapter.get().getErrorString(errorCode));
 
-        removeAdFromMap();
-        mAdapter.get().mZoneIdToInterstitialAdReadyStatus.put(mZoneId, false);
+        mAdapter.get().disposeInterstitialAd(mZoneId);
+        mAdapter.get().updateInterstitialAvailability(mZoneId, false);
         mListener.onInterstitialAdLoadFailed(ironSourceError);
     }
 
@@ -155,13 +155,7 @@ public class AppLovinInterstitialListener implements AppLovinAdLoadListener, App
             return;
         }
 
-        removeAdFromMap();
+        mAdapter.get().disposeInterstitialAd(mZoneId);
         mListener.onInterstitialAdClosed();
-    }
-
-    private void removeAdFromMap() {
-        if (AppLovinAdapter.mZoneIdToInterstitialAd.containsKey(mZoneId) && AppLovinAdapter.mZoneIdToInterstitialAd.get(mZoneId) != null) {
-            AppLovinAdapter.mZoneIdToInterstitialAd.remove(mZoneId);
-        }
     }
 }

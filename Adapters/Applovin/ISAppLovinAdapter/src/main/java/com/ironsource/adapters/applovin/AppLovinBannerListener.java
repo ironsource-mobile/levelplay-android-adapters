@@ -108,6 +108,12 @@ public class AppLovinBannerListener implements AppLovinAdLoadListener, AppLovinA
     @Override
     public void adDisplayed(AppLovinAd appLovinAd) {
         IronLog.ADAPTER_CALLBACK.verbose("zoneId = " + mZoneId);
+
+        if (mListener == null) {
+            IronLog.INTERNAL.verbose("listener is null");
+            return;
+        }
+
         mListener.onBannerAdShown();
     }
 

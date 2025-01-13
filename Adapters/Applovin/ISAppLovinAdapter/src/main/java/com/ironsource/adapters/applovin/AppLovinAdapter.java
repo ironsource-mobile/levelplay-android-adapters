@@ -28,7 +28,6 @@ import com.ironsource.mediationsdk.INetworkInitCallbackListener;
 import com.ironsource.mediationsdk.LoadWhileShowSupportState;
 import com.ironsource.mediationsdk.logger.IronLog;
 import com.ironsource.mediationsdk.logger.IronSourceError;
-import com.ironsource.mediationsdk.metadata.MetaData;
 import com.ironsource.mediationsdk.metadata.MetaDataUtils;
 import com.ironsource.mediationsdk.sdk.BannerSmashListener;
 import com.ironsource.mediationsdk.sdk.InterstitialSmashListener;
@@ -59,16 +58,18 @@ class AppLovinAdapter extends AbstractAdapter implements INetworkInitCallbackLis
     private static final String SDK_KEY = "sdkKey";
 
     // Rewarded video collections
-    protected final ConcurrentHashMap<String, AppLovinIncentivizedInterstitial> mZoneIdToRewardedVideoAd;
+    private static final AppLovinAdHolder<AppLovinIncentivizedInterstitial> mRewardedVideoAds = new AppLovinAdHolder<>();
     protected final ConcurrentHashMap<String, RewardedVideoSmashListener> mZoneIdToRewardedVideoSmashListener;
     protected final ConcurrentHashMap<String, AppLovinRewardedVideoListener> mZoneIdToAppLovinRewardedVideoListener;
     protected final CopyOnWriteArraySet<String> mRewardedVideoZoneIdsForInitCallbacks;
+    private String mRewardedVideoZoneId;
 
     // Interstitial maps
-    protected static final ConcurrentHashMap<String, AppLovinAd> mZoneIdToInterstitialAd = new ConcurrentHashMap<>();
+    private static final AppLovinAdHolder<AppLovinAd> mInterstitialAds = new AppLovinAdHolder<>();
     protected final ConcurrentHashMap<String, InterstitialSmashListener> mZoneIdToInterstitialSmashListener;
     protected final ConcurrentHashMap<String, AppLovinInterstitialListener> mZoneIdToAppLovinInterstitialListener;
-    protected final ConcurrentHashMap<String, Boolean> mZoneIdToInterstitialAdReadyStatus;
+    private final ConcurrentHashMap<String, Boolean> mZoneIdToInterstitialAdReadyStatus;
+    private String mInterstitialZoneId;
 
     // Banner maps
     protected final ConcurrentHashMap<String, AppLovinAdView> mZoneIdToBannerAd;
@@ -106,7 +107,6 @@ class AppLovinAdapter extends AbstractAdapter implements INetworkInitCallbackLis
 
         // Rewarded video
         mZoneIdToAppLovinRewardedVideoListener = new ConcurrentHashMap<>();
-        mZoneIdToRewardedVideoAd = new ConcurrentHashMap<>();
         mZoneIdToRewardedVideoSmashListener = new ConcurrentHashMap<>();
         mRewardedVideoZoneIdsForInitCallbacks = new CopyOnWriteArraySet<>();
 
@@ -171,8 +171,8 @@ class AppLovinAdapter extends AbstractAdapter implements INetworkInitCallbackLis
             try {
                 // Create AppLovin sdk configuration
                 initConfig = AppLovinSdkInitializationConfiguration.builder(sdkKey, context)
-                        .setMediationProvider(AppLovinMediationProvider.IRONSOURCE)
-                        .build();
+                    .setMediationProvider(AppLovinMediationProvider.IRONSOURCE)
+                    .build();
             } catch (Throwable t) {
                 initializationFailure(t.getMessage());
                 return;
@@ -362,20 +362,25 @@ class AppLovinAdapter extends AbstractAdapter implements INetworkInitCallbackLis
     private void loadRewardedVideoInternal(String zoneId, RewardedVideoSmashListener listener) {
         IronLog.ADAPTER_API.verbose("zoneId = " + zoneId);
 
-        AppLovinIncentivizedInterstitial rewardedVideoAd;
-
-        if (mZoneIdToRewardedVideoAd.containsKey(zoneId)) {
-            rewardedVideoAd = mZoneIdToRewardedVideoAd.get(zoneId);
-        } else {
-            if (!zoneId.equals(DEFAULT_ZONE_ID)) {
-                rewardedVideoAd = AppLovinIncentivizedInterstitial.create(zoneId, mAppLovinSdk);
-            } else {
-                rewardedVideoAd = AppLovinIncentivizedInterstitial.create(mAppLovinSdk);
-            }
-            mZoneIdToRewardedVideoAd.put(zoneId, rewardedVideoAd);
+        if (isRewardedZoneIdExist(zoneId)) {
+            // Handle case when a rewarded video is already loaded with the same zoneId
+            String errorMessage = "AppLovin can't load multiple rewarded video ads for the same zoneId - " + zoneId + ", skipping load attempt since there is a loaded rewarded video ad for this zoneId";
+            IronLog.INTERNAL.info(errorMessage);
+            listener.onRewardedVideoLoadFailed(ErrorBuilder.buildLoadFailedError(errorMessage));
+            return;
         }
 
-        // create AppLovin rewarded video listener
+        AppLovinIncentivizedInterstitial rewardedVideoAd;
+        if (!zoneId.equals(DEFAULT_ZONE_ID)) {
+            rewardedVideoAd = AppLovinIncentivizedInterstitial.create(zoneId, mAppLovinSdk);
+        } else {
+            rewardedVideoAd = AppLovinIncentivizedInterstitial.create(mAppLovinSdk);
+        }
+
+        mRewardedVideoZoneId = zoneId;
+        mRewardedVideoAds.storeAd(this, rewardedVideoAd);
+
+        // create AppLovin rewarded video ad listener
         AppLovinRewardedVideoListener rewardedVideoListener = new AppLovinRewardedVideoListener(AppLovinAdapter.this, listener, zoneId);
         mZoneIdToAppLovinRewardedVideoListener.put(zoneId, rewardedVideoListener);
 
@@ -395,12 +400,13 @@ class AppLovinAdapter extends AbstractAdapter implements INetworkInitCallbackLis
                 mAppLovinSettings.setUserIdentifier(getDynamicUserId());
             }
 
-            AppLovinIncentivizedInterstitial rewardedVideoAd = mZoneIdToRewardedVideoAd.get(zoneId);
+            AppLovinIncentivizedInterstitial rewardedVideoAd = mRewardedVideoAds.retrieveAd(this);
             AppLovinRewardedVideoListener rewardedVideoListener = mZoneIdToAppLovinRewardedVideoListener.get(zoneId);
 
             rewardedVideoAd.show(ContextProvider.getInstance().getCurrentActiveActivity(), rewardedVideoListener, rewardedVideoListener, rewardedVideoListener, rewardedVideoListener);
 
         } else {
+            disposeRewardedVideoAd(config);
             listener.onRewardedVideoAdShowFailed(ErrorBuilder.buildNoAdsToShowError(IronSourceConstants.REWARDED_VIDEO_AD_UNIT));
         }
     }
@@ -408,8 +414,36 @@ class AppLovinAdapter extends AbstractAdapter implements INetworkInitCallbackLis
     @Override
     public boolean isRewardedVideoAvailable(JSONObject config) {
         String zoneId = getZoneId(config);
-        AppLovinIncentivizedInterstitial rewardedVideoAd = mZoneIdToRewardedVideoAd.get(zoneId);
-        return rewardedVideoAd != null && rewardedVideoAd.isAdReadyToDisplay();
+        AppLovinIncentivizedInterstitial rewardedVideoAd = mRewardedVideoAds.retrieveAd(this);
+        return rewardedVideoAd != null && rewardedVideoAd.isAdReadyToDisplay() && isRewardedZoneIdExist(zoneId);
+    }
+
+    public void disposeRewardedVideoAd(JSONObject config) {
+        String zoneId = "";
+        if(config != null) {
+            zoneId = config.optString(ZONE_ID);
+        }
+
+        disposeRewardedVideoAd(zoneId);
+    }
+
+    void disposeRewardedVideoAd(String zoneId) {
+        IronLog.ADAPTER_API.verbose("Dispose rewarded video ad of " + getProviderName() + ", zoneId = " + zoneId);
+        mRewardedVideoAds.removeAd(this);
+    }
+
+    private boolean isRewardedZoneIdExist(String zoneId) {
+        for (AppLovinAdapter adapter : mRewardedVideoAds.getAdapters()) {
+            if (zoneId.equals(adapter.getRewardedZoneId())) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private String getRewardedZoneId() {
+        return mRewardedVideoZoneId;
     }
 
     //endregion
@@ -460,12 +494,14 @@ class AppLovinAdapter extends AbstractAdapter implements INetworkInitCallbackLis
         mZoneIdToAppLovinInterstitialListener.put(zoneId, interstitialListener);
 
         // Handle case where an interstitial ad is already loaded with the same zoneId
-        if(mZoneIdToInterstitialAd.containsKey(zoneId)) {
+        if((isInterstitialZoneIdExist(zoneId))) {
             String errorMessage = "AppLovin can't load multiple interstitial ads for the same zoneId - " + zoneId + ", skipping load attempt since there is a loaded interstitial ad for this zoneId";
             IronLog.INTERNAL.info(errorMessage);
             listener.onInterstitialAdLoadFailed(ErrorBuilder.buildLoadFailedError(errorMessage));
             return;
         }
+
+        mInterstitialZoneId = zoneId;
 
         // load interstitial
         if (!zoneId.equals(DEFAULT_ZONE_ID)) {
@@ -481,7 +517,7 @@ class AppLovinAdapter extends AbstractAdapter implements INetworkInitCallbackLis
         IronLog.ADAPTER_API.verbose("zoneId = " + zoneId);
 
         if (isInterstitialReady(config)) {
-            AppLovinAd interstitialAd = mZoneIdToInterstitialAd.get(zoneId);
+            AppLovinAd interstitialAd = mInterstitialAds.retrieveAd(this);
             AppLovinInterstitialListener interstitialListener = mZoneIdToAppLovinInterstitialListener.get(zoneId);
 
             AppLovinInterstitialAdDialog interstitialAdDialog = AppLovinInterstitialAd.create(mAppLovinSdk, ContextProvider.getInstance().getApplicationContext());
@@ -490,19 +526,59 @@ class AppLovinAdapter extends AbstractAdapter implements INetworkInitCallbackLis
             interstitialAdDialog.setAdDisplayListener(interstitialListener);
             interstitialAdDialog.setAdVideoPlaybackListener(interstitialListener);
             interstitialAdDialog.showAndRender(interstitialAd);
-
-            mZoneIdToInterstitialAdReadyStatus.put(zoneId, false);
         } else {
             // Remove the ad object to enable other interstitial ad to be loaded
-            mZoneIdToInterstitialAd.remove(zoneId);
+            mInterstitialAds.removeAd(this);
             listener.onInterstitialAdShowFailed(ErrorBuilder.buildNoAdsToShowError(IronSourceConstants.INTERSTITIAL_AD_UNIT));
         }
+
+        updateInterstitialAvailability(zoneId, false);
     }
 
     @Override
     public boolean isInterstitialReady(JSONObject config) {
         String zoneId = getZoneId(config);
-        return mZoneIdToInterstitialAd.containsKey(zoneId) && mZoneIdToInterstitialAdReadyStatus.containsKey(zoneId) && mZoneIdToInterstitialAdReadyStatus.get(zoneId);
+        AppLovinAd interstitialAd = mInterstitialAds.retrieveAd(this);
+        return interstitialAd != null && mZoneIdToInterstitialAdReadyStatus.containsKey(zoneId)
+            && Boolean.TRUE.equals(mZoneIdToInterstitialAdReadyStatus.get(zoneId))
+            && isInterstitialZoneIdExist(zoneId);
+    }
+
+    public void disposeInterstitialAd(JSONObject config) {
+        String zoneId = "";
+        if(config != null) {
+            zoneId = config.optString(ZONE_ID);
+        }
+
+        disposeInterstitialAd(zoneId);
+    }
+
+    void disposeInterstitialAd(String zoneId) {
+        IronLog.ADAPTER_API.verbose("Dispose interstitial ad of " + getProviderName() + ", zoneId = " + zoneId);
+        mInterstitialAds.removeAd(this);
+    }
+
+    void updateInterstitialAvailability(String zoneId, boolean isAvailable) {
+        mZoneIdToInterstitialAdReadyStatus.put(zoneId, isAvailable);
+    }
+
+    // Store the returned ad object from callbacks
+    void addAdToInterstitialAdapter(AppLovinAd ad) {
+        mInterstitialAds.storeAd(this, ad);
+    }
+
+    private boolean isInterstitialZoneIdExist(String zoneId) {
+        for (AppLovinAdapter adapter : mInterstitialAds.getAdapters()) {
+            if (zoneId.equals(adapter.getInterstitialZoneId())) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private String getInterstitialZoneId() {
+        return mInterstitialZoneId;
     }
 
     //endregion
@@ -629,14 +705,14 @@ class AppLovinAdapter extends AbstractAdapter implements INetworkInitCallbackLis
 
         if (adUnit == IronSource.AD_UNIT.REWARDED_VIDEO) {
             mZoneIdToAppLovinRewardedVideoListener.clear();
-            mZoneIdToRewardedVideoAd.clear();
+            disposeRewardedVideoAd(config);
             mZoneIdToRewardedVideoSmashListener.clear();
             mRewardedVideoZoneIdsForInitCallbacks.clear();
 
         } else if (adUnit == IronSource.AD_UNIT.INTERSTITIAL) {
             mZoneIdToAppLovinInterstitialListener.clear();
             mZoneIdToInterstitialAdReadyStatus.clear();
-            mZoneIdToInterstitialAd.clear();
+            disposeInterstitialAd(config);
             mZoneIdToInterstitialSmashListener.clear();
 
         } else if (adUnit == IronSource.AD_UNIT.BANNER) {
@@ -790,3 +866,6 @@ class AppLovinAdapter extends AbstractAdapter implements INetworkInitCallbackLis
 
     //endregion
 }
+
+
+
