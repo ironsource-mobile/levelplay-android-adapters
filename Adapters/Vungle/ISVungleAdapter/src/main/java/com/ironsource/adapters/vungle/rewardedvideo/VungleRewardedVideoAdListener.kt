@@ -8,6 +8,7 @@ import com.ironsource.mediationsdk.utils.IronSourceConstants
 import com.vungle.ads.BaseAd
 import com.vungle.ads.RewardedAdListener
 import com.vungle.ads.VungleError
+import com.vungle.ads.internal.protos.Sdk.SDKError
 import java.lang.ref.WeakReference
 
 class VungleRewardedVideoAdListener (
@@ -38,7 +39,7 @@ class VungleRewardedVideoAdListener (
         mAdapter.get()?.setRewardedVideoAdAvailability(mPlacementId,false)
         val adapterError = "${adError.errorMessage}( ${adError.code} )"
 
-        val error = if (adError.code == VungleError.NO_SERVE) {
+        val error = if (adError.code == SDKError.Reason.AD_NO_FILL_VALUE) {
             IronSourceError(IronSourceError.ERROR_RV_LOAD_NO_FILL, adapterError)
         } else {
             ErrorBuilder.buildLoadFailedError(adapterError)

@@ -12,6 +12,7 @@ import com.vungle.ads.BannerAdListener
 import com.vungle.ads.BaseAd
 import com.vungle.ads.VungleBannerView
 import com.vungle.ads.VungleError
+import com.vungle.ads.internal.protos.Sdk.SDKError
 
 class VungleBannerAdListener(
     private val mListener: BannerSmashListener,
@@ -46,7 +47,7 @@ class VungleBannerAdListener(
         IronLog.ADAPTER_CALLBACK.verbose("placementId = $mPlacementId, errorCode = ${adError.code}, errorMessage = ${adError.message}")
         val adapterError = "${adError.errorMessage}( ${adError.code} )"
 
-        val error = if (adError.code == VungleError.NO_SERVE) {
+        val error = if (adError.code == SDKError.Reason.AD_NO_FILL_VALUE) {
             IronSourceError(IronSourceError.ERROR_BN_LOAD_NO_FILL, adapterError)
         } else {
             ErrorBuilder.buildLoadFailedError(adapterError)
