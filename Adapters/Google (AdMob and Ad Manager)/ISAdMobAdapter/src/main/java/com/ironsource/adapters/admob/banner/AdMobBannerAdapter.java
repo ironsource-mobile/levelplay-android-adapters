@@ -2,6 +2,7 @@ package com.ironsource.adapters.admob.banner;
 
 import android.os.Bundle;
 import android.text.TextUtils;
+import android.view.ViewGroup;
 
 import androidx.annotation.NonNull;
 
@@ -145,6 +146,7 @@ public class AdMobBannerAdapter extends AbstractBannerAdapter<AdMobAdapter> {
                             AdView adView = new AdView(ContextProvider.getInstance().getApplicationContext());
                             adView.setAdSize(size);
                             adView.setAdUnitId(adUnitId);
+                            adView.setDescendantFocusability(ViewGroup.FOCUS_BLOCK_DESCENDANTS);
                             AdMobBannerAdListener adMobBannerAdListener = new AdMobBannerAdListener(listener, adUnitId, adView);
 
                             adView.setAdListener(adMobBannerAdListener);
