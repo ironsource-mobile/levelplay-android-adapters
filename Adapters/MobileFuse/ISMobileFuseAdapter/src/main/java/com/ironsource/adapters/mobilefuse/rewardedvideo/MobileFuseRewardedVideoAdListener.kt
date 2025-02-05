@@ -37,6 +37,10 @@ class MobileFuseRewardedVideoAdListener(
 
   override fun onAdExpired() {
     IronLog.ADAPTER_CALLBACK.verbose()
+    mListener.onRewardedVideoLoadFailed(IronSourceError(
+      IronSourceError.ERROR_RV_EXPIRED_ADS,
+      "ads are expired")
+    )
   }
 
   override fun onAdError(error: AdError?) {
@@ -46,6 +50,7 @@ class MobileFuseRewardedVideoAdListener(
 
     val ironSourceError = IronSourceError(code, message)
     if ( error == AdError.AD_ALREADY_LOADED || error == AdError.AD_LOAD_ERROR ) {
+      mListener.onRewardedVideoAvailabilityChanged(false)
       mListener.onRewardedVideoLoadFailed(ironSourceError)
     }
     else {
