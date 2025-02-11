@@ -1,8 +1,8 @@
 apply plugin: 'com.android.library'
-apply plugin: 'com.android.library'
+apply plugin: 'kotlin-android'
 
 ext {
-    adapterVersion = '4.3.48'
+    adapterVersion = '4.3.49'
 }
 
 def getGitHash = { ->
@@ -13,7 +13,6 @@ def getGitHash = { ->
     }
     return stdout.toString().trim()
 }
-
 
 repositories {
     mavenCentral()
@@ -55,9 +54,8 @@ android {
  dependencies {
     implementation 'com.ironsource.sdk:mediationsdk:8.6.1'
     implementation 'com.unity3d.ads:unity-ads:4.13.1'
-     implementation 'com.android.support:multidex:1.0.3'
-
-}
+     implementation 'androidx.multidex:multidex:2.0.1'
+ }
 
 task sourcesJar(type: Jar) {
     archiveClassifier = 'sources'
@@ -75,5 +73,3 @@ task createAAR(type: Copy,group:'buildTasks') {
         fileName.replace('release', adapterVersion)
     }
 }
-
-
