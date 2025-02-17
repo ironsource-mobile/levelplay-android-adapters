@@ -112,5 +112,9 @@ class BidMachineRewardedVideoAdListener(
      */
     override fun onAdExpired(ad: RewardedAd) {
         IronLog.ADAPTER_CALLBACK.verbose()
+        mListener.onRewardedVideoLoadFailed(IronSourceError(
+            IronSourceError.ERROR_RV_EXPIRED_ADS,
+            "ads are expired")
+        )
     }
 }
