@@ -19,6 +19,7 @@ import com.ironsource.adapters.facebook.rewardedvideo.FacebookRewardedVideoAdapt
 import com.ironsource.environment.ContextProvider;
 import com.ironsource.environment.StringUtils;
 import com.ironsource.mediationsdk.AbstractAdapter;
+import com.ironsource.mediationsdk.AdapterNetworkData;
 import com.ironsource.mediationsdk.INetworkInitCallbackListener;
 import com.ironsource.mediationsdk.IntegrationData;
 import com.ironsource.mediationsdk.IronSource;
@@ -26,16 +27,14 @@ import com.ironsource.mediationsdk.LoadWhileShowSupportState;
 import com.ironsource.mediationsdk.logger.IronLog;
 import com.ironsource.mediationsdk.metadata.MetaDataUtils;
 import com.ironsource.mediationsdk.utils.IronSourceUtils;
-
-
 import org.jetbrains.annotations.NotNull;
-
+import org.json.JSONArray;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -59,6 +58,8 @@ public class FacebookAdapter extends AbstractAdapter implements AudienceNetworkA
     protected final String META_MIXED_AUDIENCE = "meta_mixed_audience";
     protected static EnumSet<CacheFlag> mInterstitialFacebookCacheFlags = EnumSet.allOf(CacheFlag.class); // collected cache flags
 
+    // NetworkData flags
+    private static final String NETWORK_DATA_CACHE_FLAG = "CacheFlag";
 
     // Init state possible values
     public enum InitState {
@@ -174,19 +175,7 @@ public class FacebookAdapter extends AbstractAdapter implements AudienceNetworkA
         switch (StringUtils.toLowerCase(key)) {
             case FACEBOOK_INTERSTITIAL_CACHE_FLAG:
             case META_INTERSTITIAL_CACHE_FLAG:
-                IronLog.ADAPTER_API.verbose("key = " + key + ", values = " + values);
-                mInterstitialFacebookCacheFlags.clear();
-
-                try {
-                    for (String value : values) {
-                        CacheFlag flag = getFacebookCacheFlag(value);
-                        IronLog.ADAPTER_API.verbose("flag for value " + value + " is " + flag.name());
-                        mInterstitialFacebookCacheFlags.add(flag);
-                    }
-                } catch (Exception e) {
-                    IronLog.INTERNAL.error("flag is unknown or all, set all as default");
-                    mInterstitialFacebookCacheFlags = getFacebookAllCacheFlags();
-                }
+                processCacheFlags(key, values);
                 break;
 
             case META_MIXED_AUDIENCE:
@@ -200,6 +189,41 @@ public class FacebookAdapter extends AbstractAdapter implements AudienceNetworkA
                 }
                 break;
         }
+    }
+
+    @Override
+    public void setNetworkData(@NonNull AdapterNetworkData networkData) {
+        JSONArray cacheFlags = networkData.dataByKeyIgnoreCase(NETWORK_DATA_CACHE_FLAG, JSONArray.class);
+        if (cacheFlags != null) {
+            processCacheFlags(cacheFlags);
+        }
+    }
+
+    private void processCacheFlags(JSONArray cacheFlags) {
+        List<String> list = new ArrayList<>();
+        for (int i = 0; i < cacheFlags.length(); i++) {
+            list.add(cacheFlags.optString(i));
+        }
+        processCacheFlags(NETWORK_DATA_CACHE_FLAG, list);
+    }
+
+    private void processCacheFlags(String key, List<String> values) {
+        IronLog.ADAPTER_API.verbose("key = " + key + ", values = " + values);
+        mInterstitialFacebookCacheFlags.clear();
+
+        try {
+            for (String value: values) {
+                CacheFlag flag = getFacebookCacheFlag(value);
+                IronLog.ADAPTER_API.verbose("flag for value " + value + " is " + flag.name());
+                mInterstitialFacebookCacheFlags.add(flag);
+            }
+        } catch (Exception e) {
+            IronLog.INTERNAL.error("flag is unknown or all, set all as default");
+            mInterstitialFacebookCacheFlags = getFacebookAllCacheFlags();
+        }
+
+        IronLog.ADAPTER_API.verbose("all flags:" + mInterstitialFacebookCacheFlags.toString());
+
     }
 
     private CacheFlag getFacebookCacheFlag(String value) {

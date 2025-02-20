@@ -134,6 +134,11 @@ public class FacebookBannerAdapter extends AbstractBannerAdapter<FacebookAdapter
         postOnUIThread(new Runnable() {
             @Override
             public void run() {
+                if (adSize == null) {
+                    IronLog.INTERNAL.error("size not supported, size = " + banner.getSize().getDescription());
+                    listener.onBannerAdLoadFailed(ErrorBuilder.unsupportedBannerSize(getAdapter().getProviderName()));
+                    return;
+                }
                 try {
                     AdView adView = new AdView(context, placementId, adSize);
                     FrameLayout.LayoutParams layoutParams = calcLayoutParams(banner.getSize(), context);
