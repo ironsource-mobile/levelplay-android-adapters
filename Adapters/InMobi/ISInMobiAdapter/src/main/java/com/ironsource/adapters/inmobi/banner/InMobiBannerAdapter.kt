@@ -177,6 +177,11 @@ class InMobiBannerAdapter (adapter: InMobiAdapter) :
 
         parseToLong(placementId)?.let { placement ->
             postOnUIThread {
+                if (banner == null) {
+                    IronLog.INTERNAL.verbose("banner is null");
+                    listener.onBannerAdLoadFailed(ErrorBuilder.unsupportedBannerSize(adapter.providerName));
+                    return@postOnUIThread
+                }
                 val inMobiBanner = InMobiBanner(
                     ContextProvider.getInstance().applicationContext,
                     placement

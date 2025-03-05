@@ -5,7 +5,11 @@ import com.inmobi.sdk.InMobiSdk
 import com.ironsource.adapters.inmobi.banner.InMobiBannerAdapter
 import com.ironsource.adapters.inmobi.interstitial.InMobiInterstitialAdapter
 import com.ironsource.adapters.inmobi.rewardedvideo.InMobiRewardedVideoAdapter
-import com.ironsource.mediationsdk.*
+import com.ironsource.mediationsdk.AbstractAdapter
+import com.ironsource.mediationsdk.INetworkInitCallbackListener
+import com.ironsource.mediationsdk.IntegrationData
+import com.ironsource.mediationsdk.IronSource
+import com.ironsource.mediationsdk.LoadWhileShowSupportState
 import com.ironsource.mediationsdk.logger.IronLog
 import com.ironsource.mediationsdk.metadata.MetaData.MetaDataValueTypes
 import com.ironsource.mediationsdk.metadata.MetaDataUtils
@@ -187,7 +191,7 @@ class InMobiAdapter(providerName: String) : AbstractAdapter(providerName),
                 obj.put(InMobiSdk.IM_GDPR_CONSENT_AVAILABLE, consentCollectingUserData)
             }
         } catch (e: JSONException) {
-            e.printStackTrace()
+            IronLog.INTERNAL.error(e.toString())
         }
         return obj
     }
