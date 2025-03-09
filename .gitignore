@@ -28,5 +28,3 @@ hs_err_pid*
 *.idea
 *.log
 Adapters/Google (AdMob and Ad Manager)/ISAdMobAdapter/build/*
-
-**/verification.properties
