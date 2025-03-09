@@ -9,6 +9,7 @@ import com.bytedance.sdk.openadsdk.api.PAGConstant.PAGChildDirectedType.*
 import com.bytedance.sdk.openadsdk.api.banner.PAGBannerAd
 import com.bytedance.sdk.openadsdk.api.banner.PAGBannerRequest
 import com.bytedance.sdk.openadsdk.api.banner.PAGBannerSize
+import com.bytedance.sdk.openadsdk.api.init.BiddingTokenCallback
 import com.bytedance.sdk.openadsdk.api.init.PAGConfig
 import com.bytedance.sdk.openadsdk.api.init.PAGSdk
 import com.bytedance.sdk.openadsdk.api.init.PAGSdk.PAGInitCallback
@@ -37,7 +38,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 
 
 class PangleAdapter(providerName: String) : AbstractAdapter(providerName),
-    INetworkInitCallbackListener {
+        INetworkInitCallbackListener {
 
     // Rewarded video collections
     private var mSlotIdToRewardedVideoListener: ConcurrentHashMap<String, RewardedVideoSmashListener> = ConcurrentHashMap()
@@ -150,12 +151,12 @@ class PangleAdapter(providerName: String) : AbstractAdapter(providerName),
 
             val context = ContextProvider.getInstance().applicationContext
             val initConfig = mPAGConfigBuilder
-                .appId(appId)
-                .setUserData(getMediationInfo())
-                .debugLog(isAdaptersDebugEnabled)
-                //supportMultiProcess is an old API that will be deprecated in future versions, in the meantime set it to false
-                .supportMultiProcess(false)
-                .build()
+                    .appId(appId)
+                    .setUserData(getMediationInfo())
+                    .debugLog(isAdaptersDebugEnabled)
+                    //supportMultiProcess is an old API that will be deprecated in future versions, in the meantime set it to false
+                    .supportMultiProcess(false)
+                    .build()
 
             postOnUIThread {
                 // Init Pangle SDK
@@ -222,8 +223,8 @@ class PangleAdapter(providerName: String) : AbstractAdapter(providerName),
 
             if (mRewardedVideoSlotIdsForInitCallbacks.contains(slotId)) {
                 rewardVideoListener.onRewardedVideoInitFailed(
-                    ErrorBuilder.buildInitFailedError(error, IronSourceConstants.REWARDED_VIDEO_AD_UNIT
-                    )
+                        ErrorBuilder.buildInitFailedError(error, IronSourceConstants.REWARDED_VIDEO_AD_UNIT
+                        )
                 )
             } else {
                 rewardVideoListener.onRewardedVideoAvailabilityChanged(false)
@@ -233,16 +234,16 @@ class PangleAdapter(providerName: String) : AbstractAdapter(providerName),
         // Interstitial
         mSlotIdToInterstitialListener.forEach { (_, interstitialListener) ->
             interstitialListener.onInterstitialInitFailed(
-                ErrorBuilder.buildInitFailedError(error, IronSourceConstants.INTERSTITIAL_AD_UNIT
-                )
+                    ErrorBuilder.buildInitFailedError(error, IronSourceConstants.INTERSTITIAL_AD_UNIT
+                    )
             )
         }
 
         // Banner
         mSlotIdToBannerListener.forEach { (_, bannerListener) ->
             bannerListener.onBannerInitFailed(
-                ErrorBuilder.buildInitFailedError(error, IronSourceConstants.BANNER_AD_UNIT
-                )
+                    ErrorBuilder.buildInitFailedError(error, IronSourceConstants.BANNER_AD_UNIT
+                    )
             )
         }
     }
@@ -376,9 +377,9 @@ class PangleAdapter(providerName: String) : AbstractAdapter(providerName),
             }
         } else {
             listener.onRewardedVideoAdShowFailed(
-                ErrorBuilder.buildNoAdsToShowError(
-                    IronSourceConstants.REWARDED_VIDEO_AD_UNIT
-                )
+                    ErrorBuilder.buildNoAdsToShowError(
+                            IronSourceConstants.REWARDED_VIDEO_AD_UNIT
+                    )
             )
         }
 
@@ -395,9 +396,9 @@ class PangleAdapter(providerName: String) : AbstractAdapter(providerName),
     }
 
     override fun collectRewardedVideoBiddingData(
-        config: JSONObject,
-        adData: JSONObject?,
-        biddingDataCallback: BiddingDataCallback
+            config: JSONObject,
+            adData: JSONObject?,
+            biddingDataCallback: BiddingDataCallback
     ) {
         collectBiddingData(biddingDataCallback, config)
     }
@@ -496,9 +497,9 @@ class PangleAdapter(providerName: String) : AbstractAdapter(providerName),
             }
         } else {
             listener.onInterstitialAdShowFailed(
-                ErrorBuilder.buildNoAdsToShowError(
-                    IronSourceConstants.INTERSTITIAL_AD_UNIT
-                )
+                    ErrorBuilder.buildNoAdsToShowError(
+                            IronSourceConstants.INTERSTITIAL_AD_UNIT
+                    )
             )
         }
 
@@ -515,9 +516,9 @@ class PangleAdapter(providerName: String) : AbstractAdapter(providerName),
     }
 
     override fun collectInterstitialBiddingData(
-        config: JSONObject,
-        adData: JSONObject?,
-        biddingDataCallback: BiddingDataCallback
+            config: JSONObject,
+            adData: JSONObject?,
+            biddingDataCallback: BiddingDataCallback
     ) {
         collectBiddingData(biddingDataCallback, config)
     }
@@ -617,9 +618,9 @@ class PangleAdapter(providerName: String) : AbstractAdapter(providerName),
     }
 
     override fun collectBannerBiddingData(
-        config: JSONObject,
-        adData: JSONObject?,
-        biddingDataCallback: BiddingDataCallback
+            config: JSONObject,
+            adData: JSONObject?,
+            biddingDataCallback: BiddingDataCallback
     ) {
         collectBiddingData(biddingDataCallback, config)
     }
@@ -765,23 +766,23 @@ class PangleAdapter(providerName: String) : AbstractAdapter(providerName),
 
         val layoutParams = when (size.description) {
             "BANNER" -> FrameLayout.LayoutParams(
-                AdapterUtils.dpToPixels(context, 320),
-                AdapterUtils.dpToPixels(context, 50)
+                    AdapterUtils.dpToPixels(context, 320),
+                    AdapterUtils.dpToPixels(context, 50)
             )
             "RECTANGLE" -> FrameLayout.LayoutParams(
-                AdapterUtils.dpToPixels(context, 300),
-                AdapterUtils.dpToPixels(context, 250)
+                    AdapterUtils.dpToPixels(context, 300),
+                    AdapterUtils.dpToPixels(context, 250)
             )
             "SMART" ->
                 if (AdapterUtils.isLargeScreen(context)) {
                     FrameLayout.LayoutParams(
-                        AdapterUtils.dpToPixels(context, 728),
-                        AdapterUtils.dpToPixels(context, 90)
+                            AdapterUtils.dpToPixels(context, 728),
+                            AdapterUtils.dpToPixels(context, 90)
                     )
                 } else {
                     FrameLayout.LayoutParams(
-                        AdapterUtils.dpToPixels(context, 320),
-                        AdapterUtils.dpToPixels(context, 50)
+                            AdapterUtils.dpToPixels(context, 320),
+                            AdapterUtils.dpToPixels(context, 50)
                     )
                 }
             else -> FrameLayout.LayoutParams(0, 0)
@@ -854,8 +855,8 @@ class PangleAdapter(providerName: String) : AbstractAdapter(providerName),
             if (!bidToken.isNullOrEmpty()) {
                 IronLog.ADAPTER_API.verbose("token = $bidToken")
                 mutableMapOf<String, Any>()
-                    .apply { put("token", bidToken) }
-                    .let { biddingDataCallback.onSuccess(it) }
+                        .apply { put("token", bidToken) }
+                        .let { biddingDataCallback.onSuccess(it) }
             } else {
                 biddingDataCallback.onFailure("Failed to receive token - Pangle")
             }
