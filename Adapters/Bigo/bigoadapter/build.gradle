@@ -1,8 +1,15 @@
+import groovy.json.JsonSlurper
+
 apply plugin: 'com.android.library'
 apply plugin: 'kotlin-android'
 
+def versionsFile = file("../versions.json")
+def versionsData = new JsonSlurper().parse(versionsFile)
+
 ext {
-    adapterVersion = '4.3.6'
+    mediationsdkVersion = versionsData.mediationsdk
+    adapterVersion = versionsData.adapter
+    sdkVersion = versionsData.sdk
 }
 
 def getGitHash = { ->
@@ -16,9 +23,6 @@ def getGitHash = { ->
 
 repositories {
     mavenCentral()
-    maven {
-        url 'https://android-sdk.is.com/'
-    }
 }
 
 android {
@@ -51,8 +55,8 @@ android {
 }
 
  dependencies {
-    implementation 'com.ironsource.sdk:mediationsdk:8.6.1'
-    implementation 'com.bigossp:bigo-ads:5.1.0'
+    implementation "com.unity3d.ads-mediation:mediation-sdk:${mediationsdkVersion}"
+    implementation "com.bigossp:bigo-ads:${sdkVersion}"
  }
 
 task sourcesJar(type: Jar) {

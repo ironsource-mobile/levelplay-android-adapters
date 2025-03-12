@@ -166,7 +166,7 @@ class BigoBannerAdapter(adapter: BigoAdapter) :
             ISBannerSize.BANNER.description -> AdSize.BANNER
             ISBannerSize.RECTANGLE.description -> AdSize.MEDIUM_RECTANGLE
             ISBannerSize.SMART.description -> if (AdapterUtils.isLargeScreen(ContextProvider.getInstance().applicationContext)) {
-                AdSize.LARGE_BANNER
+               AdSize.LARGE_BANNER
             } else {
                 AdSize.BANNER
             }
