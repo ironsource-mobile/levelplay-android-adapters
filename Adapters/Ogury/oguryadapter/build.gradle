@@ -1,8 +1,14 @@
 apply plugin: 'com.android.library'
 apply plugin: 'kotlin-android'
+import groovy.json.JsonSlurper
+
+def versionsFile = file("../versions.json")
+def versionsData = new JsonSlurper().parse(versionsFile)
 
 ext {
-    adapterVersion = '4.3.1'
+    mediationsdkVersion = versionsData.mediationsdk
+    adapterVersion = versionsData.adapter
+    sdkVersion = versionsData.sdk
 }
 
 def getGitHash = { ->
@@ -17,9 +23,6 @@ def getGitHash = { ->
 repositories {
     mavenCentral()
     maven {
-        url 'https://android-sdk.is.com/'
-    }
-    maven {
         url 'https://maven.ogury.co' 
     }
 
@@ -30,7 +33,7 @@ android {
     buildToolsVersion "30.0.3"
 
     defaultConfig {
-        minSdkVersion 19
+        minSdkVersion 21
         targetSdkVersion 33
         versionCode 1
         versionName adapterVersion
@@ -55,8 +58,8 @@ android {
 }
 
  dependencies {
-    implementation 'com.ironsource.sdk:mediationsdk:8.3.0'
-    implementation 'co.ogury:ogury-sdk:5.8.0'
+    implementation "com.unity3d.ads-mediation:mediation-sdk:${mediationsdkVersion}"
+    implementation "co.ogury:ogury-sdk:${sdkVersion}"
  }
 
 task sourcesJar(type: Jar) {

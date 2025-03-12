@@ -15,8 +15,8 @@ import com.ironsource.mediationsdk.logger.IronLog
 import com.ironsource.mediationsdk.sdk.BannerSmashListener
 import com.ironsource.mediationsdk.utils.ErrorBuilder
 import com.ironsource.mediationsdk.utils.IronSourceConstants
-import com.ogury.ed.OguryBannerAdSize
-import com.ogury.ed.OguryBannerAdView
+import com.ogury.ad.OguryBannerAdSize
+import com.ogury.ad.OguryBannerAdView
 import org.json.JSONObject
 import java.lang.ref.WeakReference
 
@@ -96,9 +96,7 @@ class OguryBannerAdapter(adapter: OguryAdapter) :
         val adUnitIdKey = OguryAdapter.getAdUnitIdKey()
         val adUnitId = getConfigStringValueFromKey(config, adUnitIdKey)
 
-        mAdView = OguryBannerAdView(context)
-        mAdView?.setAdSize(bannerSize)
-        mAdView?.setAdUnit(adUnitId)
+        mAdView = OguryBannerAdView(context, adUnitId, bannerSize)
 
         val bannerAdListener = OguryBannerAdListener(
             listener,
@@ -109,9 +107,13 @@ class OguryBannerAdapter(adapter: OguryAdapter) :
 
         mAdListener = bannerAdListener
         mAdView?.setListener(mAdListener)
-        mAdView?.setAdMarkup(serverData)
         postOnUIThread {
-            mAdView?.loadAd() ?: run {
+            if (banner == null) {
+                IronLog.INTERNAL.verbose("banner is null")
+                listener.onBannerAdLoadFailed(ErrorBuilder.unsupportedBannerSize(adapter.providerName))
+                return@postOnUIThread
+            }
+            mAdView?.load(serverData) ?: run {
                 listener.onBannerAdLoadFailed(ErrorBuilder.buildLoadFailedError("Ad is null"))
             }
         }
@@ -160,14 +162,14 @@ class OguryBannerAdapter(adapter: OguryAdapter) :
     }
 
     private fun getBannerSize(bannerSize: ISBannerSize?): OguryBannerAdSize? {
-        if(bannerSize == null) {
+        if (bannerSize == null) {
             IronLog.INTERNAL.verbose("Banner size is null")
             return null
         }
 
         return when (bannerSize.description) {
             ISBannerSize.BANNER.description -> OguryBannerAdSize.SMALL_BANNER_320x50
-            ISBannerSize.RECTANGLE.description -> OguryBannerAdSize.MPU_300x250
+            ISBannerSize.RECTANGLE.description -> OguryBannerAdSize.MREC_300x250
             ISBannerSize.SMART.description -> if (AdapterUtils.isLargeScreen(ContextProvider.getInstance().applicationContext)) {
                 null
             } else {
@@ -176,6 +178,5 @@ class OguryBannerAdapter(adapter: OguryAdapter) :
             else -> null
         }
     }
-
     //endregion
 }
