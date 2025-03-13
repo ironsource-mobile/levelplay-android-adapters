@@ -12,7 +12,7 @@ import java.lang.ref.WeakReference
 class MolocoRewardedVideoAdLoadListener(
     private val mListener: RewardedVideoSmashListener,
     private val mAdapter: WeakReference<MolocoRewardedVideoAdapter>
-) : AdLoad.Listener {
+) : AdLoad.Listener{
 
     /**
      * Called when Ad was loaded and ready to be displayed
@@ -41,5 +41,4 @@ class MolocoRewardedVideoAdLoadListener(
         )
         mAdapter.get()?.destroyRewardedVideoAd()
     }
-
-    }
+}

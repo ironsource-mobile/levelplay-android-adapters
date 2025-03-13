@@ -11,7 +11,6 @@ import com.ironsource.mediationsdk.utils.ErrorBuilder
 import com.ironsource.mediationsdk.utils.IronSourceConstants
 import com.moloco.sdk.publisher.InterstitialAd
 import com.moloco.sdk.publisher.Moloco
-import com.moloco.sdk.publisher.MolocoAdError
 import org.json.JSONObject
 import java.lang.ref.WeakReference
 
@@ -22,7 +21,6 @@ class MolocoInterstitialAdapter(adapter: MolocoAdapter) :
     private var mAdLoadListener : MolocoInterstitialAdLoadListener? = null
     private var mAdShowListener : MolocoInterstitialAdShowListener? = null
     private var mAd: InterstitialAd? = null
-
     //regin Interstitial API
 
     override fun initInterstitialForBidding(
@@ -139,7 +137,6 @@ class MolocoInterstitialAdapter(adapter: MolocoAdapter) :
         listener: InterstitialSmashListener
     ) {
         IronLog.ADAPTER_API.verbose()
-
         if (!isInterstitialReady(config)) {
             listener.onInterstitialAdShowFailed(
                 ErrorBuilder.buildNoAdsToShowError(
@@ -174,6 +171,7 @@ class MolocoInterstitialAdapter(adapter: MolocoAdapter) :
         destroyInterstitialAd()
         mAdLoadListener = null
         mAdShowListener = null
+        mListener = null
     }
 
     //end region

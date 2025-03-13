@@ -108,6 +108,7 @@ class MolocoRewardedVideoAdapter(adapter: MolocoAdapter) :
 
         val rewardedVideoAdListener = MolocoRewardedVideoAdLoadListener(listener, WeakReference(this))
         mAdLoadListener = rewardedVideoAdListener
+
         val adUnitIdKey = MolocoAdapter.getAdUnitIdKey()
         val adUnitId = getConfigStringValueFromKey(config, adUnitIdKey)
         Moloco.createRewardedInterstitial(adUnitId) { rewardedAd, error ->
