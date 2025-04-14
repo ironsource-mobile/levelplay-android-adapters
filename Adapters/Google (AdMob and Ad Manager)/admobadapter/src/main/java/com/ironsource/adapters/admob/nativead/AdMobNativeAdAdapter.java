@@ -6,7 +6,6 @@ import static com.google.android.gms.ads.nativead.NativeAdOptions.ADCHOICES_TOP_
 import static com.google.android.gms.ads.nativead.NativeAdOptions.ADCHOICES_TOP_RIGHT;
 
 import android.text.TextUtils;
-
 import androidx.annotation.NonNull;
 import com.google.android.gms.ads.AdFormat;
 import com.google.android.gms.ads.AdLoader;
@@ -119,6 +118,7 @@ public class AdMobNativeAdAdapter extends AbstractNativeAdAdapter<AdMobAdapter> 
                                     .setAdChoicesPlacement(getAdChoicesPosition(adOptionsPosition))
                                     .build())
                             .build();
+
                     adLoader.loadAd(getAdapter().createAdRequest(adData, serverData));
                 } catch (Exception e) {
                     IronSourceError error = ErrorBuilder.buildLoadFailedError("AdMobAdapter loadNativeAd exception " + e.getMessage());

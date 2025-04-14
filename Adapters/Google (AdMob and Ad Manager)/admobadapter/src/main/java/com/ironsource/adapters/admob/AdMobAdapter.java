@@ -20,6 +20,7 @@ import com.ironsource.adapters.admob.rewardedvideo.AdMobRewardedVideoAdapter;
 import com.ironsource.environment.ContextProvider;
 import com.ironsource.environment.StringUtils;
 import com.ironsource.mediationsdk.AbstractAdapter;
+import com.ironsource.mediationsdk.AdapterNetworkData;
 import com.ironsource.mediationsdk.INetworkInitCallbackListener;
 import com.ironsource.mediationsdk.IntegrationData;
 import com.ironsource.mediationsdk.IronSource;
@@ -29,6 +30,7 @@ import com.ironsource.mediationsdk.logger.IronLog;
 import com.ironsource.mediationsdk.metadata.MetaDataUtils;
 
 import org.jetbrains.annotations.NotNull;
+import org.json.JSONArray;
 import org.json.JSONObject;
 
 import java.util.ArrayList;
@@ -100,6 +102,10 @@ public class AdMobAdapter extends AbstractAdapter {
         String ADMOB_MAX_RATING_KEY = "admob_maxcontentrating";
         String ADMOB_CONTENT_MAPPING_KEY = "google_content_mapping";
     }
+
+    // Network Data flags
+    private static final String NETWORK_DATA_CONTENT_MAPPING = "ContentMapping";
+    private static final String NETWORK_DATA_CONTENT_RATING = "MaxAdContentRating";
 
     //region Adapter Methods
     public static AdMobAdapter startAdapter(String providerName) {
@@ -251,6 +257,47 @@ public class AdMobAdapter extends AbstractAdapter {
             setAdMobMetaDataValue(StringUtils.toLowerCase(key), StringUtils.toLowerCase(value));
         }
 
+    }
+
+    @Override
+    public void setNetworkData(@NonNull AdapterNetworkData networkData) {
+        JSONObject allData = networkData.allData();
+
+        // If the contentMapping key maps to a string
+        String networkDataContentMappingString = networkData.dataByKeyIgnoreCase(NETWORK_DATA_CONTENT_MAPPING, String.class);
+        if(networkDataContentMappingString != null){
+            processContentMapping(networkDataContentMappingString);
+        }
+
+        // If the contentMapping key maps to an array
+        JSONArray networkDataContentMappingArray = networkData.dataByKeyIgnoreCase(NETWORK_DATA_CONTENT_MAPPING, JSONArray.class);
+        if(networkDataContentMappingArray != null){
+            processContentMapping(networkDataContentMappingArray);
+        }
+
+        String networkDataContentRating = networkData.dataByKeyIgnoreCase(NETWORK_DATA_CONTENT_RATING, String.class);
+        if(networkDataContentRating != null){
+            processContentRating(networkDataContentRating);
+        }
+    }
+
+    private void processContentMapping(String value) {
+        mContentMappingURLValue = value;
+        IronLog.ADAPTER_API.verbose("key = " + NETWORK_DATA_CONTENT_MAPPING + ", contentMappingValue = " + mContentMappingURLValue);
+    }
+
+    private void processContentMapping(JSONArray value) {
+        mNeighboringContentMappingURLValue.clear();
+        for (int i = 0; i < value.length(); i++) {
+            mNeighboringContentMappingURLValue.add(value.optString(i));
+        }
+        IronLog.ADAPTER_API.verbose("key = " + NETWORK_DATA_CONTENT_MAPPING + ", contentMappingValues = " + mNeighboringContentMappingURLValue.toString());
+    }
+
+    private void processContentRating(String value) {
+        mRatingValue = getAdMobRatingValue(StringUtils.toLowerCase(value));
+        IronLog.ADAPTER_API.verbose("key = " + NETWORK_DATA_CONTENT_RATING + ", inputValue = " + value + ", ratingValue = " + mRatingValue);
+        setRequestConfiguration();
     }
 
     private void setCCPAValue(final boolean value) {

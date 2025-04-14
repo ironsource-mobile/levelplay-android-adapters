@@ -107,13 +107,12 @@ public class AdMobNativeAdListener extends AdListener implements NativeAd.OnNati
             IronLog.INTERNAL.verbose("listener is null");
             return;
         }
-
+        
         mListener.onNativeAdClicked();
     }
 
     @Override
     public void onAdClosed() {
         IronLog.ADAPTER_CALLBACK.verbose("adUnitId = " + mAdUnitId);
-
     }
 }
