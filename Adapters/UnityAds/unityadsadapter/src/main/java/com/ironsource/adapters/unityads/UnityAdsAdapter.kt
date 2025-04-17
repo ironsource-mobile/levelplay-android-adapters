@@ -96,6 +96,9 @@ class UnityAdsAdapter(providerName: String) : AbstractAdapter(providerName),
         fun getIntegrationData(context: Context?): IntegrationData {
             return IntegrationData("UnityAds", VERSION)
         }
+
+        @JvmStatic
+        fun getAdapterSDKVersion(): String = UnityAds.version
     }
 
     //region Adapter Methods
@@ -104,7 +107,7 @@ class UnityAdsAdapter(providerName: String) : AbstractAdapter(providerName),
     override fun getVersion(): String = VERSION
 
     // get network sdk version
-    override fun getCoreSDKVersion(): String = UnityAds.version
+    override fun getCoreSDKVersion(): String = getAdapterSDKVersion()
 
     override fun isUsingActivityBeforeImpression(adUnit: AD_UNIT): Boolean = false
 
