@@ -1,8 +1,15 @@
+import groovy.json.JsonSlurper
+
 apply plugin: 'com.android.library'
 apply plugin: 'org.jetbrains.kotlin.android'
 
+def versionsFile = file("../versions.json")
+def versionsData = new JsonSlurper().parse(versionsFile)
+
 ext {
-    adapterVersion = '4.3.50'
+    mediationsdkVersion = versionsData.mediationsdk
+    adapterVersion = versionsData.adapter
+    sdkVersion = versionsData.sdk
 }
 
 def getGitHash = { ->
@@ -15,9 +22,7 @@ def getGitHash = { ->
 }
 
 repositories {
-    maven {
-        url 'https://android-sdk.is.com/'
-    }
+    mavenCentral()
 }
 
 android {
@@ -49,9 +54,9 @@ android {
 }
 
  dependencies {
-     implementation 'com.ironsource.sdk:mediationsdk:8.6.1'
-     implementation 'com.applovin:applovin-sdk:13.1.0'
-     implementation 'org.jetbrains:annotations:16.0.2'
+     implementation "com.unity3d.ads-mediation:mediation-sdk:${mediationsdkVersion}"
+     implementation "com.applovin:applovin-sdk:${sdkVersion}"
+     implementation "org.jetbrains:annotations:16.0.2"
  }
 
 task sourcesJar(type: Jar) {

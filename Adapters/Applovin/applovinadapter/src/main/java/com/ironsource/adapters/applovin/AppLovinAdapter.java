@@ -366,6 +366,7 @@ class AppLovinAdapter extends AbstractAdapter implements INetworkInitCallbackLis
             // Handle case when a rewarded video is already loaded with the same zoneId
             String errorMessage = "AppLovin can't load multiple rewarded video ads for the same zoneId - " + zoneId + ", skipping load attempt since there is a loaded rewarded video ad for this zoneId";
             IronLog.INTERNAL.info(errorMessage);
+            listener.onRewardedVideoAvailabilityChanged(false);
             listener.onRewardedVideoLoadFailed(ErrorBuilder.buildLoadFailedError(errorMessage));
             return;
         }
