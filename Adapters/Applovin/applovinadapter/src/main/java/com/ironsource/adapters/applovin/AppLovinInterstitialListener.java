@@ -9,7 +9,6 @@ import com.applovin.sdk.AppLovinErrorCodes;
 import com.ironsource.mediationsdk.logger.IronLog;
 import com.ironsource.mediationsdk.logger.IronSourceError;
 import com.ironsource.mediationsdk.sdk.InterstitialSmashListener;
-
 import java.lang.ref.WeakReference;
 
 public class AppLovinInterstitialListener implements AppLovinAdLoadListener, AppLovinAdClickListener, AppLovinAdDisplayListener, AppLovinAdVideoPlaybackListener {

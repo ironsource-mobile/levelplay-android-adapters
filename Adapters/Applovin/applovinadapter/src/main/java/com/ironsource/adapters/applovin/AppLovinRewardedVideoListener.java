@@ -10,9 +10,6 @@ import com.applovin.sdk.AppLovinErrorCodes;
 import com.ironsource.mediationsdk.logger.IronLog;
 import com.ironsource.mediationsdk.logger.IronSourceError;
 import com.ironsource.mediationsdk.sdk.RewardedVideoSmashListener;
-
-import org.json.JSONObject;
-
 import java.lang.ref.WeakReference;
 import java.util.Map;
 

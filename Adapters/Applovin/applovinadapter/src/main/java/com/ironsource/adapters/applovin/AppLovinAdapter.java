@@ -4,7 +4,6 @@ import android.content.Context;
 import android.text.TextUtils;
 import android.view.Gravity;
 import android.widget.FrameLayout;
-
 import com.applovin.adview.AppLovinAdView;
 import com.applovin.adview.AppLovinIncentivizedInterstitial;
 import com.applovin.adview.AppLovinInterstitialAd;
@@ -15,7 +14,6 @@ import com.applovin.sdk.AppLovinErrorCodes;
 import com.applovin.sdk.AppLovinMediationProvider;
 import com.applovin.sdk.AppLovinPrivacySettings;
 import com.applovin.sdk.AppLovinSdk;
-import com.applovin.sdk.AppLovinSdkConfiguration;
 import com.applovin.sdk.AppLovinSdkInitializationConfiguration;
 import com.applovin.sdk.AppLovinSdkSettings;
 import com.ironsource.environment.ContextProvider;
@@ -35,16 +33,13 @@ import com.ironsource.mediationsdk.sdk.RewardedVideoSmashListener;
 import com.ironsource.mediationsdk.AdapterUtils;
 import com.ironsource.mediationsdk.utils.ErrorBuilder;
 import com.ironsource.mediationsdk.utils.IronSourceConstants;
-
 import org.jetbrains.annotations.NotNull;
 import org.json.JSONObject;
-
 import java.util.HashSet;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.atomic.AtomicBoolean;
-
 
 class AppLovinAdapter extends AbstractAdapter implements INetworkInitCallbackListener {
 
@@ -170,7 +165,7 @@ class AppLovinAdapter extends AbstractAdapter implements INetworkInitCallbackLis
             AppLovinSdkInitializationConfiguration initConfig;
             try {
                 // Create AppLovin sdk configuration
-                initConfig = AppLovinSdkInitializationConfiguration.builder(sdkKey, context)
+                initConfig = AppLovinSdkInitializationConfiguration.builder(sdkKey)
                     .setMediationProvider(AppLovinMediationProvider.IRONSOURCE)
                     .build();
             } catch (Throwable t) {
@@ -190,14 +185,9 @@ class AppLovinAdapter extends AbstractAdapter implements INetworkInitCallbackLis
             mAppLovinSettings = settings;
 
             // init AppLovin sdk
-            mAppLovinSdk.initialize(initConfig, new AppLovinSdk.SdkInitializationListener() {
-                // AppLovin's initialization callback currently doesn't give any indication to initialization failure.
-                // Once this callback is called we will treat the initialization as successful
-                @Override
-                public void onSdkInitialized(final AppLovinSdkConfiguration sdkConfig) {
-                    initializationSuccess();
-                }
-            });
+            // AppLovin's initialization callback currently doesn't give any indication to initialization failure.
+            // Once this callback is called we will treat the initialization as successful
+            mAppLovinSdk.initialize(initConfig, sdkConfig -> initializationSuccess());
         }
     }
 
@@ -372,11 +362,7 @@ class AppLovinAdapter extends AbstractAdapter implements INetworkInitCallbackLis
         }
 
         AppLovinIncentivizedInterstitial rewardedVideoAd;
-        if (!zoneId.equals(DEFAULT_ZONE_ID)) {
-            rewardedVideoAd = AppLovinIncentivizedInterstitial.create(zoneId, mAppLovinSdk);
-        } else {
-            rewardedVideoAd = AppLovinIncentivizedInterstitial.create(mAppLovinSdk);
-        }
+        rewardedVideoAd = new AppLovinIncentivizedInterstitial();
 
         mRewardedVideoZoneId = zoneId;
         mRewardedVideoAds.storeAd(this, rewardedVideoAd);
@@ -400,12 +386,17 @@ class AppLovinAdapter extends AbstractAdapter implements INetworkInitCallbackLis
             if (!TextUtils.isEmpty(getDynamicUserId())) {
                 mAppLovinSettings.setUserIdentifier(getDynamicUserId());
             }
-
+            
             AppLovinIncentivizedInterstitial rewardedVideoAd = mRewardedVideoAds.retrieveAd(this);
             AppLovinRewardedVideoListener rewardedVideoListener = mZoneIdToAppLovinRewardedVideoListener.get(zoneId);
 
-            rewardedVideoAd.show(ContextProvider.getInstance().getCurrentActiveActivity(), rewardedVideoListener, rewardedVideoListener, rewardedVideoListener, rewardedVideoListener);
-
+            if (rewardedVideoAd != null) {
+                rewardedVideoAd.show(ContextProvider.getInstance().getCurrentActiveActivity(), rewardedVideoListener, rewardedVideoListener, rewardedVideoListener, rewardedVideoListener);
+            } else {
+                listener.onRewardedVideoAdShowFailed(
+                    ErrorBuilder.buildNoAdsToShowError(IronSourceConstants.REWARDED_VIDEO_AD_UNIT)
+                );
+            }
         } else {
             disposeRewardedVideoAd(config);
             listener.onRewardedVideoAdShowFailed(ErrorBuilder.buildNoAdsToShowError(IronSourceConstants.REWARDED_VIDEO_AD_UNIT));
@@ -521,7 +512,7 @@ class AppLovinAdapter extends AbstractAdapter implements INetworkInitCallbackLis
             AppLovinAd interstitialAd = mInterstitialAds.retrieveAd(this);
             AppLovinInterstitialListener interstitialListener = mZoneIdToAppLovinInterstitialListener.get(zoneId);
 
-            AppLovinInterstitialAdDialog interstitialAdDialog = AppLovinInterstitialAd.create(mAppLovinSdk, ContextProvider.getInstance().getApplicationContext());
+            AppLovinInterstitialAdDialog interstitialAdDialog = AppLovinInterstitialAd.create();
 
             interstitialAdDialog.setAdClickListener(interstitialListener);
             interstitialAdDialog.setAdDisplayListener(interstitialListener);
@@ -654,7 +645,7 @@ class AppLovinAdapter extends AbstractAdapter implements INetworkInitCallbackLis
                 // create banner listener
                 AppLovinBannerListener applovinListener = new AppLovinBannerListener(AppLovinAdapter.this, listener, zoneId, layoutParams);
                 // create ad view
-                AppLovinAdView adView = new AppLovinAdView(mAppLovinSdk, bannerSize, ContextProvider.getInstance().getApplicationContext());
+                AppLovinAdView adView = new AppLovinAdView(bannerSize);
                 adView.setAdDisplayListener(applovinListener);
                 adView.setAdClickListener(applovinListener);
                 adView.setAdViewEventListener(applovinListener);
@@ -753,12 +744,12 @@ class AppLovinAdapter extends AbstractAdapter implements INetworkInitCallbackLis
     @Override
     protected void setConsent(boolean consent) {
         IronLog.ADAPTER_API.verbose("consent = " + consent);
-        AppLovinPrivacySettings.setHasUserConsent(consent, ContextProvider.getInstance().getApplicationContext());
+        AppLovinPrivacySettings.setHasUserConsent(consent);
     }
 
     private void setCCPAValue(final boolean value) {
         IronLog.ADAPTER_API.verbose("value = " + value);
-        AppLovinPrivacySettings.setDoNotSell(value, ContextProvider.getInstance().getApplicationContext());
+        AppLovinPrivacySettings.setDoNotSell(value);
     }
 
     //endregion
