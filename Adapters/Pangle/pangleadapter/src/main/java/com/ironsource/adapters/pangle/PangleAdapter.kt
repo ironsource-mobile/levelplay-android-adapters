@@ -4,12 +4,11 @@ import android.content.Context
 import android.view.Gravity
 import android.widget.FrameLayout
 import com.bytedance.sdk.openadsdk.api.PAGConstant.PAGGDPRConsentType.*
-import com.bytedance.sdk.openadsdk.api.PAGConstant.PAGDoNotSellType.*
-import com.bytedance.sdk.openadsdk.api.PAGConstant.PAGChildDirectedType.*
+import com.bytedance.sdk.openadsdk.api.PAGConstant.PAGPAConsentType.*
 import com.bytedance.sdk.openadsdk.api.banner.PAGBannerAd
 import com.bytedance.sdk.openadsdk.api.banner.PAGBannerRequest
 import com.bytedance.sdk.openadsdk.api.banner.PAGBannerSize
-import com.bytedance.sdk.openadsdk.api.init.BiddingTokenCallback
+import com.bytedance.sdk.openadsdk.api.bidding.PAGBiddingRequest
 import com.bytedance.sdk.openadsdk.api.init.PAGConfig
 import com.bytedance.sdk.openadsdk.api.init.PAGSdk
 import com.bytedance.sdk.openadsdk.api.init.PAGSdk.PAGInitCallback
@@ -72,6 +71,7 @@ class PangleAdapter(providerName: String) : AbstractAdapter(providerName),
         private const val MEDIATION_NAME_KEY = "mediation"
         private const val MEDIATION_NAME = "Ironsource"
         private const val ADAPTER_VERSION_KEY = "adapter_version"
+        private const val LEVELPLAY_ADXID = "33"
 
         // Adapter version
         private const val VERSION = BuildConfig.VERSION_NAME
@@ -83,9 +83,6 @@ class PangleAdapter(providerName: String) : AbstractAdapter(providerName),
 
         // Pangle errors
         const val PANGLE_NO_FILL_ERROR_CODE = 20001
-
-        // Meta data flags
-        private const val META_DATA_PANGLE_COPPA_KEY = "Pangle_COPPA"
 
         // Pangle Builder
         private val mPAGConfigBuilder = PAGConfig.Builder()
@@ -152,6 +149,7 @@ class PangleAdapter(providerName: String) : AbstractAdapter(providerName),
             val context = ContextProvider.getInstance().applicationContext
             val initConfig = mPAGConfigBuilder
                     .appId(appId)
+                    .setAdxId(LEVELPLAY_ADXID)
                     .setUserData(getMediationInfo())
                     .debugLog(isAdaptersDebugEnabled)
                     //supportMultiProcess is an old API that will be deprecated in future versions, in the meantime set it to false
@@ -680,9 +678,6 @@ class PangleAdapter(providerName: String) : AbstractAdapter(providerName),
             MetaDataUtils.isValidCCPAMetaData(key, value) -> {
                 setCCPAValue(MetaDataUtils.getMetaDataBooleanValue(value))
             }
-            MetaDataUtils.isValidMetaData(key, META_DATA_PANGLE_COPPA_KEY, value) -> {
-                setCOPPAValue(value)
-            }
         }
     }
 
@@ -692,39 +687,16 @@ class PangleAdapter(providerName: String) : AbstractAdapter(providerName),
         val ccpaValueString : String
 
         if (doNotSell) {
-            ccpaValue = PAG_DO_NOT_SELL_TYPE_NOT_SELL
-            ccpaValueString = "PAG_DO_NOT_SELL_TYPE_NOT_SELL"
+            ccpaValue = PAG_PA_CONSENT_TYPE_NO_CONSENT
+            ccpaValueString = "PAG_PA_CONSENT_TYPE_NO_CONSENT"
         }
         else {
-            ccpaValue = PAG_DO_NOT_SELL_TYPE_SELL
-            ccpaValueString = "PAG_DO_NOT_SELL_TYPE_SELL"
+            ccpaValue = PAG_PA_CONSENT_TYPE_CONSENT
+            ccpaValueString = "PAG_PA_CONSENT_TYPE_CONSENT"
         }
 
         IronLog.ADAPTER_API.verbose("ccpaValue = $ccpaValueString")
-        mPAGConfigBuilder.setDoNotSell(ccpaValue)
-    }
-
-    private fun setCOPPAValue(value: String) {
-        val coppaValue: Int
-        val coppaValueString : String
-
-        when (value.toIntOrNull()) {
-            PAG_CHILD_DIRECTED_TYPE_CHILD -> {
-                coppaValue = PAG_CHILD_DIRECTED_TYPE_CHILD
-                coppaValueString = "PAG_CHILD_DIRECTED_TYPE_CHILD"
-            }
-            PAG_CHILD_DIRECTED_TYPE_NON_CHILD -> {
-                coppaValue = PAG_CHILD_DIRECTED_TYPE_NON_CHILD
-                coppaValueString = "PAG_CHILD_DIRECTED_TYPE_NON_CHILD"
-            }
-            else -> {
-                coppaValue = PAG_CHILD_DIRECTED_TYPE_DEFAULT
-                coppaValueString = "PAG_CHILD_DIRECTED_TYPE_DEFAULT"
-            }
-        }
-
-        IronLog.ADAPTER_API.verbose("coppaValue = $coppaValueString")
-        mPAGConfigBuilder.setChildDirected(coppaValue)
+        mPAGConfigBuilder.setPAConsent(ccpaValue)
     }
 
     override fun setConsent(consent: Boolean) {
@@ -844,14 +816,21 @@ class PangleAdapter(providerName: String) : AbstractAdapter(providerName),
     }
 
     private fun collectBiddingData(biddingDataCallback: BiddingDataCallback, config: JSONObject) {
-        val slotId = config.optString(SLOT_ID_KEY)
+        val slotid = config.optString(SLOT_ID_KEY)
         if (mInitState == InitState.INIT_STATE_FAILED) {
             val error = "returning null as token since init is not successful"
             IronLog.INTERNAL.verbose(error)
             biddingDataCallback.onFailure("$error - Pangle")
             return
         }
-        PAGSdk.getBiddingToken(slotId) { bidToken ->
+
+        val pagBiddingRequest = PAGBiddingRequest().apply {
+            slotId = slotid
+            adxId = LEVELPLAY_ADXID
+        }
+
+        PAGSdk.getBiddingToken(ContextProvider.getInstance().applicationContext, pagBiddingRequest
+        ) { bidToken ->
             if (!bidToken.isNullOrEmpty()) {
                 IronLog.ADAPTER_API.verbose("token = $bidToken")
                 mutableMapOf<String, Any>()
@@ -860,8 +839,8 @@ class PangleAdapter(providerName: String) : AbstractAdapter(providerName),
             } else {
                 biddingDataCallback.onFailure("Failed to receive token - Pangle")
             }
+            }
         }
-    }
 
     //endregion
 
