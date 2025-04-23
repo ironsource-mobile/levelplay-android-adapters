@@ -362,7 +362,11 @@ class AppLovinAdapter extends AbstractAdapter implements INetworkInitCallbackLis
         }
 
         AppLovinIncentivizedInterstitial rewardedVideoAd;
-        rewardedVideoAd = new AppLovinIncentivizedInterstitial();
+        if (!zoneId.equals(DEFAULT_ZONE_ID)) {
+            rewardedVideoAd = new AppLovinIncentivizedInterstitial(zoneId);
+        } else {
+            rewardedVideoAd = new AppLovinIncentivizedInterstitial();
+        }
 
         mRewardedVideoZoneId = zoneId;
         mRewardedVideoAds.storeAd(this, rewardedVideoAd);
