@@ -19,6 +19,7 @@ import com.vungle.ads.VungleAds
 import com.vungle.ads.VunglePrivacySettings.setCCPAStatus
 import com.vungle.ads.VunglePrivacySettings.setCOPPAStatus
 import com.vungle.ads.VunglePrivacySettings.setGDPRStatus
+import com.vungle.ads.VungleWrapperFramework
 import java.util.concurrent.atomic.AtomicBoolean
 
 
@@ -108,7 +109,7 @@ class VungleAdapter(providerName: String) : AbstractAdapter(providerName),
             mInitState = InitState.INIT_STATE_IN_PROGRESS
 
             VungleAds.setIntegrationName(
-                VungleAds.WrapperFramework.ironsource, BuildConfig.VERSION_NAME
+                VungleWrapperFramework.ironsource, BuildConfig.VERSION_NAME
             )
 
             // init SDK
