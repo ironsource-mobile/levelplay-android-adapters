@@ -1,21 +1,21 @@
-package com.ironsource.adapters.vungle.rewardedvideo
+package com.ironsource.adapters.vungle.interstitial
 
 import com.ironsource.mediationsdk.logger.IronLog
 import com.ironsource.mediationsdk.logger.IronSourceError
-import com.ironsource.mediationsdk.sdk.RewardedVideoSmashListener
+import com.ironsource.mediationsdk.sdk.InterstitialSmashListener
 import com.ironsource.mediationsdk.utils.ErrorBuilder
 import com.ironsource.mediationsdk.utils.IronSourceConstants
 import com.vungle.ads.BaseAd
-import com.vungle.ads.RewardedAdListener
+import com.vungle.ads.InterstitialAdListener
 import com.vungle.ads.VungleError
 import com.vungle.ads.internal.protos.Sdk.SDKError
 import java.lang.ref.WeakReference
 
-class VungleRewardedVideoAdListener (
-    private val mAdapter: WeakReference<VungleRewardedVideoAdapter>,
-    private val mListener: RewardedVideoSmashListener,
+class VungleInterstitialAdListener(
+    private val mAdapter: WeakReference<VungleInterstitialAdapter>,
+    private val mListener: InterstitialSmashListener,
     private val mPlacementId: String
-): RewardedAdListener{
+) : InterstitialAdListener {
 
     /**
      * Callback used to notify that the advertisement assets have been downloaded and are ready to play.
@@ -24,8 +24,8 @@ class VungleRewardedVideoAdListener (
      */
     override fun onAdLoaded(baseAd: BaseAd) {
         IronLog.ADAPTER_CALLBACK.verbose("placementId = $mPlacementId")
-        mAdapter.get()?.setRewardedVideoAdAvailability(mPlacementId,true)
-        mListener.onRewardedVideoAvailabilityChanged(true)
+        mAdapter.get()?.setInterstitialAdAvailability(mPlacementId,true)
+        mListener.onInterstitialAdReady()
     }
 
     /**
@@ -35,18 +35,17 @@ class VungleRewardedVideoAdListener (
      * @param adError - Error message and event suggesting the cause of failure
      */
     override fun onAdFailedToLoad(baseAd: BaseAd, adError: VungleError) {
-        IronLog.ADAPTER_CALLBACK.verbose("placementId = $mPlacementId, errorCode = ${adError.code}, errorMessage = ${adError.message}")
-        mAdapter.get()?.setRewardedVideoAdAvailability(mPlacementId,false)
+        IronLog.ADAPTER_CALLBACK.verbose("placementId = $mPlacementId, errorCode= ${adError.code} error = ${adError.errorMessage}")
+        mAdapter.get()?.setInterstitialAdAvailability(mPlacementId,false)
         val adapterError = "${adError.errorMessage}( ${adError.code} )"
 
         val error = if (adError.code == SDKError.Reason.AD_NO_FILL_VALUE) {
-            IronSourceError(IronSourceError.ERROR_RV_LOAD_NO_FILL, adapterError)
+            IronSourceError(IronSourceError.ERROR_IS_LOAD_NO_FILL, adapterError)
         } else {
             ErrorBuilder.buildLoadFailedError(adapterError)
         }
 
-        mListener.onRewardedVideoAvailabilityChanged(false)
-        mListener.onRewardedVideoLoadFailed(error)
+        mListener.onInterstitialAdLoadFailed(error)
     }
 
     /**
@@ -56,7 +55,7 @@ class VungleRewardedVideoAdListener (
      */
     override fun onAdStart(baseAd: BaseAd) {
         IronLog.ADAPTER_CALLBACK.verbose("placementId = $mPlacementId")
-        mListener.onRewardedVideoAdStarted()
+        mListener.onInterstitialAdShowSucceeded()
     }
 
     /**
@@ -66,7 +65,7 @@ class VungleRewardedVideoAdListener (
      */
     override fun onAdImpression(baseAd: BaseAd) {
         IronLog.ADAPTER_CALLBACK.verbose("placementId = $mPlacementId")
-        mListener.onRewardedVideoAdOpened()
+        mListener.onInterstitialAdOpened()
     }
 
     /**
@@ -79,10 +78,10 @@ class VungleRewardedVideoAdListener (
         IronLog.ADAPTER_CALLBACK.verbose("placementId = $mPlacementId, errorCode = ${adError.code}, errorMessage = ${adError.message}")
         val errorMessage = " reason = " + adError.errorMessage + " errorCode = " + adError.code
         val error: IronSourceError = ErrorBuilder.buildShowFailedError(
-            IronSourceConstants.REWARDED_VIDEO_AD_UNIT,
+            IronSourceConstants.INTERSTITIAL_AD_UNIT,
             errorMessage
         )
-        mListener.onRewardedVideoAdShowFailed(error)
+        mListener.onInterstitialAdShowFailed(error)
     }
 
     /**
@@ -92,7 +91,7 @@ class VungleRewardedVideoAdListener (
      */
     override fun onAdClicked(baseAd: BaseAd) {
         IronLog.ADAPTER_CALLBACK.verbose("placementId = $mPlacementId")
-        mListener.onRewardedVideoAdClicked()
+        mListener.onInterstitialAdClicked()
     }
 
     /**
@@ -105,23 +104,12 @@ class VungleRewardedVideoAdListener (
     }
 
     /**
-     * Callback for the user has watched the advertisement to completion. The Vungle SDK has finished playing the advertisement and the user has closed the advertisement.
-     *
-     * @param baseAd - identifier for which the advertisement got rewarded.
-     */
-    override fun onAdRewarded(baseAd: BaseAd) {
-        IronLog.ADAPTER_CALLBACK.verbose("placementId = $mPlacementId")
-        mListener.onRewardedVideoAdRewarded()
-    }
-
-    /**
      * Callback for an advertisement ending. The Vungle SDK has finished playing the advertisement and the user has closed the advertisement.
      *
      * @param baseAd - identifier for which the advertisement that ended.
      */
     override fun onAdEnd(baseAd: BaseAd) {
         IronLog.ADAPTER_CALLBACK.verbose("placementId = $mPlacementId")
-        mListener.onRewardedVideoAdEnded()
-        mListener.onRewardedVideoAdClosed()
+        mListener.onInterstitialAdClosed()
     }
 }

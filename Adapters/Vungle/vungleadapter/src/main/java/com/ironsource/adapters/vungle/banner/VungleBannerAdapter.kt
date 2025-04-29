@@ -183,12 +183,12 @@ class VungleBannerAdapter(adapter: VungleAdapter) :
                 IronLog.ADAPTER_API.verbose(
                     "destroyBanner Vungle ad, with ${VungleAdapter.PLACEMENT_ID} - $placementId"
                 )
-                // destroy banner
-                vungleBanner.finishAd()
-                // remove banner obj from the map
-                mPlacementToBannerAd.remove(placementId)
+                    // destroy banner
+                    vungleBanner.finishAd()
+                    // remove banner obj from the map
+                    mPlacementToBannerAd.remove(placementId)
+                }
             }
-        }
     }
 
     private fun getBannerSize(bannerSize: ISBannerSize): VungleAdSize? {
