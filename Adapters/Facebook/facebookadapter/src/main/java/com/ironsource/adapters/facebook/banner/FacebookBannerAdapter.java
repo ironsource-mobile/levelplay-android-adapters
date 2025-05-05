@@ -186,14 +186,14 @@ public class FacebookBannerAdapter extends AbstractBannerAdapter<FacebookAdapter
     public void releaseMemory(@NonNull IronSource.AD_UNIT adUnit, JSONObject config) {
         // release banner ads
         for (AdView adView : mPlacementIdToAd.values()) {
-            postOnUIThread(new Runnable() {
-                @Override
-                public void run() {
-                    if (adView != null) {
-                        adView.destroy();
+                postOnUIThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        if (adView != null) {
+                            adView.destroy();
+                        }
                     }
-                }
-            });
+                });
         }
         mPlacementIdToAd.clear();
         mPlacementIdToSmashListener.clear();

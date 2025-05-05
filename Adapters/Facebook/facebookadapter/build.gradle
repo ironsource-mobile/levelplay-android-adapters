@@ -1,7 +1,14 @@
+import groovy.json.JsonSlurper
+
 apply plugin: 'com.android.library'
 
+def versionsFile = file("../versions.json")
+def versionsData = new JsonSlurper().parse(versionsFile)
+
 ext {
-    adapterVersion = '4.3.49'
+    mediationsdkVersion = versionsData.mediationsdk
+    adapterVersion = versionsData.adapter
+    sdkVersion = versionsData.sdk
 }
 
 def getGitHash = { ->
@@ -15,10 +22,6 @@ def getGitHash = { ->
 
 repositories {
     google()
-    maven {
-        url 'https://android-sdk.is.com/'
-    }
-
 }
 
 android {
@@ -50,8 +53,8 @@ android {
 }
 
  dependencies {
-     implementation 'com.ironsource.sdk:mediationsdk:8.7.0'
-     implementation 'com.facebook.android:audience-network-sdk:6.19.0'
+     implementation "com.unity3d.ads-mediation:mediation-sdk:${mediationsdkVersion}"
+     implementation "com.facebook.android:audience-network-sdk:${sdkVersion}"
      implementation 'com.facebook.infer.annotation:infer-annotation:0.18.0'
      implementation 'org.jetbrains:annotations:16.0.2'
 }

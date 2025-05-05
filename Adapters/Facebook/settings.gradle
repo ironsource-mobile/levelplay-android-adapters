@@ -1,1 +1,1 @@
-include ':ISFacebookAdapter'
+include ':facebookadapter'

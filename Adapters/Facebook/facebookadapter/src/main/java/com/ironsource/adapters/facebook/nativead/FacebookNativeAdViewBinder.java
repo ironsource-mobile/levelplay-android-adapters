@@ -43,7 +43,6 @@ public class FacebookNativeAdViewBinder extends AdapterNativeAdViewBinder {
 
         NativeAdViewHolder nativeAdViewHolder = getNativeAdViewHolder();
 
-
         if (nativeAdViewHolder.getTitleView() != null)
             viewsToRegister.add(nativeAdViewHolder.getTitleView());
         if (nativeAdViewHolder.getAdvertiserView() != null)
@@ -69,6 +68,8 @@ public class FacebookNativeAdViewBinder extends AdapterNativeAdViewBinder {
                 mNativeAd.registerViewForInteraction(nativeAdView, facebookMediaView, viewsToRegister);
             }
         });
+
+
     }
 
     private FrameLayout.LayoutParams getAdOptionsLayoutParams() {
