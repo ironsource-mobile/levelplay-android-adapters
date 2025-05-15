@@ -38,8 +38,8 @@ class MobileFuseRewardedVideoAdListener(
   override fun onAdExpired() {
     IronLog.ADAPTER_CALLBACK.verbose()
     mListener.onRewardedVideoLoadFailed(IronSourceError(
-      IronSourceError.ERROR_RV_EXPIRED_ADS,
-      "ads are expired")
+        IronSourceError.ERROR_RV_EXPIRED_ADS,
+        "ads are expired")
     )
   }
 
