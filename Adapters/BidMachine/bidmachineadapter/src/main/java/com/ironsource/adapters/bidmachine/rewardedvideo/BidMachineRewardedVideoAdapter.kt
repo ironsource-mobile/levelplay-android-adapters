@@ -4,6 +4,7 @@ import com.ironsource.adapters.bidmachine.BidMachineAdapter
 import com.ironsource.environment.ContextProvider
 import com.ironsource.mediationsdk.IronSource
 import com.ironsource.mediationsdk.adapter.AbstractRewardedVideoAdapter
+import com.ironsource.mediationsdk.bidding.BiddingDataCallback
 import com.ironsource.mediationsdk.logger.IronLog
 import com.ironsource.mediationsdk.sdk.RewardedVideoSmashListener
 import com.ironsource.mediationsdk.utils.ErrorBuilder
@@ -104,15 +105,18 @@ class BidMachineRewardedVideoAdapter(adapter: BidMachineAdapter) :
 
     override fun isRewardedVideoAvailable(config: JSONObject): Boolean {
         return isRewardedVideoAdAvailable && (mRewardedVideoAd?.let { rewardedVideoAd ->
-            return rewardedVideoAd.canShow() && !rewardedVideoAd.isExpired
+            rewardedVideoAd.canShow() && !rewardedVideoAd.isExpired
         } ?: false)
     }
 
-    override fun getRewardedVideoBiddingData(
+    override fun collectRewardedVideoBiddingData(
         config: JSONObject,
-        adData: JSONObject?
-    ): MutableMap<String?, Any?>? {
-        return adapter.getBiddingData(AdsFormat.RewardedVideo)
+        adData: JSONObject?,
+        biddingDataCallback: BiddingDataCallback
+    ) {
+        val sourceKey = BidMachineAdapter.getSourceIdKey()
+        val sourceId = config.optString(sourceKey)
+        adapter.collectBiddingData(biddingDataCallback, AdsFormat.RewardedVideo, sourceId)
     }
 
     //region memory handling

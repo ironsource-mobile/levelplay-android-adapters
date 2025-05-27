@@ -6,10 +6,12 @@ import com.ironsource.adapters.bidmachine.rewardedvideo.BidMachineRewardedVideoA
 import com.ironsource.adapters.bidmachine.banner.BidMachineBannerAdapter
 import com.ironsource.environment.ContextProvider
 import com.ironsource.mediationsdk.*
+import com.ironsource.mediationsdk.bidding.BiddingDataCallback
 import com.ironsource.mediationsdk.logger.IronLog
 import com.ironsource.mediationsdk.logger.IronSourceError
 import com.ironsource.mediationsdk.metadata.MetaData
 import com.ironsource.mediationsdk.metadata.MetaDataUtils
+import io.bidmachine.AdPlacementConfig
 import io.bidmachine.AdsFormat
 import io.bidmachine.BidMachine
 import io.bidmachine.utils.BMError
@@ -72,12 +74,13 @@ class BidMachineAdapter(providerName: String) : AbstractAdapter(providerName),
             return SOURCE_ID_KEY
         }
 
-        fun getLoadErrorAndCheckNoFill(error: BMError, noFillError : Int): IronSourceError {
+        fun getLoadErrorAndCheckNoFill(error: BMError, noFillError: Int): IronSourceError {
             return when (error.code) {
                 BMError.NO_CONTENT -> IronSourceError(
                     noFillError,
                     error.message
                 )
+
                 else -> IronSourceError(error.code, error.message)
             }
         }
@@ -157,12 +160,16 @@ class BidMachineAdapter(providerName: String) : AbstractAdapter(providerName),
         // This is a list of 1 value
         val value = values[0]
         IronLog.ADAPTER_API.verbose("key = $key, value = $value")
-        val formattedValue: String = MetaDataUtils.formatValueForType(value, MetaData.MetaDataValueTypes.META_DATA_VALUE_BOOLEAN)
+        val formattedValue: String = MetaDataUtils.formatValueForType(
+            value,
+            MetaData.MetaDataValueTypes.META_DATA_VALUE_BOOLEAN
+        )
 
         when {
             MetaDataUtils.isValidCCPAMetaData(key, value) -> {
                 setCCPAValue(MetaDataUtils.getMetaDataBooleanValue(value))
             }
+
             MetaDataUtils.isValidMetaData(key, META_DATA_BIDMACHINE_COPPA_KEY, formattedValue) -> {
                 setCOPPAValue(MetaDataUtils.getMetaDataBooleanValue(formattedValue))
             }
@@ -193,21 +200,32 @@ class BidMachineAdapter(providerName: String) : AbstractAdapter(providerName),
     //endregion
 
     // region Helpers
-
-    internal fun getBiddingData(adsFormat: AdsFormat): MutableMap<String?, Any?>? {
+    fun collectBiddingData(biddingDataCallback: BiddingDataCallback, adsFormat: AdsFormat, sourceId: String) {
         if (mInitState != InitState.INIT_STATE_SUCCESS) {
-            IronLog.INTERNAL.error("returning nil as token since init isn't completed")
-            return null
+            val error = "returning null as token since init isn't completed"
+            IronLog.INTERNAL.verbose(error)
+            biddingDataCallback.onFailure("$error - BidMachine")
+            return
         }
 
-        val ret: MutableMap<String?, Any?> = HashMap()
-        var bidToken = BidMachine.getBidToken(
-            ContextProvider.getInstance().applicationContext,
-            adsFormat
-        )
-        IronLog.ADAPTER_API.verbose("token = $bidToken")
-        ret["token"] = bidToken
-        return ret
+        val context = ContextProvider.getInstance().applicationContext
+        val adPlacementConfig = AdPlacementConfig.Builder(adsFormat)
+            .withPlacementId(sourceId)
+            .build()
+
+        BidMachine.getBidToken(context, adPlacementConfig) { token ->
+            if (token.isNullOrEmpty()) {
+                val error = "failed to receive token - returned null/empty token"
+                IronLog.INTERNAL.verbose(error)
+                biddingDataCallback.onFailure("$error - BidMachine")
+                return@getBidToken
+            }
+
+            IronLog.ADAPTER_API.verbose("token = $token")
+            val ret: MutableMap<String?, Any?> = HashMap()
+            ret["token"] = token
+            biddingDataCallback.onSuccess(ret)
+        }
     }
 
     //endregion

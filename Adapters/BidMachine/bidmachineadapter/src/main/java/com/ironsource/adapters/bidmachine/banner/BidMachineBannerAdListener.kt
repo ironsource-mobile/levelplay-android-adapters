@@ -5,8 +5,6 @@ import com.ironsource.adapters.bidmachine.BidMachineAdapter
 import com.ironsource.mediationsdk.logger.IronLog
 import com.ironsource.mediationsdk.logger.IronSourceError
 import com.ironsource.mediationsdk.sdk.BannerSmashListener
-import com.ironsource.mediationsdk.utils.ErrorBuilder
-import com.ironsource.mediationsdk.utils.IronSourceConstants
 import io.bidmachine.banner.BannerListener
 import io.bidmachine.banner.BannerView
 import io.bidmachine.utils.BMError

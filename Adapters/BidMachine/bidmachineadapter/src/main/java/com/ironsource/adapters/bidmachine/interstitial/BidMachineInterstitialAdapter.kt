@@ -5,6 +5,7 @@ import com.ironsource.adapters.bidmachine.BidMachineAdapter
 import com.ironsource.environment.ContextProvider
 import com.ironsource.mediationsdk.IronSource
 import com.ironsource.mediationsdk.adapter.AbstractInterstitialAdapter
+import com.ironsource.mediationsdk.bidding.BiddingDataCallback
 import com.ironsource.mediationsdk.logger.IronLog
 import com.ironsource.mediationsdk.sdk.InterstitialSmashListener
 import com.ironsource.mediationsdk.utils.ErrorBuilder
@@ -101,16 +102,21 @@ class BidMachineInterstitialAdapter(adapter: BidMachineAdapter) :
     }
 
     override fun isInterstitialReady(config: JSONObject): Boolean {
-        return isinterstitialAdAvailable && mInterstitialAd?.let { interstitialAd ->
-            return interstitialAd.canShow() && !interstitialAd.isExpired
-        } ?: false
+        return isinterstitialAdAvailable &&
+            mInterstitialAd?.let { interstitialAd ->
+                interstitialAd.canShow() && !interstitialAd.isExpired
+            } ?: false
+
     }
 
-    override fun getInterstitialBiddingData(
+    override fun collectInterstitialBiddingData(
         config: JSONObject,
-        adData: JSONObject?
-    ): MutableMap<String?, Any?>? {
-        return adapter.getBiddingData(AdsFormat.Interstitial)
+        adData: JSONObject?,
+        biddingDataCallback: BiddingDataCallback
+    ) {
+        val sourceKey = BidMachineAdapter.getSourceIdKey()
+        val sourceId = config.optString(sourceKey)
+        adapter.collectBiddingData(biddingDataCallback, AdsFormat.Interstitial, sourceId)
     }
 
     //region memory handling
