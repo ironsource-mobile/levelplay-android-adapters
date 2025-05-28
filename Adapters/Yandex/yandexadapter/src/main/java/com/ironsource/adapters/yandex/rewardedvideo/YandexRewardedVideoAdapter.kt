@@ -157,9 +157,9 @@ class YandexRewardedVideoAdapter(adapter: YandexAdapter) :
 
     override fun releaseMemory(adUnit: IronSource.AD_UNIT, config: JSONObject?) {
         IronLog.INTERNAL.verbose("adUnit = $adUnit")
-            destroyRewardedVideoAd()
-            mYandexAdListener = null
-            mSmashListener = null
+        destroyRewardedVideoAd()
+        mYandexAdListener = null
+        mSmashListener = null
     }
 
     //endregion

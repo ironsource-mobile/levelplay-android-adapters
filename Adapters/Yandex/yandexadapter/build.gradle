@@ -1,8 +1,15 @@
+import groovy.json.JsonSlurper
+
 apply plugin: 'com.android.library'
 apply plugin: 'kotlin-android'
 
+def versionsFile = file("../versions.json")
+def versionsData = new JsonSlurper().parse(versionsFile)
+
 ext {
-    adapterVersion = '4.3.8'
+    mediationsdkVersion = versionsData.mediationsdk
+    adapterVersion = versionsData.adapter
+    sdkVersion = versionsData.sdk
 }
 
 def getGitHash = { ->
@@ -16,13 +23,11 @@ def getGitHash = { ->
 
 repositories {
     mavenCentral()
-    maven {
-        url 'https://android-sdk.is.com/'
-    }
 }
 
 android {
-    compileSdkVersion 33
+    namespace "com.ironsource.adapters.yandex"
+    compileSdkVersion 35
     buildToolsVersion "30.0.3"
 
     defaultConfig {
@@ -33,7 +38,19 @@ android {
         buildConfigField "String", "GitHash", "\"${getGitHash()}\""
         buildConfigField("String","VERSION_NAME","\"${defaultConfig.versionName}\"")
     }
-    
+
+    compileOptions {
+        targetCompatibility JavaVersion.VERSION_17
+        sourceCompatibility JavaVersion.VERSION_17
+    }
+    kotlinOptions {
+        jvmTarget = '17'
+    }
+
+    buildFeatures {
+        buildConfig true
+    }
+
     buildTypes {
         debug{
             minifyEnabled false
@@ -51,8 +68,8 @@ android {
 }
 
  dependencies {
-    implementation 'com.ironsource.sdk:mediationsdk:8.6.1'
-    implementation 'com.yandex.android:mobileads:7.8.1'
+    implementation "com.unity3d.ads-mediation:mediation-sdk:${mediationsdkVersion}"
+    implementation "com.yandex.android:mobileads:${sdkVersion}"
  }
 
 task sourcesJar(type: Jar) {
