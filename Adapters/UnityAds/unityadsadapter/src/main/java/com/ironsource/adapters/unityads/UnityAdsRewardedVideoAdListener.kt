@@ -12,7 +12,7 @@ import com.unity3d.ads.UnityAds.UnityAdsLoadError
 import com.unity3d.ads.UnityAds.UnityAdsShowCompletionState
 import java.lang.ref.WeakReference
 
-class UnityAdsRewardedVideoListener(private val mListener: RewardedVideoSmashListener?,
+class UnityAdsRewardedVideoAdListener(private val mListener: RewardedVideoSmashListener?,
                                     private val mAdapter: WeakReference<UnityAdsAdapter>?,
                                     private val mPlacementId: String) : IUnityAdsLoadListener, IUnityAdsShowListener {
 

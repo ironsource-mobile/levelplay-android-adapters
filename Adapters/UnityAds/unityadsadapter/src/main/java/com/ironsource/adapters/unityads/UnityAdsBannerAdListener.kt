@@ -10,7 +10,7 @@ import com.unity3d.services.banners.BannerView
 import com.unity3d.services.banners.BannerView.IListener
 import java.lang.ref.WeakReference
 
-class UnityAdsBannerListener(private val mListener: BannerSmashListener?,
+class UnityAdsBannerAdListener(private val mListener: BannerSmashListener?,
                              private val mAdapter: WeakReference<UnityAdsAdapter>?,
                              private val mPlacementId: String) : IListener {
 

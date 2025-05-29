@@ -23,7 +23,9 @@ import com.ironsource.mediationsdk.sdk.RewardedVideoSmashListener
 import com.ironsource.mediationsdk.utils.ErrorBuilder
 import com.ironsource.mediationsdk.utils.IronSourceConstants
 import com.ironsource.mediationsdk.utils.IronSourceUtils
+import com.unity3d.ads.AdFormat
 import com.unity3d.ads.IUnityAdsInitializationListener
+import com.unity3d.ads.TokenConfiguration
 import com.unity3d.ads.UnityAds
 import com.unity3d.ads.UnityAdsLoadOptions
 import com.unity3d.ads.UnityAdsShowOptions
@@ -41,17 +43,17 @@ class UnityAdsAdapter(providerName: String) : AbstractAdapter(providerName),
     IUnityAdsInitializationListener, INetworkInitCallbackListener {
 
     // Rewarded video collections
-    private val placementIdToRewardedVideoAdListener: ConcurrentHashMap<String, UnityAdsRewardedVideoListener> = ConcurrentHashMap()
+    private val placementIdToRewardedVideoAdListener: ConcurrentHashMap<String, UnityAdsRewardedVideoAdListener> = ConcurrentHashMap()
     private val rewardedVideoPlacementIdToLoadedAdObjectId: ConcurrentHashMap<String, String> = ConcurrentHashMap()
     private val placementIdToRewardedVideoAdAvailability: ConcurrentHashMap<String, Boolean> = ConcurrentHashMap()
 
     // Interstitial maps
-    private val placementIdToInterstitialAdListener: ConcurrentHashMap<String, UnityAdsInterstitialListener> = ConcurrentHashMap()
+    private val placementIdToInterstitialAdListener: ConcurrentHashMap<String, UnityAdsInterstitialAdListener> = ConcurrentHashMap()
     private val interstitialPlacementIdToLoadedAdObjectId: ConcurrentHashMap<String, String> = ConcurrentHashMap()
     private val placementIdToInterstitialAdAvailability: ConcurrentHashMap<String, Boolean> = ConcurrentHashMap()
 
     // Banner maps
-    private val placementIdToBannerAdListener: ConcurrentHashMap<String, UnityAdsBannerListener> = ConcurrentHashMap()
+    private val placementIdToBannerAdListener: ConcurrentHashMap<String, UnityAdsBannerAdListener> = ConcurrentHashMap()
     private val placementIdToBannerAd: ConcurrentHashMap<String, BannerView?> = ConcurrentHashMap()
 
     // handle init callback for all adapter instances
@@ -269,7 +271,7 @@ class UnityAdsAdapter(providerName: String) : AbstractAdapter(providerName),
 
         setRewardedVideoAdAvailability(placementId, false)
 
-        val rewardedVideoAdListener = UnityAdsRewardedVideoListener(listener, WeakReference(this), placementId)
+        val rewardedVideoAdListener = UnityAdsRewardedVideoAdListener(listener, WeakReference(this), placementId)
         placementIdToRewardedVideoAdListener[placementId] = rewardedVideoAdListener
         val loadOptions = UnityAdsLoadOptions()
 
@@ -339,7 +341,7 @@ class UnityAdsAdapter(providerName: String) : AbstractAdapter(providerName),
         adData: JSONObject?,
         biddingDataCallback: BiddingDataCallback
     ) {
-        collectBiddingData(config, biddingDataCallback)
+        collectBiddingData(AdFormat.REWARDED, config, biddingDataCallback)
     }
 
     // The network's capability to load a Rewarded Video ad while another Rewarded Video ad of that network is showing
@@ -438,7 +440,7 @@ class UnityAdsAdapter(providerName: String) : AbstractAdapter(providerName),
 
         setInterstitialAdAvailability(placementId, false)
 
-        val interstitialAdListener = UnityAdsInterstitialListener(listener, WeakReference(this), placementId)
+        val interstitialAdListener = UnityAdsInterstitialAdListener(listener, WeakReference(this), placementId)
         placementIdToInterstitialAdListener[placementId] = interstitialAdListener
         val loadOptions = UnityAdsLoadOptions()
 
@@ -500,7 +502,7 @@ class UnityAdsAdapter(providerName: String) : AbstractAdapter(providerName),
         adData: JSONObject?,
         biddingDataCallback: BiddingDataCallback
     ) {
-        collectBiddingData(config, biddingDataCallback)
+        collectBiddingData(AdFormat.INTERSTITIAL, config, biddingDataCallback)
     }
 
     //endregion
@@ -634,7 +636,7 @@ class UnityAdsAdapter(providerName: String) : AbstractAdapter(providerName),
         adData: JSONObject?,
         biddingDataCallback: BiddingDataCallback
     ) {
-        collectBiddingData(config, biddingDataCallback)
+        collectBiddingData(AdFormat.BANNER, config, biddingDataCallback)
     }
 
     //endregion
@@ -739,10 +741,11 @@ class UnityAdsAdapter(providerName: String) : AbstractAdapter(providerName),
     //region Adapter Helpers
 
     private fun collectBiddingData(
+        adFormat: AdFormat,
         config: JSONObject?,
         biddingDataCallback: BiddingDataCallback
     ) {
-        UnityAds.getToken { bidToken ->
+        UnityAds.getToken(TokenConfiguration(adFormat)) { bidToken ->
             if (!bidToken.isNullOrEmpty()) {
                 IronLog.ADAPTER_API.verbose("token = $bidToken")
                 mutableMapOf<String, Any>()
@@ -793,7 +796,7 @@ class UnityAdsAdapter(providerName: String) : AbstractAdapter(providerName),
                 placementId, unityBannerSize)
 
         // add listener
-        val bannerAdListener = UnityAdsBannerListener(listener, WeakReference(this), placementId)
+        val bannerAdListener = UnityAdsBannerAdListener(listener, WeakReference(this), placementId)
         placementIdToBannerAdListener[placementId] = bannerAdListener
         bannerView.listener = bannerAdListener
 

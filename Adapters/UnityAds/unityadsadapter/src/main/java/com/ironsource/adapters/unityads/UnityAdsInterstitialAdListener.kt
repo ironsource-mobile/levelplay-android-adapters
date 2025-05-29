@@ -12,7 +12,7 @@ import com.unity3d.ads.UnityAds.UnityAdsLoadError
 import com.unity3d.ads.UnityAds.UnityAdsShowCompletionState
 import java.lang.ref.WeakReference
 
-class UnityAdsInterstitialListener(private val mListener: InterstitialSmashListener?,
+class UnityAdsInterstitialAdListener(private val mListener: InterstitialSmashListener?,
                                    private val mAdapter: WeakReference<UnityAdsAdapter>?,
                                    private val mPlacementId: String) : IUnityAdsLoadListener, IUnityAdsShowListener {
 
