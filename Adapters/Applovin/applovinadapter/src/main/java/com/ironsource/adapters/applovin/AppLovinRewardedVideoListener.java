@@ -40,7 +40,7 @@ public class AppLovinRewardedVideoListener implements AppLovinAdLoadListener, Ap
             IronLog.INTERNAL.verbose("listener is null");
             return;
         }
-
+        mAdapter.get().setRewardedVideoAd(appLovinAd);
         mListener.onRewardedVideoAvailabilityChanged(true);
     }
 

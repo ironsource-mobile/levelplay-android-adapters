@@ -52,6 +52,8 @@ class AppLovinAdapter extends AbstractAdapter implements INetworkInitCallbackLis
     private static final String DEFAULT_ZONE_ID = "defaultZoneId";
     private static final String SDK_KEY = "sdkKey";
 
+    private AppLovinAd mRewardedAppLovinAd;
+
     // Rewarded video collections
     private static final AppLovinAdHolder<AppLovinIncentivizedInterstitial> mRewardedVideoAds = new AppLovinAdHolder<>();
     protected final ConcurrentHashMap<String, RewardedVideoSmashListener> mZoneIdToRewardedVideoSmashListener;
@@ -376,7 +378,7 @@ class AppLovinAdapter extends AbstractAdapter implements INetworkInitCallbackLis
         mZoneIdToAppLovinRewardedVideoListener.put(zoneId, rewardedVideoListener);
 
         // load rewarded video
-        rewardedVideoAd.preload(rewardedVideoListener);
+        mAppLovinSdk.getAdService().loadNextAdForZoneId(zoneId,rewardedVideoListener);
     }
 
     @Override
@@ -390,12 +392,19 @@ class AppLovinAdapter extends AbstractAdapter implements INetworkInitCallbackLis
             if (!TextUtils.isEmpty(getDynamicUserId())) {
                 mAppLovinSettings.setUserIdentifier(getDynamicUserId());
             }
+
+            if (mRewardedVideoAds == null) {
+                listener.onRewardedVideoAdShowFailed(
+                    ErrorBuilder.buildNoAdsToShowError(IronSourceConstants.REWARDED_VIDEO_AD_UNIT)
+                );
+                return;
+            }
             
             AppLovinIncentivizedInterstitial rewardedVideoAd = mRewardedVideoAds.retrieveAd(this);
             AppLovinRewardedVideoListener rewardedVideoListener = mZoneIdToAppLovinRewardedVideoListener.get(zoneId);
 
             if (rewardedVideoAd != null) {
-                rewardedVideoAd.show(ContextProvider.getInstance().getCurrentActiveActivity(), rewardedVideoListener, rewardedVideoListener, rewardedVideoListener, rewardedVideoListener);
+                rewardedVideoAd.show(mRewardedAppLovinAd,rewardedVideoListener,rewardedVideoListener,rewardedVideoListener,rewardedVideoListener);
             } else {
                 listener.onRewardedVideoAdShowFailed(
                     ErrorBuilder.buildNoAdsToShowError(IronSourceConstants.REWARDED_VIDEO_AD_UNIT)
@@ -409,9 +418,12 @@ class AppLovinAdapter extends AbstractAdapter implements INetworkInitCallbackLis
 
     @Override
     public boolean isRewardedVideoAvailable(JSONObject config) {
+        if (mRewardedVideoAds == null) {
+            return false;
+        }
         String zoneId = getZoneId(config);
         AppLovinIncentivizedInterstitial rewardedVideoAd = mRewardedVideoAds.retrieveAd(this);
-        return rewardedVideoAd != null && rewardedVideoAd.isAdReadyToDisplay() && isRewardedZoneIdExist(zoneId);
+        return rewardedVideoAd != null && isRewardedZoneIdExist(zoneId);
     }
 
     public void disposeRewardedVideoAd(JSONObject config) {
@@ -429,17 +441,24 @@ class AppLovinAdapter extends AbstractAdapter implements INetworkInitCallbackLis
     }
 
     private boolean isRewardedZoneIdExist(String zoneId) {
+        if (mRewardedVideoAds == null) {
+            IronLog.INTERNAL.verbose("mRewardedVideoAds is null in isRewardedZoneIdExist");
+            return false;
+        }
         for (AppLovinAdapter adapter : mRewardedVideoAds.getAdapters()) {
             if (zoneId.equals(adapter.getRewardedZoneId())) {
                 return true;
             }
         }
-
         return false;
     }
 
     private String getRewardedZoneId() {
         return mRewardedVideoZoneId;
+    }
+
+    public void setRewardedVideoAd(AppLovinAd ad) {
+        this.mRewardedAppLovinAd = ad;
     }
 
     //endregion
@@ -511,8 +530,15 @@ class AppLovinAdapter extends AbstractAdapter implements INetworkInitCallbackLis
     public void showInterstitial(JSONObject config, InterstitialSmashListener listener) {
         String zoneId = getZoneId(config);
         IronLog.ADAPTER_API.verbose("zoneId = " + zoneId);
-
         if (isInterstitialReady(config)) {
+
+            if (mInterstitialAds == null) {
+                listener.onInterstitialAdShowFailed(
+                    ErrorBuilder.buildNoAdsToShowError(IronSourceConstants.INTERSTITIAL_AD_UNIT)
+                );
+                return;
+            }
+
             AppLovinAd interstitialAd = mInterstitialAds.retrieveAd(this);
             AppLovinInterstitialListener interstitialListener = mZoneIdToAppLovinInterstitialListener.get(zoneId);
 
@@ -524,18 +550,25 @@ class AppLovinAdapter extends AbstractAdapter implements INetworkInitCallbackLis
             interstitialAdDialog.showAndRender(interstitialAd);
         } else {
             // Remove the ad object to enable other interstitial ad to be loaded
-            mInterstitialAds.removeAd(this);
+            if (mInterstitialAds != null) {
+                mInterstitialAds.removeAd(this);
+            }
             listener.onInterstitialAdShowFailed(ErrorBuilder.buildNoAdsToShowError(IronSourceConstants.INTERSTITIAL_AD_UNIT));
         }
-
         updateInterstitialAvailability(zoneId, false);
     }
 
     @Override
     public boolean isInterstitialReady(JSONObject config) {
+        if (mInterstitialAds == null) {
+            IronLog.INTERNAL.verbose("mInterstitialAds is null");
+            return false;
+        }
+
         String zoneId = getZoneId(config);
         AppLovinAd interstitialAd = mInterstitialAds.retrieveAd(this);
-        return interstitialAd != null && mZoneIdToInterstitialAdReadyStatus.containsKey(zoneId)
+        return interstitialAd != null &&
+            mZoneIdToInterstitialAdReadyStatus.containsKey(zoneId)
             && Boolean.TRUE.equals(mZoneIdToInterstitialAdReadyStatus.get(zoneId))
             && isInterstitialZoneIdExist(zoneId);
     }
@@ -564,12 +597,15 @@ class AppLovinAdapter extends AbstractAdapter implements INetworkInitCallbackLis
     }
 
     private boolean isInterstitialZoneIdExist(String zoneId) {
+        if (mInterstitialAds == null) {
+            IronLog.INTERNAL.error("mInterstitialAds is null in isInterstitialZoneIdExist");
+            return false;
+        }
         for (AppLovinAdapter adapter : mInterstitialAds.getAdapters()) {
             if (zoneId.equals(adapter.getInterstitialZoneId())) {
                 return true;
             }
         }
-
         return false;
     }
 
@@ -855,6 +891,10 @@ class AppLovinAdapter extends AbstractAdapter implements INetworkInitCallbackLis
                 return "An attempt to cache an image resource to the filesystem failed; the device may be out of space.";
             case AppLovinErrorCodes.UNABLE_TO_PRECACHE_VIDEO_RESOURCES:
                 return "An attempt to cache a video resource to the filesystem failed; the device may be out of space.";
+            case AppLovinErrorCodes.INVALID_BODY:
+                return "The request body sent to the server was malformed or invalid.";
+            case AppLovinErrorCodes.UNABLE_TO_PRECACHE_HTML_RESOURCES:
+                return "An attempt to cache HTML content failed; the device may be out of space or the resource was malformed.";
             default:
                 return "Unknown error";
         }
