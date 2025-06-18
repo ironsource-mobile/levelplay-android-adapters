@@ -114,9 +114,7 @@ class BidMachineInterstitialAdapter(adapter: BidMachineAdapter) :
         adData: JSONObject?,
         biddingDataCallback: BiddingDataCallback
     ) {
-        val sourceKey = BidMachineAdapter.getSourceIdKey()
-        val sourceId = config.optString(sourceKey)
-        adapter.collectBiddingData(biddingDataCallback, AdsFormat.Interstitial, sourceId)
+        adapter.collectBiddingData(biddingDataCallback, AdsFormat.Interstitial)
     }
 
     //region memory handling

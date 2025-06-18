@@ -200,7 +200,7 @@ class BidMachineAdapter(providerName: String) : AbstractAdapter(providerName),
     //endregion
 
     // region Helpers
-    fun collectBiddingData(biddingDataCallback: BiddingDataCallback, adsFormat: AdsFormat, sourceId: String) {
+    fun collectBiddingData(biddingDataCallback: BiddingDataCallback, adsFormat: AdsFormat) {
         if (mInitState != InitState.INIT_STATE_SUCCESS) {
             val error = "returning null as token since init isn't completed"
             IronLog.INTERNAL.verbose(error)
@@ -210,7 +210,6 @@ class BidMachineAdapter(providerName: String) : AbstractAdapter(providerName),
 
         val context = ContextProvider.getInstance().applicationContext
         val adPlacementConfig = AdPlacementConfig.Builder(adsFormat)
-            .withPlacementId(sourceId)
             .build()
 
         BidMachine.getBidToken(context, adPlacementConfig) { token ->

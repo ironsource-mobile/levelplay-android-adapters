@@ -121,8 +121,6 @@ class BidMachineBannerAdapter(adapter: BidMachineAdapter) :
         adData: JSONObject?,
         biddingDataCallback: BiddingDataCallback
     ) {
-        val sourceIdKey = BidMachineAdapter.getSourceIdKey()
-        val sourceId = config.optString(sourceIdKey)
         val bannerLayout = adData?.opt(IronSourceConstants.BANNER_LAYOUT)
         if (bannerLayout !is IronSourceBannerLayout) {
             val error = "Banner layout is invalid or not of type IronSourceBannerLayout"
@@ -143,7 +141,7 @@ class BidMachineBannerAdapter(adapter: BidMachineAdapter) :
             BannerSize.Size_300x250 -> AdsFormat.Banner_300x250
             BannerSize.Size_728x90 -> AdsFormat.Banner_728x90
         }
-        adapter.collectBiddingData(biddingDataCallback, format, sourceId)
+        adapter.collectBiddingData(biddingDataCallback, format)
     }
 
     //endregion

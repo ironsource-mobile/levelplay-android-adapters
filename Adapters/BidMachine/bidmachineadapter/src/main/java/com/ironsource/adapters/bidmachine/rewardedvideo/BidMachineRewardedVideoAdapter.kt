@@ -114,9 +114,7 @@ class BidMachineRewardedVideoAdapter(adapter: BidMachineAdapter) :
         adData: JSONObject?,
         biddingDataCallback: BiddingDataCallback
     ) {
-        val sourceKey = BidMachineAdapter.getSourceIdKey()
-        val sourceId = config.optString(sourceKey)
-        adapter.collectBiddingData(biddingDataCallback, AdsFormat.RewardedVideo, sourceId)
+        adapter.collectBiddingData(biddingDataCallback, AdsFormat.RewardedVideo)
     }
 
     //region memory handling
