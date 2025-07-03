@@ -22,7 +22,6 @@ import com.ironsource.mediationsdk.sdk.InterstitialSmashListener
 import com.ironsource.mediationsdk.sdk.RewardedVideoSmashListener
 import com.ironsource.mediationsdk.utils.ErrorBuilder
 import com.ironsource.mediationsdk.utils.IronSourceConstants
-import com.ironsource.mediationsdk.utils.IronSourceUtils
 import com.unity3d.ads.AdFormat
 import com.unity3d.ads.IUnityAdsInitializationListener
 import com.unity3d.ads.TokenConfiguration
@@ -32,6 +31,7 @@ import com.unity3d.ads.UnityAdsShowOptions
 import com.unity3d.ads.metadata.MediationMetaData
 import com.unity3d.ads.metadata.MetaData
 import com.unity3d.ads.metadata.PlayerMetaData
+import com.unity3d.mediation.LevelPlay
 import com.unity3d.services.banners.BannerView
 import com.unity3d.services.banners.UnityBannerSize
 import org.json.JSONObject
@@ -129,7 +129,7 @@ class UnityAdsAdapter(providerName: String) : AbstractAdapter(providerName),
             val mediationMetaData = MediationMetaData(ContextProvider.getInstance().applicationContext)
             mediationMetaData.setName(MEDIATION_NAME)
             // mediation version
-            mediationMetaData.setVersion(IronSourceUtils.getSDKVersion())
+            mediationMetaData.setVersion(LevelPlay.getSdkVersion())
             // adapter version
             mediationMetaData[ADAPTER_VERSION_KEY] = BuildConfig.VERSION_NAME
 
