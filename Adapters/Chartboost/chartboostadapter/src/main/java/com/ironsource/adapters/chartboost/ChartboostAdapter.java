@@ -37,7 +37,7 @@ import com.ironsource.mediationsdk.sdk.InterstitialSmashListener;
 import com.ironsource.mediationsdk.sdk.RewardedVideoSmashListener;
 import com.ironsource.mediationsdk.utils.ErrorBuilder;
 import com.ironsource.mediationsdk.utils.IronSourceConstants;
-import com.ironsource.mediationsdk.utils.IronSourceUtils;
+import com.unity3d.mediation.LevelPlay;
 
 import org.jetbrains.annotations.NotNull;
 import org.json.JSONObject;
@@ -50,7 +50,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-class ChartboostAdapter extends AbstractAdapter implements INetworkInitCallbackListener {
+public class ChartboostAdapter extends AbstractAdapter implements INetworkInitCallbackListener {
 
     // Mediation info
     private final String MEDIATION_NAME = "ironSource";
@@ -824,7 +824,7 @@ class ChartboostAdapter extends AbstractAdapter implements INetworkInitCallbackL
 
     private Mediation getMediation() {
         if (mMediationInfo == null) {
-            mMediationInfo = new Mediation(MEDIATION_NAME, IronSourceUtils.getSDKVersion() , VERSION);
+            mMediationInfo = new Mediation(MEDIATION_NAME, LevelPlay.getSdkVersion(), VERSION);
         }
 
         return mMediationInfo;

@@ -3,31 +3,29 @@ package com.ironsource.adapters.chartboost;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
-import com.chartboost.sdk.callbacks.RewardedCallback;
+import com.chartboost.sdk.callbacks.InterstitialCallback;
 import com.chartboost.sdk.events.CacheError;
 import com.chartboost.sdk.events.CacheEvent;
 import com.chartboost.sdk.events.ClickError;
 import com.chartboost.sdk.events.ClickEvent;
 import com.chartboost.sdk.events.DismissEvent;
 import com.chartboost.sdk.events.ImpressionEvent;
-import com.chartboost.sdk.events.RewardEvent;
 import com.chartboost.sdk.events.ShowError;
 import com.chartboost.sdk.events.ShowEvent;
+import com.chartboost.sdk.impl.z7;
 import com.ironsource.mediationsdk.logger.IronLog;
 import com.ironsource.mediationsdk.logger.IronSourceError;
-import com.ironsource.mediationsdk.sdk.RewardedVideoSmashListener;
+import com.ironsource.mediationsdk.sdk.InterstitialSmashListener;
 import com.ironsource.mediationsdk.utils.ErrorBuilder;
 import com.ironsource.mediationsdk.utils.IronSourceConstants;
 
-import java.lang.ref.WeakReference;
-
-final class ChartboostRewardedVideoAdListener implements RewardedCallback {
+final class ChartboostInterstitialAdListener implements InterstitialCallback {
 
     // data
     private String mLocationId;
-    private RewardedVideoSmashListener mListener;
+    private InterstitialSmashListener mListener;
 
-    ChartboostRewardedVideoAdListener(RewardedVideoSmashListener listener, String locationId) {
+    ChartboostInterstitialAdListener(InterstitialSmashListener listener, String locationId) {
         mLocationId = locationId;
         mListener = listener;
     }
@@ -47,16 +45,14 @@ final class ChartboostRewardedVideoAdListener implements RewardedCallback {
             IronSourceError isError;
 
             if (cacheError.getCode() == CacheError.Code.NO_AD_FOUND) {
-                isError = new IronSourceError(IronSourceError.ERROR_RV_LOAD_NO_FILL, "load failed - rewarded video no fill");
+                isError = new IronSourceError(IronSourceError.ERROR_IS_LOAD_NO_FILL, " load failed - interstitial no fill");
             } else {
                 isError = new IronSourceError(cacheError.getCode().getErrorCode(), cacheError.toString());
             }
 
-            mListener.onRewardedVideoAvailabilityChanged(false);
-            mListener.onRewardedVideoLoadFailed(isError);
-
+            mListener.onInterstitialAdLoadFailed(isError);
         } else {
-            mListener.onRewardedVideoAvailabilityChanged(true);
+            mListener.onInterstitialAdReady();
         }
     }
 
@@ -76,7 +72,7 @@ final class ChartboostRewardedVideoAdListener implements RewardedCallback {
 
         if (showError != null) {
             IronLog.ADAPTER_CALLBACK.error("error = " + showError.toString());
-            mListener.onRewardedVideoAdShowFailed(ErrorBuilder.buildShowFailedError(IronSourceConstants.REWARDED_VIDEO_AD_UNIT, showError.toString()));
+            mListener.onInterstitialAdShowFailed(ErrorBuilder.buildShowFailedError(IronSourceConstants.INTERSTITIAL_AD_UNIT, showError.toString()));
         }
     }
 
@@ -89,7 +85,8 @@ final class ChartboostRewardedVideoAdListener implements RewardedCallback {
             return;
         }
 
-        mListener.onRewardedVideoAdOpened();
+        mListener.onInterstitialAdOpened();
+        mListener.onInterstitialAdShowSucceeded();
     }
 
     @Override
@@ -105,19 +102,12 @@ final class ChartboostRewardedVideoAdListener implements RewardedCallback {
             IronLog.ADAPTER_CALLBACK.verbose("clickError = " + clickError.toString());
         }
 
-        mListener.onRewardedVideoAdClicked();
+        mListener.onInterstitialAdClicked();
     }
 
     @Override
-    public void onRewardEarned(@NonNull RewardEvent rewardEvent) {
-        IronLog.ADAPTER_CALLBACK.verbose("locationId = " + mLocationId);
-
-        if (mListener == null) {
-            IronLog.INTERNAL.verbose("listener is null");
-            return;
-        }
-
-        mListener.onRewardedVideoAdRewarded();
+    public void onAdExpired(@NonNull z7 z7) {
+        IronLog.ADAPTER_CALLBACK.verbose();
     }
 
     @Override
@@ -129,6 +119,6 @@ final class ChartboostRewardedVideoAdListener implements RewardedCallback {
             return;
         }
 
-        mListener.onRewardedVideoAdClosed();
+        mListener.onInterstitialAdClosed();
     }
 }

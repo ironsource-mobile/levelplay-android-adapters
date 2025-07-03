@@ -14,7 +14,7 @@ import com.chartboost.sdk.events.ClickEvent;
 import com.chartboost.sdk.events.ImpressionEvent;
 import com.chartboost.sdk.events.ShowError;
 import com.chartboost.sdk.events.ShowEvent;
-import com.ironsource.mediationsdk.IronSourceBannerLayout;
+import com.chartboost.sdk.impl.z7;
 import com.ironsource.mediationsdk.logger.IronLog;
 import com.ironsource.mediationsdk.logger.IronSourceError;
 import com.ironsource.mediationsdk.sdk.BannerSmashListener;
@@ -117,5 +117,10 @@ final class ChartboostBannerAdListener implements BannerCallback {
         }
 
         mListener.onBannerAdClicked();
+    }
+
+    @Override
+    public void onAdExpired(@NonNull z7 z7) {
+        IronLog.ADAPTER_CALLBACK.verbose();
     }
 }
