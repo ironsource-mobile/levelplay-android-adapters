@@ -9,10 +9,10 @@ import com.chartboost.sdk.events.CacheEvent;
 import com.chartboost.sdk.events.ClickError;
 import com.chartboost.sdk.events.ClickEvent;
 import com.chartboost.sdk.events.DismissEvent;
+import com.chartboost.sdk.events.ExpirationEvent;
 import com.chartboost.sdk.events.ImpressionEvent;
 import com.chartboost.sdk.events.ShowError;
 import com.chartboost.sdk.events.ShowEvent;
-import com.chartboost.sdk.impl.z7;
 import com.ironsource.mediationsdk.logger.IronLog;
 import com.ironsource.mediationsdk.logger.IronSourceError;
 import com.ironsource.mediationsdk.sdk.InterstitialSmashListener;
@@ -106,7 +106,7 @@ final class ChartboostInterstitialAdListener implements InterstitialCallback {
     }
 
     @Override
-    public void onAdExpired(@NonNull z7 z7) {
+    public void onAdExpired(@NonNull ExpirationEvent expirationEvent) {
         IronLog.ADAPTER_CALLBACK.verbose();
     }
 
