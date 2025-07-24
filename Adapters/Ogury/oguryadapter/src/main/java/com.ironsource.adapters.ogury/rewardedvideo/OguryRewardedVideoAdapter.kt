@@ -2,6 +2,7 @@ package com.ironsource.adapters.ogury.rewardedvideo
 
 import com.ironsource.adapters.ogury.OguryAdapter
 import com.ironsource.adapters.ogury.OguryAdapter.Companion.LOG_INIT_FAILED
+import com.ironsource.adapters.ogury.OguryAdapter.Companion.MEDIATION_NAME
 import com.ironsource.environment.ContextProvider
 import com.ironsource.mediationsdk.IronSource
 import com.ironsource.mediationsdk.adapter.AbstractRewardedVideoAdapter
@@ -10,7 +11,9 @@ import com.ironsource.mediationsdk.logger.IronLog
 import com.ironsource.mediationsdk.sdk.RewardedVideoSmashListener
 import com.ironsource.mediationsdk.utils.ErrorBuilder
 import com.ironsource.mediationsdk.utils.IronSourceConstants
-import com.ogury.ed.OguryOptinVideoAd
+import com.ogury.ad.OguryRewardedAd
+import com.ogury.ad.common.OguryMediation
+import com.unity3d.mediation.LevelPlay
 import org.json.JSONObject
 
 class OguryRewardedVideoAdapter(adapter: OguryAdapter) :
@@ -18,15 +21,7 @@ class OguryRewardedVideoAdapter(adapter: OguryAdapter) :
 
     private var mSmashListener : RewardedVideoSmashListener? = null
     private var mAdListener : OguryRewardedVideoAdListener? = null
-    private var mAd: OguryOptinVideoAd? = null
-    private var mAdState: AdState = AdState.STATE_NONE
-
-    // ad state possible values
-    enum class AdState {
-        STATE_NONE,
-        STATE_LOAD,
-        STATE_SHOW
-    }
+    private var mAd: OguryRewardedAd? = null
 
     //regin Rewarded Video API
     override fun initRewardedVideoWithCallback(
@@ -68,7 +63,6 @@ class OguryRewardedVideoAdapter(adapter: OguryAdapter) :
         serverData: String?,
         listener: RewardedVideoSmashListener
     ) {
-        setAdState(AdState.STATE_LOAD)
         IronLog.ADAPTER_API.verbose()
 
         if (serverData.isNullOrEmpty()) {
@@ -80,20 +74,18 @@ class OguryRewardedVideoAdapter(adapter: OguryAdapter) :
         val adUnitIdKey = OguryAdapter.getAdUnitIdKey()
         val adUnitId = getConfigStringValueFromKey(config, adUnitIdKey)
 
-        val rewardedVideoAdListener = OguryRewardedVideoAdListener(listener, this)
+        val rewardedVideoAdListener = OguryRewardedVideoAdListener(listener)
         mAdListener = rewardedVideoAdListener
 
         val context = ContextProvider.getInstance().applicationContext
-        mAd = OguryOptinVideoAd(context,adUnitId)
+        mAd = OguryRewardedAd(context,adUnitId, OguryMediation(MEDIATION_NAME, LevelPlay.getSdkVersion()))
         mAd?.setListener(mAdListener)
-        mAd?.setAdMarkup(serverData)
-        mAd?.load()?: run {
+        mAd?.load(serverData)?: run {
             listener.onRewardedVideoLoadFailed(ErrorBuilder.buildLoadFailedError("Ad is null"))
         }
     }
 
     override fun showRewardedVideo(config: JSONObject, listener: RewardedVideoSmashListener) {
-        setAdState(AdState.STATE_SHOW)
         IronLog.ADAPTER_API.verbose()
 
         if (!isRewardedVideoAvailable(config)) {
@@ -102,7 +94,7 @@ class OguryRewardedVideoAdapter(adapter: OguryAdapter) :
             return
         }
 
-        val rewardedAdShowListener = OguryRewardedVideoAdListener(listener, this)
+        val rewardedAdShowListener = OguryRewardedVideoAdListener(listener)
         mAdListener = rewardedAdShowListener
         mAd?.show() ?: run {
             listener.onRewardedVideoAdShowFailed(
@@ -128,17 +120,6 @@ class OguryRewardedVideoAdapter(adapter: OguryAdapter) :
         mAd = null
         mSmashListener = null
         mAdListener = null
-    }
-
-    //endregion
-
-    //region helper methods
-    fun getAdState(): AdState {
-        return mAdState
-    }
-
-    private fun setAdState(newState: AdState) {
-        mAdState = newState
     }
 
     //endregion

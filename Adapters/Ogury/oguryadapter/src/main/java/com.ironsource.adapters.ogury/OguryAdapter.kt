@@ -15,12 +15,13 @@ import com.ironsource.mediationsdk.logger.IronLog
 import com.ironsource.mediationsdk.logger.IronSourceError
 import com.ironsource.mediationsdk.metadata.MetaData
 import com.ironsource.mediationsdk.metadata.MetaDataUtils
+import com.ogury.ad.OguryBidTokenListener
+import com.ogury.ad.OguryBidTokenProvider
 import com.ogury.core.OguryError
 import com.ogury.core.OguryLog
 import com.ogury.sdk.Ogury
 import com.ogury.sdk.OguryChildPrivacyTreatment
-import com.ogury.sdk.OguryConfiguration
-import io.presage.common.token.OguryTokenProvider
+import com.ogury.sdk.OguryOnStartListener
 import org.json.JSONObject
 import java.util.concurrent.atomic.AtomicBoolean
 
@@ -47,6 +48,7 @@ class OguryAdapter(providerName: String) : AbstractAdapter(providerName),
         private const val NETWORK_NAME: String = "Ogury"
         private const val ASSET_KEY: String = "assetKey"
         private const val AD_UNIT_ID: String = "adUnitId"
+        const val MEDIATION_NAME: String = "Unity LevelPlay"
 
         // Meta data flags
         private const val META_DATA_OGURY_COPPA_KEY = "LevelPlay_ChildDirected"
@@ -92,7 +94,7 @@ class OguryAdapter(providerName: String) : AbstractAdapter(providerName),
 
         fun getLoadError(error: Throwable?): IronSourceError {
             return IronSourceError(
-                (error as OguryError).errorCode,
+                (error as OguryError).code,
                 error.message)
         }
     }
@@ -139,9 +141,17 @@ class OguryAdapter(providerName: String) : AbstractAdapter(providerName),
             val context = ContextProvider.getInstance().applicationContext
 
             // Init Ogury SDK
-            val oguryConfigurationBuilder = OguryConfiguration.Builder(context, assetKey)
-            Ogury.start(oguryConfigurationBuilder.build())
-            initializationSuccess()
+            Ogury.start(context,assetKey, object : OguryOnStartListener {
+                override fun onStarted() {
+                    IronLog.ADAPTER_API.verbose("Initialization Success")
+                    initializationSuccess()
+                }
+
+                override fun onFailed(error: OguryError) {
+                    IronLog.ADAPTER_API.verbose("Initialization Failed")
+                    initializationFailure()
+                }
+            })
         }
     }
 
@@ -153,6 +163,18 @@ class OguryAdapter(providerName: String) : AbstractAdapter(providerName),
         //iterate over all the adapter instances and report init success
         for (adapter: INetworkInitCallbackListener in initCallbackListeners) {
             adapter.onNetworkInitCallbackSuccess()
+        }
+        initCallbackListeners.clear()
+    }
+
+    private fun initializationFailure() {
+        IronLog.ADAPTER_CALLBACK.verbose()
+
+        mInitState = InitState.INIT_STATE_FAILED
+
+        //iterate over all the adapter instances and report init failed
+        for (adapter: INetworkInitCallbackListener in initCallbackListeners) {
+            adapter.onNetworkInitCallbackFailed("Ogury sdk init failed")
         }
         initCallbackListeners.clear()
     }
@@ -192,14 +214,21 @@ class OguryAdapter(providerName: String) : AbstractAdapter(providerName),
         )
     }
 
-    fun collectBiddingData(biddingDataCallback: BiddingDataCallback): MutableMap<String?, Any?> {
-        val ret: MutableMap<String?, Any?> = HashMap()
+    fun collectBiddingData(biddingDataCallback: BiddingDataCallback){
         val context = ContextProvider.getInstance().applicationContext
-        val bidToken = OguryTokenProvider.getBidderToken(context)
-        IronLog.ADAPTER_API.verbose("token = $bidToken")
-        ret["token"] = bidToken
-        biddingDataCallback.onSuccess(ret)
-        return ret
+        OguryBidTokenProvider.getBidToken(context, object : OguryBidTokenListener {
+
+            override fun onBidTokenGenerated(bidToken: String) {
+                IronLog.ADAPTER_API.verbose("token = $bidToken")
+                val result: MutableMap<String?, Any?> = HashMap()
+                result["token"] = bidToken
+                biddingDataCallback.onSuccess(result)
+            }
+
+            override fun onBidTokenGenerationFailed(error: OguryError) {
+                biddingDataCallback.onFailure("failed to receive token - Ogury , errorCode = ${error.code}, error = ${error.message}")
+            }
+        })
     }
 
 }

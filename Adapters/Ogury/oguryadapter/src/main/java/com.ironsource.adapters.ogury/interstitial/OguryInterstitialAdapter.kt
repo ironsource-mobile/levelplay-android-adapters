@@ -2,6 +2,7 @@ package com.ironsource.adapters.ogury.interstitial
 
 import com.ironsource.adapters.ogury.OguryAdapter
 import com.ironsource.adapters.ogury.OguryAdapter.Companion.LOG_INIT_FAILED
+import com.ironsource.adapters.ogury.OguryAdapter.Companion.MEDIATION_NAME
 import com.ironsource.environment.ContextProvider
 import com.ironsource.mediationsdk.IronSource
 import com.ironsource.mediationsdk.adapter.AbstractInterstitialAdapter
@@ -10,7 +11,9 @@ import com.ironsource.mediationsdk.logger.IronLog
 import com.ironsource.mediationsdk.sdk.InterstitialSmashListener
 import com.ironsource.mediationsdk.utils.ErrorBuilder
 import com.ironsource.mediationsdk.utils.IronSourceConstants
-import com.ogury.ed.OguryInterstitialAd
+import com.ogury.ad.OguryInterstitialAd
+import com.ogury.ad.common.OguryMediation
+import com.unity3d.mediation.LevelPlay
 import org.json.JSONObject
 
 class OguryInterstitialAdapter(adapter: OguryAdapter) :
@@ -19,14 +22,6 @@ class OguryInterstitialAdapter(adapter: OguryAdapter) :
     private var mSmashListener : InterstitialSmashListener? = null
     private var mAdListener : OguryInterstitialAdListener? = null
     private var mAd: OguryInterstitialAd? = null
-    private var mAdState: AdState = AdState.STATE_NONE
-
-    // ad state possible values
-    enum class AdState {
-        STATE_NONE,
-        STATE_LOAD,
-        STATE_SHOW
-    }
 
     //regin Interstitial API
 
@@ -71,7 +66,6 @@ class OguryInterstitialAdapter(adapter: OguryAdapter) :
             serverData: String?,
             listener: InterstitialSmashListener
     ){
-        setAdState(AdState.STATE_LOAD)
         IronLog.ADAPTER_API.verbose()
 
         if (serverData.isNullOrEmpty()) {
@@ -81,7 +75,7 @@ class OguryInterstitialAdapter(adapter: OguryAdapter) :
             return
         }
 
-        val interstitialAdListener = OguryInterstitialAdListener(listener, this)
+        val interstitialAdListener = OguryInterstitialAdListener(listener)
         mAdListener = interstitialAdListener
 
         val context = ContextProvider.getInstance().applicationContext
@@ -91,16 +85,15 @@ class OguryInterstitialAdapter(adapter: OguryAdapter) :
         mAd = OguryInterstitialAd(
             context,
             adUnitId,
+            OguryMediation(MEDIATION_NAME, LevelPlay.getSdkVersion())
         )
         mAd?.setListener(mAdListener)
-        mAd?.setAdMarkup(serverData)
-        mAd?.load()?: run {
+        mAd?.load(serverData)?: run {
             listener.onInterstitialAdLoadFailed(ErrorBuilder.buildLoadFailedError("Ad is null"))
         }
     }
 
     override fun showInterstitial(config: JSONObject, listener: InterstitialSmashListener) {
-        setAdState(AdState.STATE_SHOW)
         IronLog.ADAPTER_API.verbose()
 
         if (!isInterstitialReady(config)) {
@@ -138,17 +131,6 @@ class OguryInterstitialAdapter(adapter: OguryAdapter) :
         mAdListener = null
         mSmashListener = null
 
-    }
-
-    //endregion
-
-    //region helper methods
-    fun getAdState(): AdState {
-        return mAdState
-    }
-
-    private fun setAdState(newState: AdState) {
-        mAdState = newState
     }
 
     //endregion
