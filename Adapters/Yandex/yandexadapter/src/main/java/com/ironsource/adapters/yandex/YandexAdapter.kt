@@ -15,7 +15,7 @@ import com.ironsource.mediationsdk.logger.IronLog
 import com.ironsource.mediationsdk.logger.IronSourceError
 import com.ironsource.mediationsdk.metadata.MetaData
 import com.ironsource.mediationsdk.metadata.MetaDataUtils
-import com.ironsource.mediationsdk.utils.IronSourceUtils
+import com.unity3d.mediation.LevelPlay
 import com.yandex.mobile.ads.common.AdRequestError
 import com.yandex.mobile.ads.common.BidderTokenLoadListener
 import com.yandex.mobile.ads.common.BidderTokenLoader
@@ -216,7 +216,7 @@ class YandexAdapter(providerName: String) : AbstractAdapter(providerName),
         return mapOf(
             "adapter_version" to VERSION,
             "adapter_network_name" to MEDIATION_NAME,
-            "adapter_network_sdk_version" to IronSourceUtils.getSDKVersion()
+            "adapter_network_sdk_version" to LevelPlay.getSdkVersion()
         )
     }
 
