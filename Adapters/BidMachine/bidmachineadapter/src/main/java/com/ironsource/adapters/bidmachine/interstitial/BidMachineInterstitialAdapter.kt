@@ -13,6 +13,7 @@ import com.ironsource.mediationsdk.utils.IronSourceConstants
 import io.bidmachine.AdsFormat
 import io.bidmachine.interstitial.InterstitialAd
 import io.bidmachine.interstitial.InterstitialRequest
+import io.bidmachine.rewarded.RewardedRequest
 import org.json.JSONObject
 import java.lang.ref.WeakReference
 
@@ -76,12 +77,17 @@ class BidMachineInterstitialAdapter(adapter: BidMachineAdapter) :
         val interstitial = InterstitialAd(ContextProvider.getInstance().applicationContext)
         val interstitialAdListener = BidMachineInterstitialAdListener(WeakReference(this), listener)
         interstitial.setListener(interstitialAdListener)
-
         mInterstitialAdListener = interstitialAdListener
 
-        mInterstitialRequest = InterstitialRequest.Builder()
+        val placementId = config.optString(BidMachineAdapter.getPlacementIdKey())
+        val interstitialRequestBuilder = InterstitialRequest.Builder()
             .setBidPayload(serverData)
-            .build()
+
+        if(!placementId.isNullOrEmpty()) {
+            interstitialRequestBuilder.setPlacementId(placementId)
+        }
+
+        mInterstitialRequest = interstitialRequestBuilder.build()
         interstitial.load(mInterstitialRequest)
     }
 
@@ -114,7 +120,7 @@ class BidMachineInterstitialAdapter(adapter: BidMachineAdapter) :
         adData: JSONObject?,
         biddingDataCallback: BiddingDataCallback
     ) {
-        adapter.collectBiddingData(biddingDataCallback, AdsFormat.Interstitial)
+        adapter.collectBiddingData(biddingDataCallback, AdsFormat.Interstitial, config)
     }
 
     //region memory handling

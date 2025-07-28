@@ -15,6 +15,7 @@ import io.bidmachine.AdPlacementConfig
 import io.bidmachine.AdsFormat
 import io.bidmachine.BidMachine
 import io.bidmachine.utils.BMError
+import org.json.JSONObject
 import java.util.concurrent.atomic.AtomicBoolean
 
 class BidMachineAdapter(providerName: String) : AbstractAdapter(providerName),
@@ -37,6 +38,7 @@ class BidMachineAdapter(providerName: String) : AbstractAdapter(providerName),
 
         // BidMachine keys
         private const val SOURCE_ID_KEY: String = "sourceId"
+        private const val PLACEMENT_ID_KEY: String = "placementId"
 
         // Meta data flags
         private const val META_DATA_BIDMACHINE_COPPA_KEY = "BidMachine_COPPA"
@@ -72,6 +74,10 @@ class BidMachineAdapter(providerName: String) : AbstractAdapter(providerName),
 
         fun getSourceIdKey(): String {
             return SOURCE_ID_KEY
+        }
+
+        fun getPlacementIdKey(): String {
+            return PLACEMENT_ID_KEY
         }
 
         fun getLoadErrorAndCheckNoFill(error: BMError, noFillError: Int): IronSourceError {
@@ -200,7 +206,7 @@ class BidMachineAdapter(providerName: String) : AbstractAdapter(providerName),
     //endregion
 
     // region Helpers
-    fun collectBiddingData(biddingDataCallback: BiddingDataCallback, adsFormat: AdsFormat) {
+    fun collectBiddingData(biddingDataCallback: BiddingDataCallback, adsFormat: AdsFormat, config: JSONObject) {
         if (mInitState != InitState.INIT_STATE_SUCCESS) {
             val error = "returning null as token since init isn't completed"
             IronLog.INTERNAL.verbose(error)
@@ -209,9 +215,13 @@ class BidMachineAdapter(providerName: String) : AbstractAdapter(providerName),
         }
 
         val context = ContextProvider.getInstance().applicationContext
-        val adPlacementConfig = AdPlacementConfig.Builder(adsFormat)
-            .build()
+        val placementId = config.optString(PLACEMENT_ID_KEY)
+        val adPlacementConfigBuilder = AdPlacementConfig.Builder(adsFormat)
+        if(!placementId.isNullOrEmpty()) {
+            adPlacementConfigBuilder.withPlacementId(placementId)
+        }
 
+        val adPlacementConfig = adPlacementConfigBuilder.build()
         BidMachine.getBidToken(context, adPlacementConfig) { token ->
             if (token.isNullOrEmpty()) {
                 val error = "failed to receive token - returned null/empty token"

@@ -15,6 +15,7 @@ import io.bidmachine.AdsFormat
 import io.bidmachine.banner.BannerRequest
 import io.bidmachine.banner.BannerSize
 import io.bidmachine.banner.BannerView
+import io.bidmachine.interstitial.InterstitialRequest
 import org.json.JSONObject
 import java.lang.ref.WeakReference
 
@@ -96,10 +97,16 @@ class BidMachineBannerAdapter(adapter: BidMachineAdapter) :
         val bannerView = BannerView(ContextProvider.getInstance().applicationContext)
         bannerView.setListener(bannerAdListener)
 
-        mBannerRequest = BannerRequest.Builder()
+        val placementId = config.optString(BidMachineAdapter.getPlacementIdKey())
+        val bannerRequestBuilder = BannerRequest.Builder()
             .setSize(bannerSize)
             .setBidPayload(serverData)
-            .build()
+
+        if(!placementId.isNullOrEmpty()) {
+            bannerRequestBuilder.setPlacementId(placementId)
+        }
+
+        mBannerRequest = bannerRequestBuilder.build()
 
         postOnUIThread {
             if (banner == null) {
@@ -141,7 +148,8 @@ class BidMachineBannerAdapter(adapter: BidMachineAdapter) :
             BannerSize.Size_300x250 -> AdsFormat.Banner_300x250
             BannerSize.Size_728x90 -> AdsFormat.Banner_728x90
         }
-        adapter.collectBiddingData(biddingDataCallback, format)
+
+        adapter.collectBiddingData(biddingDataCallback, format, config)
     }
 
     //endregion

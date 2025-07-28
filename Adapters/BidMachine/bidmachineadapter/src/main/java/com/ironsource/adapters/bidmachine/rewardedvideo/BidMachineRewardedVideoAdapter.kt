@@ -77,13 +77,16 @@ class BidMachineRewardedVideoAdapter(adapter: BidMachineAdapter) :
         val rewardedVideo = RewardedAd(ContextProvider.getInstance().applicationContext)
         val rewardedVideoAdListener = BidMachineRewardedVideoAdListener(listener, WeakReference(this))
         rewardedVideo.setListener(rewardedVideoAdListener)
-
         mRewardedVideoAdListener = rewardedVideoAdListener
 
-        mRewardedRequest = RewardedRequest.Builder()
+        val placementId = config.optString(BidMachineAdapter.getPlacementIdKey())
+        val rewardedRequestBuilder = RewardedRequest.Builder()
             .setBidPayload(serverData)
-            .build()
+        if(!placementId.isNullOrEmpty()) {
+            rewardedRequestBuilder.setPlacementId(placementId)
+        }
 
+        mRewardedRequest = rewardedRequestBuilder.build()
         rewardedVideo.load(mRewardedRequest)
     }
 
@@ -114,7 +117,7 @@ class BidMachineRewardedVideoAdapter(adapter: BidMachineAdapter) :
         adData: JSONObject?,
         biddingDataCallback: BiddingDataCallback
     ) {
-        adapter.collectBiddingData(biddingDataCallback, AdsFormat.RewardedVideo)
+        adapter.collectBiddingData(biddingDataCallback, AdsFormat.RewardedVideo, config)
     }
 
     //region memory handling
