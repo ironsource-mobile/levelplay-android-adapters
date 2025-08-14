@@ -205,6 +205,7 @@ public class FacebookRewardedVideoAdapter extends AbstractRewardedVideoAdapter<F
         postOnUIThread(new Runnable() {
             @Override
             public void run() {
+              try {
                 RewardedVideoAd rewardedVideoAd = mPlacementIdToAd.get(placementId);
                 // make sure the ad is loaded and has not expired
                 if (rewardedVideoAd != null && rewardedVideoAd.isAdLoaded() && !rewardedVideoAd.isAdInvalidated()) {
@@ -215,6 +216,10 @@ public class FacebookRewardedVideoAdapter extends AbstractRewardedVideoAdapter<F
                 }
                 // change rewarded video availability to false
                 mAdsAvailability.put(placementId, false);
+              } catch (Exception ex) {
+                  IronLog.INTERNAL.error("ex.getMessage() = " + ex.getMessage());
+                  listener.onRewardedVideoAdShowFailed(ErrorBuilder.buildShowFailedError(IronSourceConstants.REWARDED_VIDEO_AD_UNIT, ex.getMessage()));
+              }
             }
         });
     }

@@ -26,19 +26,17 @@ import com.ironsource.mediationsdk.IronSource;
 import com.ironsource.mediationsdk.LoadWhileShowSupportState;
 import com.ironsource.mediationsdk.logger.IronLog;
 import com.ironsource.mediationsdk.metadata.MetaDataUtils;
-import com.ironsource.mediationsdk.utils.IronSourceUtils;
+import com.unity3d.mediation.LevelPlay;
 
 
 import org.jetbrains.annotations.NotNull;
 import org.json.JSONArray;
-import org.json.JSONObject;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -256,7 +254,7 @@ public class FacebookAdapter extends AbstractAdapter implements AudienceNetworkA
 
 
     private String getMediationServiceInfo() {
-        String mediationServiceInfo = String.format("%s_%s:%s", MEDIATION_NAME, IronSourceUtils.getSDKVersion(), VERSION);
+        String mediationServiceInfo = String.format("%s_%s:%s", MEDIATION_NAME, LevelPlay.getSdkVersion(), VERSION);
         IronLog.INTERNAL.verbose("mediationServiceInfo = " + mediationServiceInfo);
         return mediationServiceInfo;
     }
