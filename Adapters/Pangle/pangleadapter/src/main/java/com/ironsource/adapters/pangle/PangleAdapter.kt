@@ -84,6 +84,22 @@ class PangleAdapter(providerName: String) : AbstractAdapter(providerName),
         // Pangle errors
         const val PANGLE_NO_FILL_ERROR_CODE = 20001
 
+        // Pangle not allow child error code
+        const val PANGLE_NOT_ALLOW_CHILD_ERROR_CODE = 20002
+        // Pangle not allow child error code
+        const val PANGLE_NOT_ALLOW_CHILD_ERROR_MSG = "Pangle_COPPA indicates the user is a child. Pangle SDK V71 or higher does not support child users."
+
+        private const val PANGLE_CHILD_DIRECTED_TYPE_CHILD = 1
+        private const val PANGLE_CHILD_DIRECTED_TYPE_NON_CHILD = 0
+        private const val PANGLE_CHILD_DIRECTED_TYPE_DEFAULT = -1
+
+        //Pangle defaultChildDirected
+        private var mChildDirected = PANGLE_CHILD_DIRECTED_TYPE_DEFAULT
+
+
+        // Meta data flags
+        private const val META_DATA_PANGLE_COPPA_KEY = "Pangle_COPPA"
+
         // Pangle Builder
         private val mPAGConfigBuilder = PAGConfig.Builder()
 
@@ -146,6 +162,11 @@ class PangleAdapter(providerName: String) : AbstractAdapter(providerName),
             mInitState = InitState.INIT_STATE_IN_PROGRESS
             IronLog.ADAPTER_API.verbose("appId = $appId")
 
+            if (isChild()){
+                initializationFailure(PANGLE_NOT_ALLOW_CHILD_ERROR_CODE, PANGLE_NOT_ALLOW_CHILD_ERROR_MSG)
+                return
+            }
+
             val context = ContextProvider.getInstance().applicationContext
             val initConfig = mPAGConfigBuilder
                     .appId(appId)
@@ -169,6 +190,13 @@ class PangleAdapter(providerName: String) : AbstractAdapter(providerName),
                 })
             }
         }
+    }
+
+    /**
+     * Whether to allow the use of pangle. If it is a child , it is not allowed
+     */
+    private fun isChild(): Boolean {
+        return mChildDirected == PANGLE_CHILD_DIRECTED_TYPE_CHILD
     }
 
     private fun initializationSuccess() {
@@ -255,6 +283,12 @@ class PangleAdapter(providerName: String) : AbstractAdapter(providerName),
         val slotId = config?.optString(SLOT_ID_KEY)
         val appId = config?.optString(APP_ID_KEY)
 
+        if (isChild()){
+            listener.onRewardedVideoInitFailed(ErrorBuilder.buildInitFailedError(
+                PANGLE_NOT_ALLOW_CHILD_ERROR_MSG, IronSourceConstants.REWARDED_VIDEO_AD_UNIT))
+            return
+        }
+
         if (slotId.isNullOrEmpty()) {
             IronLog.INTERNAL.error("Missing param - $SLOT_ID_KEY")
             listener.onRewardedVideoInitFailed(ErrorBuilder.buildInitFailedError("Missing params - $SLOT_ID_KEY", IronSourceConstants.REWARDED_VIDEO_AD_UNIT))
@@ -293,6 +327,13 @@ class PangleAdapter(providerName: String) : AbstractAdapter(providerName),
     override fun initAndLoadRewardedVideo(appKey: String?, userId: String?, config: JSONObject?, adData: JSONObject?, listener: RewardedVideoSmashListener) {
         val slotId = config?.optString(SLOT_ID_KEY)
         val appId = config?.optString(APP_ID_KEY)
+
+        if (isChild()){
+            IronLog.INTERNAL.error(PANGLE_NOT_ALLOW_CHILD_ERROR_MSG)
+            listener.onRewardedVideoAvailabilityChanged(false)
+            return
+        }
+
 
         if (slotId.isNullOrEmpty()) {
             IronLog.INTERNAL.error("Missing param - $SLOT_ID_KEY")
@@ -346,6 +387,15 @@ class PangleAdapter(providerName: String) : AbstractAdapter(providerName),
 
         val rewardedVideoAdListener = PangleRewardedVideoAdListener(listener, WeakReference(this), slotId)
         mSlotIdToRewardedVideoAdListener[slotId] = rewardedVideoAdListener
+
+        if (isChild()) {
+            rewardedVideoAdListener.onError(
+                PANGLE_NOT_ALLOW_CHILD_ERROR_CODE,
+                PANGLE_NOT_ALLOW_CHILD_ERROR_MSG
+            )
+            return
+        }
+
         val request = PAGRewardedRequest()
 
         if (serverData != null) {
@@ -360,6 +410,15 @@ class PangleAdapter(providerName: String) : AbstractAdapter(providerName),
     override fun showRewardedVideo(config: JSONObject, listener: RewardedVideoSmashListener) {
         val slotId = config.optString(SLOT_ID_KEY)
         IronLog.ADAPTER_API.verbose("slotId = $slotId")
+
+        if (isChild()) {
+            listener.onRewardedVideoAdShowFailed(
+                ErrorBuilder.buildShowFailedError(
+                    IronSourceConstants.REWARDED_VIDEO_AD_UNIT, PANGLE_NOT_ALLOW_CHILD_ERROR_MSG
+                )
+            )
+            return
+        }
 
         if (isRewardedVideoAvailable(config)) {
             val activity = ContextProvider.getInstance().currentActiveActivity
@@ -414,6 +473,12 @@ class PangleAdapter(providerName: String) : AbstractAdapter(providerName),
         val slotId = config?.optString(SLOT_ID_KEY)
         val appId = config?.optString(APP_ID_KEY)
 
+        if (isChild()){
+            listener.onInterstitialInitFailed(ErrorBuilder.buildInitFailedError(
+                PANGLE_NOT_ALLOW_CHILD_ERROR_MSG, IronSourceConstants.INTERSTITIAL_AD_UNIT))
+            return
+        }
+
         if (slotId.isNullOrEmpty()) {
             IronLog.INTERNAL.error("Missing param - $SLOT_ID_KEY")
             listener.onInterstitialInitFailed(ErrorBuilder.buildInitFailedError("Missing params - $SLOT_ID_KEY", IronSourceConstants.INTERSTITIAL_AD_UNIT))
@@ -467,6 +532,13 @@ class PangleAdapter(providerName: String) : AbstractAdapter(providerName),
 
         val interstitialAdListener = PangleInterstitialAdListener(listener, WeakReference(this), slotId)
         mSlotIdToInterstitialAdListener[slotId] = interstitialAdListener
+
+        if (isChild()) {
+            interstitialAdListener.onError(PANGLE_NOT_ALLOW_CHILD_ERROR_CODE,
+                PANGLE_NOT_ALLOW_CHILD_ERROR_MSG)
+            return
+        }
+
         val request = PAGInterstitialRequest()
 
         if (serverData != null) {
@@ -481,6 +553,15 @@ class PangleAdapter(providerName: String) : AbstractAdapter(providerName),
     override fun showInterstitial(config: JSONObject, listener: InterstitialSmashListener) {
         val slotId = config.optString(SLOT_ID_KEY)
         IronLog.ADAPTER_API.verbose("slotId = $slotId")
+
+        if (isChild()) {
+            listener.onInterstitialAdShowFailed(
+                ErrorBuilder.buildShowFailedError(
+                    IronSourceConstants.INTERSTITIAL_AD_UNIT, PANGLE_NOT_ALLOW_CHILD_ERROR_MSG
+                )
+            )
+            return
+        }
 
         if (isInterstitialReady(config)) {
             val activity = ContextProvider.getInstance().currentActiveActivity
@@ -528,6 +609,12 @@ class PangleAdapter(providerName: String) : AbstractAdapter(providerName),
     override fun initBannerForBidding(appKey: String?, userId: String?, config: JSONObject?, listener: BannerSmashListener) {
         val slotId = config?.optString(SLOT_ID_KEY)
         val appId = config?.optString(APP_ID_KEY)
+
+        if (isChild()) {
+            listener.onBannerInitFailed(ErrorBuilder.buildInitFailedError(
+                PANGLE_NOT_ALLOW_CHILD_ERROR_MSG, IronSourceConstants.BANNER_AD_UNIT))
+            return
+        }
 
         if (slotId.isNullOrEmpty()) {
             IronLog.INTERNAL.error("Missing param - $SLOT_ID_KEY")
@@ -579,6 +666,14 @@ class PangleAdapter(providerName: String) : AbstractAdapter(providerName),
         val layoutParams: FrameLayout.LayoutParams = getBannerLayoutParams(banner.size)
         val bannerAdListener = PangleBannerAdListener(listener, WeakReference(this), slotId, layoutParams)
         mSlotIdToBannerAdListener[slotId] = bannerAdListener
+
+        if (isChild()) {
+            bannerAdListener.onError(
+                PANGLE_NOT_ALLOW_CHILD_ERROR_CODE,
+                PANGLE_NOT_ALLOW_CHILD_ERROR_MSG
+            )
+            return
+        }
 
         val adSize = getBannerSize(banner.size)
         val bannerRequest = PAGBannerRequest(adSize)
@@ -678,7 +773,31 @@ class PangleAdapter(providerName: String) : AbstractAdapter(providerName),
             MetaDataUtils.isValidCCPAMetaData(key, value) -> {
                 setCCPAValue(MetaDataUtils.getMetaDataBooleanValue(value))
             }
+            MetaDataUtils.isValidMetaData(key, META_DATA_PANGLE_COPPA_KEY, value) -> {
+                setCOPPAValue(value)
+            }
         }
+    }
+
+    private fun setCOPPAValue(value: String) {
+        val coppaValueString : String
+        when (value.toIntOrNull()) {
+            PANGLE_CHILD_DIRECTED_TYPE_CHILD -> {
+                mChildDirected = PANGLE_CHILD_DIRECTED_TYPE_CHILD
+                coppaValueString = "PAG_CHILD_DIRECTED_TYPE_CHILD"
+            }
+
+            PANGLE_CHILD_DIRECTED_TYPE_NON_CHILD -> {
+                mChildDirected = PANGLE_CHILD_DIRECTED_TYPE_NON_CHILD
+                coppaValueString = "PAG_CHILD_DIRECTED_TYPE_NON_CHILD"
+            }
+
+            else -> {
+                mChildDirected = PANGLE_CHILD_DIRECTED_TYPE_DEFAULT
+                coppaValueString = "PAG_CHILD_DIRECTED_TYPE_DEFAULT"
+            }
+        }
+        IronLog.ADAPTER_API.verbose("coppaValue = $coppaValueString")
     }
 
     private fun setCCPAValue(doNotSell: Boolean) {
@@ -821,6 +940,10 @@ class PangleAdapter(providerName: String) : AbstractAdapter(providerName),
             val error = "returning null as token since init is not successful"
             IronLog.INTERNAL.verbose(error)
             biddingDataCallback.onFailure("$error - Pangle")
+            return
+        }
+        if (isChild()) {
+            biddingDataCallback.onFailure("$PANGLE_NOT_ALLOW_CHILD_ERROR_MSG - Pangle")
             return
         }
 
