@@ -21,6 +21,7 @@ import com.ironsource.mediationsdk.*
 import com.ironsource.mediationsdk.IronSource.AD_UNIT
 import com.ironsource.mediationsdk.bidding.BiddingDataCallback
 import com.ironsource.mediationsdk.logger.IronLog
+import com.ironsource.mediationsdk.logger.IronSourceError
 import com.ironsource.mediationsdk.metadata.MetaDataUtils
 import com.ironsource.mediationsdk.sdk.BannerSmashListener
 import com.ironsource.mediationsdk.sdk.InterstitialSmashListener
@@ -81,8 +82,21 @@ class PangleAdapter(providerName: String) : AbstractAdapter(providerName),
         private const val SLOT_ID_KEY = "slotID"
         private const val APP_ID_KEY = "appID"
 
-        // Pangle errors
+        // Pangle error codes
         const val PANGLE_NO_FILL_ERROR_CODE = 20001
+        const val PANGLE_NOT_ALLOW_CHILD_ERROR_CODE = 20002
+
+        // Pangle not allow child error message
+        const val PANGLE_NOT_ALLOW_CHILD_ERROR_MSG = "Pangle_COPPA indicates the user is a child. Pangle SDK V71 or higher does not support child users."
+
+        // Pangle COPPA/Child-related constants
+        private const val PANGLE_CHILD_DIRECTED_TYPE_CHILD = 1
+        private const val PANGLE_CHILD_DIRECTED_TYPE_NON_CHILD = 0
+        private const val PANGLE_CHILD_DIRECTED_TYPE_DEFAULT = -1
+        private const val META_DATA_PANGLE_COPPA_KEY = "Pangle_COPPA"
+
+        // Pangle defaultChildDirected
+        private var mChildDirected = PANGLE_CHILD_DIRECTED_TYPE_DEFAULT
 
         // Pangle Builder
         private val mPAGConfigBuilder = PAGConfig.Builder()
@@ -145,6 +159,11 @@ class PangleAdapter(providerName: String) : AbstractAdapter(providerName),
         if (mWasInitCalled.compareAndSet(false, true)) {
             mInitState = InitState.INIT_STATE_IN_PROGRESS
             IronLog.ADAPTER_API.verbose("appId = $appId")
+
+            if (isCoppaChildUser()) {
+                initializationFailure(PANGLE_NOT_ALLOW_CHILD_ERROR_CODE, PANGLE_NOT_ALLOW_CHILD_ERROR_MSG)
+                return
+            }
 
             val context = ContextProvider.getInstance().applicationContext
             val initConfig = mPAGConfigBuilder
@@ -344,8 +363,16 @@ class PangleAdapter(providerName: String) : AbstractAdapter(providerName),
         IronLog.ADAPTER_API.verbose("slotId = $slotId")
         setRewardedVideoAdAvailability(slotId, false)
 
+        if (isCoppaChildUser()) {
+            IronLog.INTERNAL.error("Child user - $PANGLE_NOT_ALLOW_CHILD_ERROR_MSG")
+            listener.onRewardedVideoAvailabilityChanged(false)
+            listener.onRewardedVideoLoadFailed(IronSourceError(PANGLE_NOT_ALLOW_CHILD_ERROR_CODE, "Child user - $PANGLE_NOT_ALLOW_CHILD_ERROR_MSG"))
+            return
+        }
+
         val rewardedVideoAdListener = PangleRewardedVideoAdListener(listener, WeakReference(this), slotId)
         mSlotIdToRewardedVideoAdListener[slotId] = rewardedVideoAdListener
+
         val request = PAGRewardedRequest()
 
         if (serverData != null) {
@@ -360,6 +387,12 @@ class PangleAdapter(providerName: String) : AbstractAdapter(providerName),
     override fun showRewardedVideo(config: JSONObject, listener: RewardedVideoSmashListener) {
         val slotId = config.optString(SLOT_ID_KEY)
         IronLog.ADAPTER_API.verbose("slotId = $slotId")
+
+        if (isCoppaChildUser()) {
+            IronLog.INTERNAL.error("Child user - $PANGLE_NOT_ALLOW_CHILD_ERROR_MSG")
+            listener.onRewardedVideoAdShowFailed(IronSourceError(PANGLE_NOT_ALLOW_CHILD_ERROR_CODE, "Child user - $PANGLE_NOT_ALLOW_CHILD_ERROR_MSG"))
+            return
+        }
 
         if (isRewardedVideoAvailable(config)) {
             val activity = ContextProvider.getInstance().currentActiveActivity
@@ -465,8 +498,15 @@ class PangleAdapter(providerName: String) : AbstractAdapter(providerName),
     private fun loadInterstitialInternal(slotId: String, serverData: String?, listener: InterstitialSmashListener) {
         setInterstitialAdAvailability(slotId, false)
 
+        if (isCoppaChildUser()) {
+            IronLog.INTERNAL.error("Child user - $PANGLE_NOT_ALLOW_CHILD_ERROR_MSG")
+            listener.onInterstitialAdLoadFailed(IronSourceError(PANGLE_NOT_ALLOW_CHILD_ERROR_CODE, "Child user - $PANGLE_NOT_ALLOW_CHILD_ERROR_MSG"))
+            return
+        }
+
         val interstitialAdListener = PangleInterstitialAdListener(listener, WeakReference(this), slotId)
         mSlotIdToInterstitialAdListener[slotId] = interstitialAdListener
+
         val request = PAGInterstitialRequest()
 
         if (serverData != null) {
@@ -481,6 +521,12 @@ class PangleAdapter(providerName: String) : AbstractAdapter(providerName),
     override fun showInterstitial(config: JSONObject, listener: InterstitialSmashListener) {
         val slotId = config.optString(SLOT_ID_KEY)
         IronLog.ADAPTER_API.verbose("slotId = $slotId")
+
+        if (isCoppaChildUser()) {
+            IronLog.INTERNAL.error("Child user - $PANGLE_NOT_ALLOW_CHILD_ERROR_MSG")
+            listener.onInterstitialAdShowFailed(IronSourceError(PANGLE_NOT_ALLOW_CHILD_ERROR_CODE, "Child user - $PANGLE_NOT_ALLOW_CHILD_ERROR_MSG"))
+            return
+        }
 
         if (isInterstitialReady(config)) {
             val activity = ContextProvider.getInstance().currentActiveActivity
@@ -573,6 +619,12 @@ class PangleAdapter(providerName: String) : AbstractAdapter(providerName),
         if (banner == null) {
             IronLog.INTERNAL.error("banner is null")
             listener.onBannerAdLoadFailed(ErrorBuilder.buildNoConfigurationAvailableError("banner is null"))
+            return
+        }
+
+        if (isCoppaChildUser()) {
+            IronLog.INTERNAL.error("Child user - $PANGLE_NOT_ALLOW_CHILD_ERROR_MSG")
+            listener.onBannerAdLoadFailed(IronSourceError(PANGLE_NOT_ALLOW_CHILD_ERROR_CODE, "Child user - $PANGLE_NOT_ALLOW_CHILD_ERROR_MSG"))
             return
         }
 
@@ -678,11 +730,13 @@ class PangleAdapter(providerName: String) : AbstractAdapter(providerName),
             MetaDataUtils.isValidCCPAMetaData(key, value) -> {
                 setCCPAValue(MetaDataUtils.getMetaDataBooleanValue(value))
             }
+            MetaDataUtils.isValidMetaData(key, META_DATA_PANGLE_COPPA_KEY, value) -> {
+                setCOPPAValue(value)
+            }
         }
     }
 
     private fun setCCPAValue(doNotSell: Boolean) {
-
         val ccpaValue: Int
         val ccpaValueString : String
 
@@ -699,6 +753,27 @@ class PangleAdapter(providerName: String) : AbstractAdapter(providerName),
         mPAGConfigBuilder.setPAConsent(ccpaValue)
     }
 
+    private fun setCOPPAValue(value: String) {
+        val coppaValueString : String
+        when (value.toIntOrNull()) {
+            PANGLE_CHILD_DIRECTED_TYPE_CHILD -> {
+                mChildDirected = PANGLE_CHILD_DIRECTED_TYPE_CHILD
+                coppaValueString = "PANGLE_CHILD_DIRECTED_TYPE_CHILD"
+            }
+
+            PANGLE_CHILD_DIRECTED_TYPE_NON_CHILD -> {
+                mChildDirected = PANGLE_CHILD_DIRECTED_TYPE_NON_CHILD
+                coppaValueString = "PANGLE_CHILD_DIRECTED_TYPE_NON_CHILD"
+            }
+
+            else -> {
+                mChildDirected = PANGLE_CHILD_DIRECTED_TYPE_DEFAULT
+                coppaValueString = "PANGLE_CHILD_DIRECTED_TYPE_DEFAULT"
+            }
+        }
+        IronLog.ADAPTER_API.verbose("coppaValue = $coppaValueString")
+    }
+
     override fun setConsent(consent: Boolean) {
         val gdprValue: Int
         val gdprValueString : String
@@ -713,6 +788,13 @@ class PangleAdapter(providerName: String) : AbstractAdapter(providerName),
 
         IronLog.ADAPTER_API.verbose("consent = $gdprValueString")
         mPAGConfigBuilder.setGDPRConsent(gdprValue)
+    }
+
+    /**
+     * Whether to allow the use of pangle. If it is a child , it is not allowed
+     */
+    private fun isCoppaChildUser(): Boolean {
+        return mChildDirected == PANGLE_CHILD_DIRECTED_TYPE_CHILD
     }
 
     //endregion
@@ -821,6 +903,12 @@ class PangleAdapter(providerName: String) : AbstractAdapter(providerName),
             val error = "returning null as token since init is not successful"
             IronLog.INTERNAL.verbose(error)
             biddingDataCallback.onFailure("$error - Pangle")
+            return
+        }
+
+        if (isCoppaChildUser()) {
+            IronLog.INTERNAL.verbose(PANGLE_NOT_ALLOW_CHILD_ERROR_MSG)
+            biddingDataCallback.onFailure("$PANGLE_NOT_ALLOW_CHILD_ERROR_MSG - Pangle")
             return
         }
 
