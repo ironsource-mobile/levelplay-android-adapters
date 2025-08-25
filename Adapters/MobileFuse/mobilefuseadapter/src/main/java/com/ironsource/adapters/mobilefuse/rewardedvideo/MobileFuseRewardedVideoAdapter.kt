@@ -72,6 +72,7 @@ class MobileFuseRewardedVideoAdapter(adapter: MobileFuseAdapter) :
     if (serverData.isNullOrEmpty()) {
       val error = "serverData is empty"
       IronLog.INTERNAL.error(error)
+      listener.onRewardedVideoAvailabilityChanged(false)
       listener.onRewardedVideoLoadFailed(ErrorBuilder.buildLoadFailedError(error))
       return
     }
@@ -88,12 +89,19 @@ class MobileFuseRewardedVideoAdapter(adapter: MobileFuseAdapter) :
       mAd?.setListener(rewardedVideoAdListener)
       mAd?.loadAdFromBiddingToken(serverData)
     }?: run {
+      listener.onRewardedVideoAvailabilityChanged(false)
       listener.onRewardedVideoLoadFailed(ErrorBuilder.buildLoadFailedError("Ad is null"))
     }
   }
 
   override fun showRewardedVideo(config: JSONObject, listener: RewardedVideoSmashListener) {
     IronLog.ADAPTER_API.verbose()
+
+    if (!isRewardedVideoAvailable(config)) {
+      listener.onRewardedVideoAdShowFailed(ErrorBuilder.buildNoAdsToShowError(IronSourceConstants.REWARDED_VIDEO_AD_UNIT))
+      return
+    }
+
     mAd?.showAd()
   }
 
