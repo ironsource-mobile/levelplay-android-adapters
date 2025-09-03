@@ -17,6 +17,7 @@ import com.ironsource.mediationsdk.sdk.BannerSmashListener
 import com.ironsource.mediationsdk.utils.ErrorBuilder
 import com.ironsource.mediationsdk.utils.IronSourceConstants
 import com.moloco.sdk.publisher.Banner
+import com.moloco.sdk.publisher.MediationInfo
 import com.moloco.sdk.publisher.Moloco
 import com.moloco.sdk.publisher.MolocoAdError
 import org.json.JSONObject
@@ -130,8 +131,9 @@ class MolocoBannerAdapter(adapter: MolocoAdapter) :
 
         val adUnitIdKey = MolocoAdapter.getAdUnitIdKey()
         val adUnitId = getConfigStringValueFromKey(config, adUnitIdKey)
+        val mediationInfo = MolocoAdapter.getMediationInfo()
 
-        createBannerWithSize(banner.size, adUnitId, listener, layoutParams, serverData)
+        createBannerWithSize(banner.size, mediationInfo, adUnitId, listener, layoutParams, serverData)
     }
 
     override fun destroyBanner(config: JSONObject) {
@@ -230,6 +232,7 @@ class MolocoBannerAdapter(adapter: MolocoAdapter) :
 
     private fun createBannerWithSize(
         size: ISBannerSize,
+        mediationInfo: MediationInfo,
         adUnitId: String,
         listener: BannerSmashListener,
         layoutParams: FrameLayout.LayoutParams,
@@ -247,15 +250,15 @@ class MolocoBannerAdapter(adapter: MolocoAdapter) :
         }
     ) {
         when (size.description) {
-            "BANNER" -> Moloco.createBanner(adUnitId, null, createCallback)
-            "LEADERBOARD" -> Moloco.createBannerTablet(adUnitId, null, createCallback)
-            "RECTANGLE" -> Moloco.createMREC(adUnitId, null, createCallback)
+            "BANNER" -> Moloco.createBanner(mediationInfo, adUnitId, null, createCallback)
+            "LEADERBOARD" -> Moloco.createBannerTablet(mediationInfo, adUnitId, null, createCallback)
+            "RECTANGLE" -> Moloco.createMREC(mediationInfo, adUnitId, null, createCallback)
             "SMART" -> if (AdapterUtils.isLargeScreen(ContextProvider.getInstance().applicationContext)) {
-                Moloco.createBannerTablet(adUnitId, null, createCallback)
+                Moloco.createBannerTablet(mediationInfo, adUnitId, null, createCallback)
             } else {
-                Moloco.createBanner(adUnitId, null, createCallback)
+                Moloco.createBanner(mediationInfo, adUnitId, null, createCallback)
             }
-            else -> Moloco.createBanner(adUnitId, null, createCallback)
+            else -> Moloco.createBanner(mediationInfo, adUnitId, null, createCallback)
         }
     }
 

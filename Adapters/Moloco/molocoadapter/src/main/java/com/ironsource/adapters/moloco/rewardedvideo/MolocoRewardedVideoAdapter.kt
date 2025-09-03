@@ -9,6 +9,7 @@ import com.ironsource.mediationsdk.logger.IronSourceError
 import com.ironsource.mediationsdk.sdk.RewardedVideoSmashListener
 import com.ironsource.mediationsdk.utils.ErrorBuilder
 import com.ironsource.mediationsdk.utils.IronSourceConstants
+import com.moloco.sdk.publisher.MediationInfo
 import com.moloco.sdk.publisher.Moloco
 import com.moloco.sdk.publisher.RewardedInterstitialAd
 import org.json.JSONObject
@@ -111,7 +112,8 @@ class MolocoRewardedVideoAdapter(adapter: MolocoAdapter) :
 
         val adUnitIdKey = MolocoAdapter.getAdUnitIdKey()
         val adUnitId = getConfigStringValueFromKey(config, adUnitIdKey)
-        Moloco.createRewardedInterstitial(adUnitId) { rewardedAd, error ->
+        val mediationInfo = MolocoAdapter.getMediationInfo()
+        Moloco.createRewardedInterstitial(mediationInfo, adUnitId) { rewardedAd, error ->
             if(error != null){
                 mListener?.onRewardedVideoLoadFailed(
                     IronSourceError(error.errorCode,error.description)

@@ -10,6 +10,7 @@ import com.ironsource.mediationsdk.sdk.InterstitialSmashListener
 import com.ironsource.mediationsdk.utils.ErrorBuilder
 import com.ironsource.mediationsdk.utils.IronSourceConstants
 import com.moloco.sdk.publisher.InterstitialAd
+import com.moloco.sdk.publisher.MediationInfo
 import com.moloco.sdk.publisher.Moloco
 import org.json.JSONObject
 import java.lang.ref.WeakReference
@@ -113,7 +114,8 @@ class MolocoInterstitialAdapter(adapter: MolocoAdapter) :
 
         val adUnitIdKey = MolocoAdapter.getAdUnitIdKey()
         val adUnitId = getConfigStringValueFromKey(config, adUnitIdKey)
-        Moloco.createInterstitial(adUnitId) { interstitialAd , error ->
+        val mediationInfo = MolocoAdapter.getMediationInfo()
+        Moloco.createInterstitial(mediationInfo, adUnitId) { interstitialAd, error ->
             if (error != null) {
                 mListener?.onInterstitialAdLoadFailed(
                     IronSourceError(error.errorCode,error.description)

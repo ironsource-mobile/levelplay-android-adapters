@@ -47,6 +47,8 @@ class MolocoAdapter(providerName: String) : AbstractAdapter(providerName),
         private const val APP_KEY: String = "appKey"
         private const val AD_UNIT_ID: String = "adUnitId"
 
+        private val mediationInfo = MediationInfo("LevelPlay")
+
         // Meta data flags
         private const val META_DATA_MOLOCO_COPPA_KEY = "Moloco_COPPA"
 
@@ -86,6 +88,10 @@ class MolocoAdapter(providerName: String) : AbstractAdapter(providerName),
 
         fun getAdUnitIdKey(): String {
             return AD_UNIT_ID
+        }
+
+        fun getMediationInfo(): MediationInfo {
+            return mediationInfo
         }
 
         fun getLoadErrorAndCheckNoFill(error: MolocoAdError, noFillError : Int): IronSourceError {
@@ -133,7 +139,6 @@ class MolocoAdapter(providerName: String) : AbstractAdapter(providerName),
             // Set log leve
             MolocoLogger.logEnabled = isAdaptersDebugEnabled
 
-            val mediationInfo = MediationInfo("LevelPlay")
             val context = ContextProvider.getInstance().currentActiveActivity.applicationContext
             // Init Moloco SDK
             Moloco.initialize(MolocoInitParams(context, appKey, mediationInfo)) { molocoInitStatus ->
@@ -230,7 +235,7 @@ class MolocoAdapter(providerName: String) : AbstractAdapter(providerName),
             return
         }
         Moloco.bidRequestEndpoint
-        Moloco.getBidToken(ContextProvider.getInstance().applicationContext) { bidToken, error ->
+        Moloco.getBidToken(mediationInfo, ContextProvider.getInstance().applicationContext) { bidToken, error ->
             if (error == null) {
                 val biddingDataMap: MutableMap<String?, Any?> = HashMap()
                 IronLog.ADAPTER_API.verbose("token = $bidToken")
