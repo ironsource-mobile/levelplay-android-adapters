@@ -67,8 +67,6 @@ public class AppLovinRewardedVideoListener implements AppLovinAdLoadListener, Ap
 
         int adapterErrorCode = errorCode == AppLovinErrorCodes.NO_FILL ? IronSourceError.ERROR_RV_LOAD_NO_FILL : errorCode;
         IronSourceError ironSourceError = new IronSourceError(adapterErrorCode, mAdapter.get().getErrorString(errorCode));
-
-        mAdapter.get().disposeRewardedVideoAd(mZoneId);
         mListener.onRewardedVideoAvailabilityChanged(false);
         mListener.onRewardedVideoLoadFailed(ironSourceError);
     }
@@ -164,8 +162,6 @@ public class AppLovinRewardedVideoListener implements AppLovinAdLoadListener, Ap
             IronLog.INTERNAL.verbose("listener is null");
             return;
         }
-
-        mAdapter.get().disposeRewardedVideoAd(mZoneId);
         mListener.onRewardedVideoAdClosed();
     }
 
