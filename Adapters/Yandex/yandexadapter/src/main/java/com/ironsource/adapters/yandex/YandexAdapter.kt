@@ -106,7 +106,7 @@ class YandexAdapter(providerName: String) : AbstractAdapter(providerName),
         return getAdapterSDKVersion()
     }
 
-    override fun isUsingActivityBeforeImpression(adUnit: IronSource.AD_UNIT): Boolean {
+    override fun isUsingActivityBeforeImpression(adFormat: LevelPlay.AdFormat): Boolean {
         return false
     }
 

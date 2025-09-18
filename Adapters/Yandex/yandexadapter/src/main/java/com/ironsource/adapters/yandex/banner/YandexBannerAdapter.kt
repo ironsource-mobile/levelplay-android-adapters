@@ -7,7 +7,6 @@ import com.ironsource.environment.ContextProvider
 import com.ironsource.mediationsdk.AdapterUtils
 import com.ironsource.mediationsdk.ISBannerSize
 import com.ironsource.mediationsdk.IronSource
-import com.ironsource.mediationsdk.IronSourceBannerLayout
 import com.ironsource.mediationsdk.adapter.AbstractBannerAdapter
 import com.ironsource.mediationsdk.bidding.BiddingDataCallback
 import com.ironsource.mediationsdk.logger.IronLog
@@ -85,19 +84,19 @@ class YandexBannerAdapter (adapter: YandexAdapter) :
         config: JSONObject,
         adData: JSONObject?,
         serverData: String?,
-        banner: IronSourceBannerLayout,
+        bannerSize: ISBannerSize?,
         listener: BannerSmashListener
     ) {
         IronLog.ADAPTER_API.verbose()
 
-        if (banner == null) {
-            IronLog.INTERNAL.verbose("banner is null")
+        if (bannerSize == null) {
+            IronLog.INTERNAL.error("banner size is null")
             listener.onBannerAdLoadFailed(ErrorBuilder.unsupportedBannerSize(adapter.providerName))
             return
         }
 
-        val bannerSize = getBannerSize(banner.size)
-        if (bannerSize == null) {
+        val yandexBannerSize = getBannerSize(bannerSize)
+        if (yandexBannerSize == null) {
             listener.onBannerAdLoadFailed(ErrorBuilder.unsupportedBannerSize(adapter.providerName))
             return
         }
@@ -111,8 +110,8 @@ class YandexBannerAdapter (adapter: YandexAdapter) :
 
         val context = ContextProvider.getInstance().applicationContext
         val layoutParams = FrameLayout.LayoutParams(
-            AdapterUtils.dpToPixels(context, bannerSize.width),
-            AdapterUtils.dpToPixels(context, bannerSize.height),
+            AdapterUtils.dpToPixels(context, yandexBannerSize.width),
+            AdapterUtils.dpToPixels(context, yandexBannerSize.height),
             Gravity.CENTER
         )
 
@@ -120,7 +119,7 @@ class YandexBannerAdapter (adapter: YandexAdapter) :
         val adUnitId = getConfigStringValueFromKey(config, adUnitIdKey)
         val bannerAdView = BannerAdView(ContextProvider.getInstance().applicationContext)
         bannerAdView.setAdUnitId(adUnitId)
-        bannerAdView.setAdSize(bannerSize)
+        bannerAdView.setAdSize(yandexBannerSize)
 
         val bannerAdListener = YandexBannerAdListener(listener, WeakReference(this), bannerAdView, layoutParams)
         mYandexAdListener = bannerAdListener
@@ -132,8 +131,8 @@ class YandexBannerAdapter (adapter: YandexAdapter) :
         bannerAdView.setBannerAdEventListener(mYandexAdListener)
 
         postOnUIThread {
-            if (banner == null) {
-                IronLog.INTERNAL.verbose("banner is null")
+            if (bannerSize == null) {
+                IronLog.INTERNAL.error("banner size is null")
                 listener.onBannerAdLoadFailed(ErrorBuilder.unsupportedBannerSize(adapter.providerName))
                 return@postOnUIThread
             }
@@ -155,10 +154,10 @@ class YandexBannerAdapter (adapter: YandexAdapter) :
             BidderTokenRequestConfiguration.Builder(AdType.BANNER)
 
         adData?.let {
-            val bannerLayout =
-                adData.opt(IronSourceConstants.BANNER_LAYOUT) as IronSourceBannerLayout
-            bannerLayout.let {
-                getBannerSize(bannerLayout.size)
+            val bannerSize =
+                adData.opt(IronSourceConstants.BANNER_SIZE) as ISBannerSize?
+            bannerSize.let {
+                getBannerSize(bannerSize)
                     ?.let {
                         bidderTokenRequest.setBannerAdSize(it)
                     }
@@ -168,17 +167,6 @@ class YandexBannerAdapter (adapter: YandexAdapter) :
         bidderTokenRequest.setParameters(adapter.getConfigParams())
         adapter.collectBiddingData(biddingDataCallback, bidderTokenRequest.build())
     }
-
-    //region memory handling
-
-    override fun releaseMemory(adUnit: IronSource.AD_UNIT, config: JSONObject?) {
-        IronLog.INTERNAL.verbose("adUnit = $adUnit")
-        destroyBannerViewAd()
-        mYandexAdListener = null
-        mSmashListener = null
-    }
-
-    //endregion
 
     // region Helpers
 

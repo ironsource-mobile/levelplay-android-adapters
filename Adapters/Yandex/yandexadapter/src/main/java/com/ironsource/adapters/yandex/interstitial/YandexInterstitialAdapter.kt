@@ -154,17 +154,6 @@ AbstractInterstitialAdapter<YandexAdapter>(adapter) {
         adapter.collectBiddingData(biddingDataCallback, bidderTokenRequest)
     }
 
-    //region memory handling
-
-    override fun releaseMemory(adUnit: IronSource.AD_UNIT, config: JSONObject?) {
-        IronLog.INTERNAL.verbose("adUnit = $adUnit")
-        destroyInterstitialAd()
-        mYandexAdListener = null
-        mSmashListener = null
-    }
-
-    //endregion
-
     //region Helpers
 
     internal fun setInterstitialAdAvailability(isAvailable: Boolean) {

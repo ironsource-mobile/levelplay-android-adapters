@@ -153,17 +153,6 @@ class YandexRewardedVideoAdapter(adapter: YandexAdapter) :
         adapter.collectBiddingData(biddingDataCallback, bidderTokenRequest)
     }
 
-    //region memory handling
-
-    override fun releaseMemory(adUnit: IronSource.AD_UNIT, config: JSONObject?) {
-        IronLog.INTERNAL.verbose("adUnit = $adUnit")
-        destroyRewardedVideoAd()
-        mYandexAdListener = null
-        mSmashListener = null
-    }
-
-    //endregion
-
     //region Helpers
 
     internal fun setRewardedVideoAdAvailability(isAvailable: Boolean) {
