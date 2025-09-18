@@ -8,7 +8,6 @@ import com.facebook.ads.RewardData;
 import com.facebook.ads.RewardedVideoAd;
 import com.ironsource.adapters.facebook.FacebookAdapter;
 import com.ironsource.environment.ContextProvider;
-import com.ironsource.mediationsdk.IronSource;
 import com.ironsource.mediationsdk.adapter.AbstractRewardedVideoAdapter;
 import com.ironsource.mediationsdk.logger.IronLog;
 import com.ironsource.mediationsdk.sdk.RewardedVideoSmashListener;
@@ -19,7 +18,6 @@ import org.json.JSONObject;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CopyOnWriteArraySet;
 
 public class FacebookRewardedVideoAdapter extends AbstractRewardedVideoAdapter<FacebookAdapter> {
 
@@ -27,7 +25,6 @@ public class FacebookRewardedVideoAdapter extends AbstractRewardedVideoAdapter<F
     private final ConcurrentHashMap<String, RewardedVideoAd> mPlacementIdToAd;
     private final ConcurrentHashMap<String, FacebookRewardedVideoAdListener> mPlacementIdToFacebookAdListener;
     protected ConcurrentHashMap<String, Boolean> mAdsAvailability;
-    private final CopyOnWriteArraySet<String> mPlacementIdsForInitCallbacks;
     protected ConcurrentHashMap<String, Boolean> mPlacementIdToShowAttempts; //Show attempts per placement id, used to identify show errors
 
 
@@ -37,46 +34,7 @@ public class FacebookRewardedVideoAdapter extends AbstractRewardedVideoAdapter<F
         mPlacementIdToAd = new ConcurrentHashMap<>();
         mPlacementIdToFacebookAdListener = new ConcurrentHashMap<>();
         mAdsAvailability = new ConcurrentHashMap<>();
-        mPlacementIdsForInitCallbacks = new CopyOnWriteArraySet<>();
         mPlacementIdToShowAttempts = new ConcurrentHashMap<>();
-    }
-
-    public void initAndLoadRewardedVideo(String appKey, String userId, @NonNull final JSONObject config, final JSONObject adData, @NonNull final RewardedVideoSmashListener listener) {
-        final String placementIdKey = getAdapter().getPlacementIdKey();
-        final String allPlacementIdsKey = getAdapter().getAllPlacementIdsKey();
-        final String placementId = getConfigStringValueFromKey(config, placementIdKey);
-        final String allPlacementIds = getConfigStringValueFromKey(config, allPlacementIdsKey);
-
-        if (TextUtils.isEmpty(placementId)) {
-            IronLog.INTERNAL.error(getAdUnitIdMissingErrorString(placementIdKey));
-            listener.onRewardedVideoAvailabilityChanged(false);
-            return;
-        }
-        if (TextUtils.isEmpty(allPlacementIds)) {
-            IronLog.INTERNAL.error(getAdUnitIdMissingErrorString(allPlacementIdsKey));
-            listener.onRewardedVideoAvailabilityChanged(false);
-            return;
-        }
-
-        IronLog.ADAPTER_API.verbose("placementId = " + placementId);
-
-        //add to rewarded video listener map
-        mPlacementIdToSmashListener.put(placementId, listener);
-
-        postOnUIThread(new Runnable() {
-            @Override
-            public void run() {
-                if (getAdapter().getInitState() == FacebookAdapter.InitState.INIT_STATE_SUCCESS) {
-                    loadRewardedVideoInternal(placementId, null, listener);
-                } else if (getAdapter().getInitState() == FacebookAdapter.InitState.INIT_STATE_FAILED) {
-                    IronLog.INTERNAL.verbose("onRewardedVideoAvailabilityChanged(false) - placementId = " + placementId);
-                    listener.onRewardedVideoAvailabilityChanged(false);
-                } else {
-                    getAdapter().initSDK(allPlacementIds);
-                }
-            }
-        });
-
     }
 
     public void initRewardedVideoWithCallback(String appKey, String userId,
@@ -102,10 +60,6 @@ public class FacebookRewardedVideoAdapter extends AbstractRewardedVideoAdapter<F
         // add to rewarded video listener map
         mPlacementIdToSmashListener.put(placementId, listener);
 
-        // add placementId to init callback map
-        mPlacementIdsForInitCallbacks.add(placementId);
-
-
         if (getAdapter().getInitState() == FacebookAdapter.InitState.INIT_STATE_SUCCESS) {
             IronLog.INTERNAL.verbose("onRewardedVideoInitSuccess - placementId = " + placementId);
             listener.onRewardedVideoInitSuccess();
@@ -120,41 +74,22 @@ public class FacebookRewardedVideoAdapter extends AbstractRewardedVideoAdapter<F
 
     @Override
     public void onNetworkInitCallbackSuccess() {
-        for (String placementId : mPlacementIdToSmashListener.keySet()) {
-            RewardedVideoSmashListener listener = mPlacementIdToSmashListener.get(placementId);
-            if (mPlacementIdsForInitCallbacks.contains(placementId)) {
-                listener.onRewardedVideoInitSuccess();
-            } else {
-                loadRewardedVideoInternal(placementId, null, listener);
-            }
+        for (RewardedVideoSmashListener listener : mPlacementIdToSmashListener.values()) {
+            listener.onRewardedVideoInitSuccess();
         }
     }
 
     @Override
     public void onNetworkInitCallbackFailed(String error) {
-        for (String placementId : mPlacementIdToSmashListener.keySet()) {
-            RewardedVideoSmashListener listener = mPlacementIdToSmashListener.get(placementId);
-            if (mPlacementIdsForInitCallbacks.contains(placementId)) {
-                listener.onRewardedVideoInitFailed(ErrorBuilder.buildInitFailedError(error, IronSourceConstants.REWARDED_VIDEO_AD_UNIT));
-            } else {
-                listener.onRewardedVideoAvailabilityChanged(false);
-            }
+        for (RewardedVideoSmashListener listener : mPlacementIdToSmashListener.values()) {
+            listener.onRewardedVideoInitFailed(ErrorBuilder.buildInitFailedError(error, IronSourceConstants.REWARDED_VIDEO_AD_UNIT));
         }
-    }
-
-    @Override
-    public void loadRewardedVideo(@NonNull final JSONObject config, final JSONObject adData, @NonNull final RewardedVideoSmashListener listener) {
-        final String placementId = getConfigStringValueFromKey(config, getAdapter().getPlacementIdKey());
-        loadRewardedVideoInternal(placementId, null, listener);
     }
 
     @Override
     public void loadRewardedVideoForBidding(@NonNull final JSONObject config, final JSONObject adData, final String serverData, @NonNull final RewardedVideoSmashListener listener) {
         final String placementId = getConfigStringValueFromKey(config, getAdapter().getPlacementIdKey());
-        loadRewardedVideoInternal(placementId, serverData, listener);
-    }
 
-    private void loadRewardedVideoInternal(@NonNull final String placementId, final String serverData, @NonNull final RewardedVideoSmashListener listener) {
         IronLog.ADAPTER_API.verbose("placementId = " + placementId);
 
         mAdsAvailability.put(placementId, false);
@@ -197,7 +132,6 @@ public class FacebookRewardedVideoAdapter extends AbstractRewardedVideoAdapter<F
         });
     }
 
-
     public void showRewardedVideo(@NonNull final JSONObject config,
                                   @NonNull final RewardedVideoSmashListener listener) {
         final String placementId = getConfigStringValueFromKey(config, getAdapter().getPlacementIdKey());
@@ -228,20 +162,6 @@ public class FacebookRewardedVideoAdapter extends AbstractRewardedVideoAdapter<F
     public boolean isRewardedVideoAvailable(@NonNull JSONObject config) {
         final String placementId = getConfigStringValueFromKey(config, getAdapter().getPlacementIdKey());
         return mAdsAvailability.containsKey(placementId) && Boolean.TRUE.equals(mAdsAvailability.get(placementId));
-    }
-
-    @Override
-    public void releaseMemory(@NonNull IronSource.AD_UNIT adUnit, JSONObject config) {
-        // release rewarded ads
-        for (RewardedVideoAd rewardedVideoAd : mPlacementIdToAd.values()) {
-            rewardedVideoAd.destroy();
-        }
-        mPlacementIdToAd.clear();
-        mPlacementIdToFacebookAdListener.clear();
-        mPlacementIdToSmashListener.clear();
-        mAdsAvailability.clear();
-        mPlacementIdsForInitCallbacks.clear();
-        mPlacementIdToShowAttempts.clear();
     }
 
     @Override

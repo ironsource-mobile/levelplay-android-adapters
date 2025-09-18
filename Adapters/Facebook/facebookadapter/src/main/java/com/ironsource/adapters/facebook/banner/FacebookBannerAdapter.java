@@ -13,8 +13,6 @@ import com.ironsource.adapters.facebook.FacebookAdapter;
 import com.ironsource.environment.ContextProvider;
 import com.ironsource.mediationsdk.AdapterUtils;
 import com.ironsource.mediationsdk.ISBannerSize;
-import com.ironsource.mediationsdk.IronSource;
-import com.ironsource.mediationsdk.IronSourceBannerLayout;
 import com.ironsource.mediationsdk.adapter.AbstractBannerAdapter;
 import com.ironsource.mediationsdk.logger.IronLog;
 import com.ironsource.mediationsdk.logger.IronSourceError;
@@ -42,16 +40,7 @@ public class FacebookBannerAdapter extends AbstractBannerAdapter<FacebookAdapter
     }
 
     @Override
-    public void initBanners(String appKey, String userId, @NonNull JSONObject config, @NonNull BannerSmashListener listener) {
-        initBannersInternal(config, listener);
-    }
-
-    @Override
     public void initBannerForBidding(String appKey, String userId, @NonNull JSONObject config, @NonNull BannerSmashListener listener) {
-        initBannersInternal(config, listener);
-    }
-
-    private void initBannersInternal(@NonNull final JSONObject config, @NonNull final BannerSmashListener listener) {
         final String placementIdKey = getAdapter().getPlacementIdKey();
         final String allPlacementIdsKey = getAdapter().getAllPlacementIdsKey();
         final String placementId = getConfigStringValueFromKey(config, placementIdKey);
@@ -83,9 +72,7 @@ public class FacebookBannerAdapter extends AbstractBannerAdapter<FacebookAdapter
         } else {
             getAdapter().initSDK(allPlacementIds);
         }
-
     }
-
 
     @Override
     public void onNetworkInitCallbackSuccess() {
@@ -102,31 +89,22 @@ public class FacebookBannerAdapter extends AbstractBannerAdapter<FacebookAdapter
     }
 
     @Override
-    public void loadBanner(@NonNull final JSONObject config, final JSONObject adData, @NonNull final IronSourceBannerLayout banner, @NonNull final BannerSmashListener listener) {
-        loadBannerInternal(config, null, banner, listener);
-    }
-
-    @Override
-    public void loadBannerForBidding(@NonNull final JSONObject config, final JSONObject adData, final String serverData, @NonNull final IronSourceBannerLayout banner, @NonNull final BannerSmashListener listener) {
-        loadBannerInternal(config, serverData, banner, listener);
-    }
-
-    private void loadBannerInternal(@NonNull JSONObject config, final String serverData, @NonNull final IronSourceBannerLayout banner, @NonNull final BannerSmashListener listener) {
+    public void loadBannerForBidding(@NonNull final JSONObject config, final JSONObject adData, final String serverData, @NonNull final ISBannerSize bannerSize, @NonNull final BannerSmashListener listener) {
         final String placementId = getConfigStringValueFromKey(config, getAdapter().getPlacementIdKey());
         IronLog.ADAPTER_API.verbose("placementId = " + placementId);
 
         // check banner
-        if (banner == null) {
-            IronLog.INTERNAL.error("banner is null");
-            listener.onBannerAdLoadFailed(ErrorBuilder.buildNoConfigurationAvailableError("banner is null"));
+        if (bannerSize == null) {
+            IronLog.INTERNAL.error("banner size is null");
+            listener.onBannerAdLoadFailed(ErrorBuilder.buildNoConfigurationAvailableError("banner size is null"));
             return;
         }
 
         // check size
         final Context context = ContextProvider.getInstance().getApplicationContext();
-        final AdSize adSize = calculateBannerSize(banner.getSize(), context);
-        if (adSize == null) {
-            IronLog.INTERNAL.error("size not supported, size = " + banner.getSize().getDescription());
+        final AdSize facebookAdSize = calculateBannerSize(bannerSize, context);
+        if (facebookAdSize == null) {
+            IronLog.INTERNAL.error("size not supported, size = " + bannerSize.getDescription());
             listener.onBannerAdLoadFailed(ErrorBuilder.unsupportedBannerSize(getAdapter().getProviderName()));
             return;
         }
@@ -134,14 +112,14 @@ public class FacebookBannerAdapter extends AbstractBannerAdapter<FacebookAdapter
         postOnUIThread(new Runnable() {
             @Override
             public void run() {
-                if (adSize == null) {
-                    IronLog.INTERNAL.error("size not supported, size = " + banner.getSize().getDescription());
+                if (facebookAdSize == null) {
+                    IronLog.INTERNAL.error("size not supported, size = " + bannerSize.getDescription());
                     listener.onBannerAdLoadFailed(ErrorBuilder.unsupportedBannerSize(getAdapter().getProviderName()));
                     return;
                 }
                 try {
-                    AdView adView = new AdView(context, placementId, adSize);
-                    FrameLayout.LayoutParams layoutParams = calcLayoutParams(banner.getSize(), context);
+                    AdView adView = new AdView(context, placementId, facebookAdSize);
+                    FrameLayout.LayoutParams layoutParams = calcLayoutParams(bannerSize, context);
 
                     // create banner
                     FacebookBannerAdListener bannerAdListener = new FacebookBannerAdListener(FacebookBannerAdapter.this, layoutParams, placementId, listener);
@@ -180,23 +158,6 @@ public class FacebookBannerAdapter extends AbstractBannerAdapter<FacebookAdapter
                 }
             }
         });
-    }
-
-    @Override
-    public void releaseMemory(@NonNull IronSource.AD_UNIT adUnit, JSONObject config) {
-        // release banner ads
-        for (AdView adView : mPlacementIdToAd.values()) {
-                postOnUIThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        if (adView != null) {
-                            adView.destroy();
-                        }
-                    }
-                });
-        }
-        mPlacementIdToAd.clear();
-        mPlacementIdToSmashListener.clear();
     }
 
     public Map<String, Object> getBannerBiddingData(@NonNull JSONObject config, JSONObject adData) {

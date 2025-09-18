@@ -9,7 +9,6 @@ import com.facebook.ads.CacheFlag;
 import com.facebook.ads.InterstitialAd;
 import com.ironsource.adapters.facebook.FacebookAdapter;
 import com.ironsource.environment.ContextProvider;
-import com.ironsource.mediationsdk.IronSource;
 import com.ironsource.mediationsdk.adapter.AbstractInterstitialAdapter;
 import com.ironsource.mediationsdk.logger.IronLog;
 import com.ironsource.mediationsdk.sdk.InterstitialSmashListener;
@@ -42,17 +41,7 @@ public class FacebookInterstitialAdapter extends AbstractInterstitialAdapter<Fac
     }
 
     @Override
-    public void initInterstitial(String appKey, String userId, @NonNull final JSONObject config,
-                                 @NonNull final InterstitialSmashListener listener) {
-        initInterstitialInternal(config, listener);
-    }
-
-    @Override
     public void initInterstitialForBidding(String appKey, String userId, @NonNull JSONObject config, @NonNull InterstitialSmashListener listener) {
-        initInterstitialInternal(config, listener);
-    }
-
-    private void initInterstitialInternal(@NonNull JSONObject config, @NonNull InterstitialSmashListener listener) {
         final String placementIdKey = getAdapter().getPlacementIdKey();
         final String allPlacementIdsKey = getAdapter().getAllPlacementIdsKey();
         final String placementId = getConfigStringValueFromKey(config, placementIdKey);
@@ -102,17 +91,7 @@ public class FacebookInterstitialAdapter extends AbstractInterstitialAdapter<Fac
     }
 
     @Override
-    public void loadInterstitial(@NonNull final JSONObject config, final JSONObject adData, @NonNull final InterstitialSmashListener listener) {
-        loadInterstitialInternal(config, null, listener);
-    }
-
-
-    @Override
     public void loadInterstitialForBidding(@NonNull final JSONObject config, final JSONObject adData, final String serverData, @NonNull final InterstitialSmashListener listener) {
-        loadInterstitialInternal(config, serverData, listener);
-    }
-
-    private void loadInterstitialInternal(@NonNull JSONObject config, final String serverData, @NonNull final InterstitialSmashListener listener) {
         final String placementIdKey = getAdapter().getPlacementIdKey();
         final String placementId = getConfigStringValueFromKey(config, placementIdKey);
 
@@ -194,18 +173,5 @@ public class FacebookInterstitialAdapter extends AbstractInterstitialAdapter<Fac
     @Override
     public Map<String, Object> getInterstitialBiddingData(@NonNull JSONObject config, JSONObject adData) {
         return getAdapter().getBiddingData();
-    }
-
-    @Override
-    public void releaseMemory(@NonNull IronSource.AD_UNIT adUnit, JSONObject config) {
-        // release interstitial ads
-        for (InterstitialAd interstitialAd : mPlacementIdToAd.values()) {
-            interstitialAd.destroy();
-        }
-        mPlacementIdToAd.clear();
-        mPlacementIdToFacebookAdListener.clear();
-        mPlacementIdToSmashListener.clear();
-        mAdsAvailability.clear();
-        mPlacementIdToShowAttempts.clear();
     }
 }

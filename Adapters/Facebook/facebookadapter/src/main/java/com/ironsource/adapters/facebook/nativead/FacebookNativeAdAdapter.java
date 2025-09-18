@@ -10,7 +10,6 @@ import com.facebook.ads.NativeAdBase;
 import com.facebook.ads.NativeAdListener;
 import com.ironsource.adapters.facebook.FacebookAdapter;
 import com.ironsource.environment.ContextProvider;
-import com.ironsource.mediationsdk.IronSource;
 import com.ironsource.mediationsdk.adapter.AbstractNativeAdAdapter;
 import com.ironsource.mediationsdk.adunit.adapter.utility.NativeAdProperties;
 import com.ironsource.mediationsdk.ads.nativead.interfaces.NativeAdSmashListener;
@@ -34,16 +33,7 @@ public class FacebookNativeAdAdapter extends AbstractNativeAdAdapter<FacebookAda
     }
 
     @Override
-    public void initNativeAds(String appKey, String userId, @NonNull JSONObject config, @NonNull NativeAdSmashListener listener) {
-        initNativeAdsInternal(config, listener);
-    }
-
-    @Override
     public void initNativeAdForBidding(String appKey, String userId, @NonNull JSONObject config, @NonNull NativeAdSmashListener listener) {
-        initNativeAdsInternal(config, listener);
-    }
-
-    private void initNativeAdsInternal(@NonNull JSONObject config, @NonNull final NativeAdSmashListener listener) {
         final String placementIdKey = getAdapter().getPlacementIdKey();
         final String allPlacementIdsKey = getAdapter().getAllPlacementIdsKey();
         final String placementId = getConfigStringValueFromKey(config, placementIdKey);
@@ -92,16 +82,7 @@ public class FacebookNativeAdAdapter extends AbstractNativeAdAdapter<FacebookAda
     }
 
     @Override
-    public void loadNativeAd(@NonNull JSONObject config, JSONObject adData, @NonNull NativeAdSmashListener listener) {
-        loadNativeAdInternal(config, null, listener);
-    }
-
-    @Override
     public void loadNativeAdForBidding(@NonNull JSONObject config, JSONObject adData, String serverData, @NonNull NativeAdSmashListener listener) {
-        loadNativeAdInternal(config, serverData, listener);
-    }
-
-    private void loadNativeAdInternal(@NonNull final JSONObject config, final String serverData, @NonNull final NativeAdSmashListener listener) {
         final String placementId = getConfigStringValueFromKey(config, getAdapter().getPlacementIdKey());
         IronLog.ADAPTER_API.verbose("placementId = " + placementId);
 
@@ -154,11 +135,6 @@ public class FacebookNativeAdAdapter extends AbstractNativeAdAdapter<FacebookAda
                 }
             }
         });
-    }
-
-    // release memory will not be called for native ads at the moment
-    @Override
-    public void releaseMemory(@NonNull IronSource.AD_UNIT adUnit, JSONObject config) {
     }
 
     @Override
