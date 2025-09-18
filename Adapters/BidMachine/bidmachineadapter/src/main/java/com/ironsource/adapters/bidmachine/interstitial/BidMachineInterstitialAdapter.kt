@@ -123,19 +123,6 @@ class BidMachineInterstitialAdapter(adapter: BidMachineAdapter) :
         adapter.collectBiddingData(biddingDataCallback, AdsFormat.Interstitial, config)
     }
 
-    //region memory handling
-
-    override fun releaseMemory(adUnit: IronSource.AD_UNIT, config: JSONObject?) {
-        IronLog.INTERNAL.verbose("adUnit = $adUnit")
-        if (adUnit == IronSource.AD_UNIT.INTERSTITIAL) {
-            destroyInterstitialAd()
-            mInterstitialAdListener = null
-            mInterstitialListener = null
-        }
-    }
-
-    //end region
-
     //region Helpers
 
     internal fun setInterstitialAdAvailability(isAvailable: Boolean) {

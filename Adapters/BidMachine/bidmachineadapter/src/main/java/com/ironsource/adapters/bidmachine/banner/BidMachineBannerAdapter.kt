@@ -15,7 +15,6 @@ import io.bidmachine.AdsFormat
 import io.bidmachine.banner.BannerRequest
 import io.bidmachine.banner.BannerSize
 import io.bidmachine.banner.BannerView
-import io.bidmachine.interstitial.InterstitialRequest
 import org.json.JSONObject
 import java.lang.ref.WeakReference
 
@@ -67,27 +66,27 @@ class BidMachineBannerAdapter(adapter: BidMachineAdapter) :
         config: JSONObject,
         adData: JSONObject?,
         serverData: String?,
-        banner: IronSourceBannerLayout,
+        bannerSize: ISBannerSize?,
         listener: BannerSmashListener
     ) {
         IronLog.ADAPTER_API.verbose()
 
-        if (banner == null) {
-            IronLog.INTERNAL.verbose("banner is null")
+        if (bannerSize == null) {
+            IronLog.INTERNAL.error("banner size is null")
             listener.onBannerAdLoadFailed(ErrorBuilder.unsupportedBannerSize(adapter.providerName))
             return
         }
 
-        val bannerSize = getBannerSize(banner.size)
-        if (bannerSize == null) {
+        val bidMachineBannerSize = getBannerSize(bannerSize)
+        if (bidMachineBannerSize == null) {
             listener.onBannerAdLoadFailed(ErrorBuilder.unsupportedBannerSize(adapter.providerName))
             return
         }
 
         val context = ContextProvider.getInstance().applicationContext
         val layoutParams = FrameLayout.LayoutParams(
-            AdapterUtils.dpToPixels(context, bannerSize.width),
-            AdapterUtils.dpToPixels(context, bannerSize.height),
+            AdapterUtils.dpToPixels(context, bidMachineBannerSize.width),
+            AdapterUtils.dpToPixels(context, bidMachineBannerSize.height),
             Gravity.CENTER
         )
 
@@ -99,7 +98,7 @@ class BidMachineBannerAdapter(adapter: BidMachineAdapter) :
 
         val placementId = config.optString(BidMachineAdapter.getPlacementIdKey())
         val bannerRequestBuilder = BannerRequest.Builder()
-            .setSize(bannerSize)
+            .setSize(bidMachineBannerSize)
             .setBidPayload(serverData)
 
         if(!placementId.isNullOrEmpty()) {
@@ -109,8 +108,8 @@ class BidMachineBannerAdapter(adapter: BidMachineAdapter) :
         mBannerRequest = bannerRequestBuilder.build()
 
         postOnUIThread {
-            if (banner == null) {
-                IronLog.INTERNAL.verbose("banner is null")
+            if (bannerSize == null) {
+                IronLog.INTERNAL.error("banner size is null")
                 listener.onBannerAdLoadFailed(ErrorBuilder.unsupportedBannerSize(adapter.providerName))
                 return@postOnUIThread
             }
@@ -128,43 +127,27 @@ class BidMachineBannerAdapter(adapter: BidMachineAdapter) :
         adData: JSONObject?,
         biddingDataCallback: BiddingDataCallback
     ) {
-        val bannerLayout = adData?.opt(IronSourceConstants.BANNER_LAYOUT)
-        if (bannerLayout !is IronSourceBannerLayout) {
-            val error = "Banner layout is invalid or not of type IronSourceBannerLayout"
+        val bannerSize = adData?.opt(IronSourceConstants.BANNER_SIZE)
+        if (bannerSize !is ISBannerSize) {
+            val error = "Banner size is invalid or not of type ISBannerSize"
             IronLog.INTERNAL.verbose(error)
             biddingDataCallback.onFailure("$error - BidMachine")
             return
         }
-        val size = bannerLayout.size
-        val bannerSize = getBannerSize(size)
-        if (bannerSize == null) {
+        val bidMachineBannerSize = getBannerSize(bannerSize)
+        if (bidMachineBannerSize == null) {
             val error = "Unsupported or null banner size"
             IronLog.INTERNAL.verbose(error)
             biddingDataCallback.onFailure("$error - BidMachine")
             return
         }
-        val format = when (bannerSize) {
+        val format = when (bidMachineBannerSize) {
             BannerSize.Size_320x50 -> AdsFormat.Banner_320x50
             BannerSize.Size_300x250 -> AdsFormat.Banner_300x250
             BannerSize.Size_728x90 -> AdsFormat.Banner_728x90
         }
 
         adapter.collectBiddingData(biddingDataCallback, format, config)
-    }
-
-    //endregion
-
-    //region memory handling
-
-    override fun releaseMemory(
-        adUnit: IronSource.AD_UNIT,
-        config: JSONObject?
-    ) {
-        IronLog.INTERNAL.verbose("adUnit = $adUnit")
-
-        if (adUnit == IronSource.AD_UNIT.BANNER) {
-            destroyBannerViewAd()
-        }
     }
 
     //endregion

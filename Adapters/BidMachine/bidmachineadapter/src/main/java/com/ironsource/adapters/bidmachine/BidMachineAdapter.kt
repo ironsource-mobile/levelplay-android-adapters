@@ -11,6 +11,7 @@ import com.ironsource.mediationsdk.logger.IronLog
 import com.ironsource.mediationsdk.logger.IronSourceError
 import com.ironsource.mediationsdk.metadata.MetaData
 import com.ironsource.mediationsdk.metadata.MetaDataUtils
+import com.unity3d.mediation.LevelPlay
 import io.bidmachine.AdPlacementConfig
 import io.bidmachine.AdsFormat
 import io.bidmachine.BidMachine
@@ -103,7 +104,7 @@ class BidMachineAdapter(providerName: String) : AbstractAdapter(providerName),
         return getAdapterSDKVersion()
     }
 
-    override fun isUsingActivityBeforeImpression(adUnit: IronSource.AD_UNIT): Boolean {
+    override fun isUsingActivityBeforeImpression(adFormat: LevelPlay.AdFormat): Boolean {
         return false
     }
 

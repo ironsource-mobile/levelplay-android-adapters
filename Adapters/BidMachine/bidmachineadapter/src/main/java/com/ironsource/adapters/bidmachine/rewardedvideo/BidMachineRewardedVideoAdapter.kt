@@ -120,20 +120,6 @@ class BidMachineRewardedVideoAdapter(adapter: BidMachineAdapter) :
         adapter.collectBiddingData(biddingDataCallback, AdsFormat.RewardedVideo, config)
     }
 
-    //region memory handling
-
-    override fun releaseMemory(adUnit: IronSource.AD_UNIT, config: JSONObject?) {
-        IronLog.INTERNAL.verbose("adUnit = $adUnit")
-
-        if (adUnit == IronSource.AD_UNIT.REWARDED_VIDEO) {
-            destroyRewardedVideoAd()
-            mRewardedVideoListener = null
-            mRewardedVideoAdListener = null
-        }
-    }
-
-    //endregion
-
     // region Helpers
 
     internal fun setRewardedVideoAd(rewardedVideoAd: RewardedAd) {
