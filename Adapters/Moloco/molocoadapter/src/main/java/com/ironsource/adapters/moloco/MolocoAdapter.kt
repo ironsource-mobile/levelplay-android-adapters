@@ -22,6 +22,7 @@ import com.moloco.sdk.publisher.Moloco
 import com.moloco.sdk.publisher.MolocoAdError
 import com.moloco.sdk.publisher.init.MolocoInitParams
 import com.moloco.sdk.publisher.privacy.MolocoPrivacy
+import com.unity3d.mediation.LevelPlay
 import java.util.concurrent.atomic.AtomicBoolean
 
 
@@ -117,7 +118,7 @@ class MolocoAdapter(providerName: String) : AbstractAdapter(providerName),
         return getAdapterSDKVersion()
     }
 
-    override fun isUsingActivityBeforeImpression(adUnit: IronSource.AD_UNIT): Boolean {
+    override fun isUsingActivityBeforeImpression(adFormat: LevelPlay.AdFormat): Boolean {
         return false
     }
 

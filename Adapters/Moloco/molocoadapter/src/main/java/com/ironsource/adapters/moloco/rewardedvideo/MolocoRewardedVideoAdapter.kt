@@ -162,18 +162,6 @@ class MolocoRewardedVideoAdapter(adapter: MolocoAdapter) :
         adapter.collectBiddingData(biddingDataCallback)
     }
 
-    //region memory handling
-
-    override fun releaseMemory(adUnit: IronSource.AD_UNIT, config: JSONObject?) {
-        IronLog.INTERNAL.verbose()
-        destroyRewardedVideoAd()
-        mAdLoadListener = null
-        mAdShowListener = null
-        mListener = null
-        }
-
-    //endregion
-
     // region Helpers
 
     internal fun destroyRewardedVideoAd() {

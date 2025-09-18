@@ -7,8 +7,6 @@ import com.ironsource.adapters.moloco.MolocoAdapter
 import com.ironsource.environment.ContextProvider
 import com.ironsource.mediationsdk.AdapterUtils
 import com.ironsource.mediationsdk.ISBannerSize
-import com.ironsource.mediationsdk.IronSource
-import com.ironsource.mediationsdk.IronSourceBannerLayout
 import com.ironsource.mediationsdk.adapter.AbstractBannerAdapter
 import com.ironsource.mediationsdk.bidding.BiddingDataCallback
 import com.ironsource.mediationsdk.logger.IronLog
@@ -108,13 +106,13 @@ class MolocoBannerAdapter(adapter: MolocoAdapter) :
         config: JSONObject,
         adData: JSONObject?,
         serverData: String?,
-        banner: IronSourceBannerLayout,
+        bannerSize: ISBannerSize?,
         listener: BannerSmashListener
     ) {
         IronLog.ADAPTER_API.verbose()
 
-        if (banner == null) {
-            IronLog.INTERNAL.verbose("banner is null")
+        if (bannerSize == null) {
+            IronLog.INTERNAL.error("banner size is null")
             listener.onBannerAdLoadFailed(ErrorBuilder.unsupportedBannerSize(adapter.providerName))
             return
         }
@@ -127,13 +125,13 @@ class MolocoBannerAdapter(adapter: MolocoAdapter) :
         }
 
         val context = ContextProvider.getInstance().applicationContext
-        val layoutParams = createBannerLayoutParams(context,banner.size)
+        val layoutParams = createBannerLayoutParams(context,bannerSize)
 
         val adUnitIdKey = MolocoAdapter.getAdUnitIdKey()
         val adUnitId = getConfigStringValueFromKey(config, adUnitIdKey)
         val mediationInfo = MolocoAdapter.getMediationInfo()
 
-        createBannerWithSize(banner.size, mediationInfo, adUnitId, listener, layoutParams, serverData)
+        createBannerWithSize(bannerSize, mediationInfo, adUnitId, listener, layoutParams, serverData)
     }
 
     override fun destroyBanner(config: JSONObject) {
@@ -147,21 +145,6 @@ class MolocoBannerAdapter(adapter: MolocoAdapter) :
         biddingDataCallback: BiddingDataCallback
     ) {
         adapter.collectBiddingData(biddingDataCallback)
-    }
-
-    //endregion
-
-    //region memory handling
-
-    override fun releaseMemory(
-        adUnit: IronSource.AD_UNIT,
-        config: JSONObject?
-    ) {
-        IronLog.INTERNAL.verbose()
-        destroyBannerViewAd()
-        mAdLoadListener = null
-        mAdShowListener = null
-        mListener = null
     }
 
     //endregion

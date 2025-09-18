@@ -166,18 +166,6 @@ class MolocoInterstitialAdapter(adapter: MolocoAdapter) :
 
     //end region
 
-    //region memory handling
-
-    override fun releaseMemory(adUnit: IronSource.AD_UNIT, config: JSONObject?) {
-        IronLog.INTERNAL.verbose()
-        destroyInterstitialAd()
-        mAdLoadListener = null
-        mAdShowListener = null
-        mListener = null
-    }
-
-    //end region
-
     //region Helpers
 
     internal fun destroyInterstitialAd() {
