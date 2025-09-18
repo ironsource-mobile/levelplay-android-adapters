@@ -28,7 +28,6 @@ import com.ironsource.mediationsdk.INetworkInitCallbackListener;
 import com.ironsource.mediationsdk.ISBannerSize;
 import com.ironsource.mediationsdk.IntegrationData;
 import com.ironsource.mediationsdk.IronSource;
-import com.ironsource.mediationsdk.IronSourceBannerLayout;
 import com.ironsource.mediationsdk.LoadWhileShowSupportState;
 import com.ironsource.mediationsdk.logger.IronLog;
 import com.ironsource.mediationsdk.metadata.MetaDataUtils;
@@ -85,7 +84,7 @@ public class ChartboostAdapter extends AbstractAdapter implements INetworkInitCa
     // Banner maps
     private ConcurrentHashMap<String, BannerSmashListener> mLocationIdToBannerListener;
     private ConcurrentHashMap<String, ChartboostBannerAdListener> mLocationIdToBannerAdListener;
-    private ConcurrentHashMap<String, IronSourceBannerLayout> mLocationIdToBannerLayout;
+    private ConcurrentHashMap<String, ISBannerSize> mLocationIdToBannerSize;
     protected ConcurrentHashMap<String, Banner> mLocationIdToBannerAd;
 
     // init state possible values
@@ -126,7 +125,7 @@ public class ChartboostAdapter extends AbstractAdapter implements INetworkInitCa
         mLocationIdToBannerListener = new ConcurrentHashMap<>();
         mLocationIdToBannerAdListener = new ConcurrentHashMap<>();
         mLocationIdToBannerAd = new ConcurrentHashMap<>();
-        mLocationIdToBannerLayout = new ConcurrentHashMap<>();
+        mLocationIdToBannerSize = new ConcurrentHashMap<>();
 
         // The network's capability to load a Rewarded Video ad while another Rewarded Video ad of that network is showing
         mLWSSupportState = LoadWhileShowSupportState.LOAD_WHILE_SHOW_BY_NETWORK;
@@ -153,7 +152,7 @@ public class ChartboostAdapter extends AbstractAdapter implements INetworkInitCa
         return Chartboost.getSDKVersion();
     }
 
-    public boolean isUsingActivityBeforeImpression(@NotNull IronSource.AD_UNIT adUnit) {
+    public boolean isUsingActivityBeforeImpression(@NotNull LevelPlay.AdFormat adFormat) {
         return false;
     }
 
@@ -599,43 +598,43 @@ public class ChartboostAdapter extends AbstractAdapter implements INetworkInitCa
     }
 
     @Override
-    public void loadBanner(final JSONObject config, final JSONObject adData, final IronSourceBannerLayout banner, final BannerSmashListener listener) {
+    public void loadBanner(final JSONObject config, final JSONObject adData, final ISBannerSize bannerSize, final BannerSmashListener listener) {
         IronLog.ADAPTER_API.verbose();
-        loadBannerInternal(config, banner, null, listener);
+        loadBannerInternal(config, bannerSize, null, listener);
     }
 
     @Override
-    public void loadBannerForBidding(JSONObject config, JSONObject adData, String serverData, IronSourceBannerLayout banner, BannerSmashListener listener) {
+    public void loadBannerForBidding(JSONObject config, JSONObject adData, String serverData, ISBannerSize bannerSize, BannerSmashListener listener) {
         IronLog.ADAPTER_API.verbose();
-        loadBannerInternal(config, banner, serverData, listener);
+        loadBannerInternal(config, bannerSize, serverData, listener);
 
     }
 
-    private void loadBannerInternal(JSONObject config,  IronSourceBannerLayout banner, String serverData, BannerSmashListener listener){
+    private void loadBannerInternal(JSONObject config,  ISBannerSize bannerSize, String serverData, BannerSmashListener listener){
         final String locationId = config.optString(AD_LOCATION);
         IronLog.ADAPTER_API.verbose("locationId = " + locationId);
 
-        if (banner == null) {
-            IronLog.ADAPTER_API.error("banner layout is null");
-            listener.onBannerAdLoadFailed(ErrorBuilder.buildNoConfigurationAvailableError("banner layout is null"));
+        if (bannerSize == null) {
+            IronLog.ADAPTER_API.error("banner size is null");
+            listener.onBannerAdLoadFailed(ErrorBuilder.buildNoConfigurationAvailableError("banner size is null"));
             return;
         }
 
         // get size
-        Banner.BannerSize bannerSize = getBannerSize(banner.getSize());
+        Banner.BannerSize chartboostBannerSize = getBannerSize(bannerSize);
 
         // verify if size is null
-        if (bannerSize == null) {
+        if (chartboostBannerSize == null) {
             IronLog.INTERNAL.error("size not supported, size is null");
             listener.onBannerAdLoadFailed(ErrorBuilder.unsupportedBannerSize(getProviderName()));
             return;
         }
 
-        // add banner layout to map
-        mLocationIdToBannerLayout.put(locationId, banner);
+        // add size layout to map
+        mLocationIdToBannerSize.put(locationId, bannerSize);
 
         // get banner
-        Banner chartboostBanner = getChartboostBanner(banner, locationId, listener);
+        Banner chartboostBanner = getChartboostBanner(bannerSize, locationId, listener);
 
         if (serverData == null) {
             chartboostBanner.cache();
@@ -763,7 +762,7 @@ public class ChartboostAdapter extends AbstractAdapter implements INetworkInitCa
         return layoutParams;
     }
 
-    private Banner getChartboostBanner(IronSourceBannerLayout banner, String locationId, BannerSmashListener listener) {
+    private Banner getChartboostBanner(ISBannerSize bannerSize, String locationId, BannerSmashListener listener) {
         // get banner from the map
         Banner chartboostBanner = mLocationIdToBannerAd.get(locationId);
 
@@ -772,15 +771,15 @@ public class ChartboostAdapter extends AbstractAdapter implements INetworkInitCa
             IronLog.ADAPTER_API.verbose("creating banner");
 
             // get size
-            Banner.BannerSize bannerSize = getBannerSize(banner.getSize());
+            Banner.BannerSize chartboostBannerSize = getBannerSize(bannerSize);
 
-            FrameLayout.LayoutParams bannerLayoutParams = getBannerLayoutParams(banner.getSize());
+            FrameLayout.LayoutParams bannerLayoutParams = getBannerLayoutParams(bannerSize);
 
             ChartboostBannerAdListener bannerAdListener = new ChartboostBannerAdListener(ChartboostAdapter.this, listener, locationId, bannerLayoutParams);
             mLocationIdToBannerAdListener.put(locationId, bannerAdListener);
 
             // create banner
-            chartboostBanner = new Banner(ContextProvider.getInstance().getApplicationContext(), locationId, bannerSize, bannerAdListener, getMediation());
+            chartboostBanner = new Banner(ContextProvider.getInstance().getApplicationContext(), locationId, chartboostBannerSize, bannerAdListener, getMediation());
 
             // add layout params
             chartboostBanner.setLayoutParams(bannerLayoutParams);
@@ -809,8 +808,8 @@ public class ChartboostAdapter extends AbstractAdapter implements INetworkInitCa
                     // remove banner view from map
                     mLocationIdToBannerAd.remove(locationId);
 
-                    // remove banner layout from map
-                    mLocationIdToBannerLayout.remove(locationId);
+                    // remove banner size from map
+                    mLocationIdToBannerSize.remove(locationId);
 
                     // remove banner listener from map
                     mLocationIdToBannerListener.remove(locationId);
@@ -828,40 +827,6 @@ public class ChartboostAdapter extends AbstractAdapter implements INetworkInitCa
         }
 
         return mMediationInfo;
-    }
-
-    @Override
-    public void releaseMemory(IronSource.AD_UNIT adUnit, JSONObject config) {
-        IronLog.INTERNAL.verbose("adUnit = " + adUnit);
-
-        if (adUnit == IronSource.AD_UNIT.REWARDED_VIDEO) {
-            // release rewarded ads
-            mLocationIdToRewardedVideoListener.clear();
-            mLocationIdToRewardedVideoAdListener.clear();
-            mLocationIdToRewardedVideoAd.clear();
-            mRewardedVideoLocationIdsForInitCallbacks.clear();
-
-        } else if (adUnit == IronSource.AD_UNIT.INTERSTITIAL) {
-            // release interstitial ads
-            mLocationIdToInterstitialListener.clear();
-            mLocationIdToInterstitialAdListener.clear();
-            mLocationIdToInterstitialAd.clear();
-
-        } else if (adUnit == IronSource.AD_UNIT.BANNER) {
-            // release banner ads
-            postOnUIThread(new Runnable() {
-                @Override
-                public void run() {
-                    for (Banner banner : mLocationIdToBannerAd.values()) {
-                        banner.detach();
-                    }
-                    mLocationIdToBannerAd.clear();
-                    mLocationIdToBannerListener.clear();
-                    mLocationIdToBannerAdListener.clear();
-                    mLocationIdToBannerLayout.clear();
-                }
-            });
-        }
     }
     //endregion
 }
