@@ -8,7 +8,6 @@ import com.ironsource.environment.ContextProvider
 import com.ironsource.mediationsdk.AdapterUtils
 import com.ironsource.mediationsdk.ISBannerSize
 import com.ironsource.mediationsdk.IronSource
-import com.ironsource.mediationsdk.IronSourceBannerLayout
 import com.ironsource.mediationsdk.adapter.AbstractBannerAdapter
 import com.ironsource.mediationsdk.bidding.BiddingDataCallback
 import com.ironsource.mediationsdk.logger.IronLog
@@ -76,13 +75,19 @@ class VerveBannerAdapter(adapter: VerveAdapter) :
             config: JSONObject,
             adData: JSONObject?,
             serverData: String?,
-            banner: IronSourceBannerLayout,
+            bannerSize: ISBannerSize?,
             listener: BannerSmashListener
     ) {
         IronLog.ADAPTER_API.verbose()
 
-        val bannerSize = getBannerSize(banner.size)
         if (bannerSize == null) {
+            IronLog.INTERNAL.error("banner size is null")
+            listener.onBannerAdLoadFailed(ErrorBuilder.unsupportedBannerSize(adapter.providerName))
+            return
+        }
+
+        val verveBannerSize = getBannerSize(bannerSize)
+        if (verveBannerSize == null) {
             listener.onBannerAdLoadFailed(ErrorBuilder.unsupportedBannerSize(adapter.providerName))
             return
         }
@@ -96,17 +101,17 @@ class VerveBannerAdapter(adapter: VerveAdapter) :
 
         val context = ContextProvider.getInstance().applicationContext
         val layoutParams = FrameLayout.LayoutParams(
-                AdapterUtils.dpToPixels(context, bannerSize.width),
-                AdapterUtils.dpToPixels(context, bannerSize.height),
+                AdapterUtils.dpToPixels(context, verveBannerSize.width),
+                AdapterUtils.dpToPixels(context, verveBannerSize.height),
                 Gravity.CENTER
         )
 
         val bannerAdView = HyBidAdView(
             context,
-            bannerSize
+            verveBannerSize
         )
 
-        bannerAdView.setAdSize(bannerSize)
+        bannerAdView.setAdSize(verveBannerSize)
         setBannerView(bannerAdView)
 
         val bannerAdListener = VerveBannerAdListener(
@@ -138,20 +143,6 @@ class VerveBannerAdapter(adapter: VerveAdapter) :
             biddingDataCallback: BiddingDataCallback
     ) {
         adapter.collectBiddingData(biddingDataCallback)
-    }
-
-    //endregion
-
-    //region memory handling
-
-    override fun releaseMemory(
-            adUnit: IronSource.AD_UNIT,
-            config: JSONObject?
-    ) {
-        IronLog.INTERNAL.verbose()
-        destroyBannerViewAd()
-        mSmashListener = null
-        mAdListener = null
     }
 
     //endregion

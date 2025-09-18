@@ -123,16 +123,6 @@ class VerveRewardedVideoAdapter(adapter: VerveAdapter) :
         adapter.collectBiddingData(biddingDataCallback)
     }
 
-    //region memory handling
-    override fun releaseMemory(adUnit: IronSource.AD_UNIT, config: JSONObject?) {
-        IronLog.INTERNAL.verbose()
-        destroyRewardedVideoAd()
-        mAdListener = null
-
-    }
-
-    //endregion
-
     // region Helpers
 
     private fun destroyRewardedVideoAd() {

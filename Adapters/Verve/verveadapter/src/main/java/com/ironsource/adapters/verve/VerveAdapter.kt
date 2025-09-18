@@ -16,6 +16,7 @@ import com.ironsource.mediationsdk.logger.IronLog
 import com.ironsource.mediationsdk.logger.IronSourceError
 import com.ironsource.mediationsdk.metadata.MetaData
 import com.ironsource.mediationsdk.metadata.MetaDataUtils
+import com.unity3d.mediation.LevelPlay
 import net.pubnative.lite.sdk.HyBid
 import net.pubnative.lite.sdk.HyBidError
 import net.pubnative.lite.sdk.utils.Logger
@@ -107,7 +108,7 @@ class VerveAdapter(providerName: String) : AbstractAdapter(providerName),
         return getAdapterSDKVersion()
     }
 
-    override fun isUsingActivityBeforeImpression(adUnit: IronSource.AD_UNIT): Boolean {
+    override fun isUsingActivityBeforeImpression(adFormat: LevelPlay.AdFormat): Boolean {
         return false
     }
 

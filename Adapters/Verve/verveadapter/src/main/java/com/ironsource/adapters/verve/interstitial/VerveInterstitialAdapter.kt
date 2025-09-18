@@ -127,18 +127,6 @@ class VerveInterstitialAdapter(adapter: VerveAdapter) :
         adapter.collectBiddingData(biddingDataCallback)
     }
 
-    //region memory handling
-
-    override fun releaseMemory(adUnit: IronSource.AD_UNIT, config: JSONObject?) {
-        IronLog.INTERNAL.verbose()
-        destroyInterstitialAd()
-        mAdListener = null
-        mSmashListener = null
-
-    }
-
-    //endregion
-
     // region Helpers
 
     private fun destroyInterstitialAd() {
