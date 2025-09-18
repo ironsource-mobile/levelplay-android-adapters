@@ -23,11 +23,11 @@ import com.ironsource.mediationsdk.AbstractAdapter;
 import com.ironsource.mediationsdk.AdapterNetworkData;
 import com.ironsource.mediationsdk.INetworkInitCallbackListener;
 import com.ironsource.mediationsdk.IntegrationData;
-import com.ironsource.mediationsdk.IronSource;
 import com.ironsource.mediationsdk.LoadWhileShowSupportState;
 import com.ironsource.mediationsdk.bidding.BiddingDataCallback;
 import com.ironsource.mediationsdk.logger.IronLog;
 import com.ironsource.mediationsdk.metadata.MetaDataUtils;
+import com.unity3d.mediation.LevelPlay;
 
 import org.jetbrains.annotations.NotNull;
 import org.json.JSONArray;
@@ -146,7 +146,7 @@ public class AdMobAdapter extends AbstractAdapter {
         return MobileAds.getVersion().toString();
     }
 
-    public boolean isUsingActivityBeforeImpression(@NotNull IronSource.AD_UNIT adUnit) {
+    public boolean isUsingActivityBeforeImpression(@NotNull LevelPlay.AdFormat adFormat) {
         return false;
     }
     //endregion

@@ -192,19 +192,6 @@ public class AdMobRewardedVideoAdapter extends AbstractRewardedVideoAdapter<AdMo
     }
 
     @Override
-    public void releaseMemory(@NonNull IronSource.AD_UNIT adUnit, JSONObject config) {
-        for (RewardedAd rewardedVideoAd : mAdUnitIdToAd.values()) {
-            rewardedVideoAd.setFullScreenContentCallback(null);
-        }
-        // clear rewarded maps
-        mAdUnitIdToAd.clear();
-        mAdUnitIdToListener.clear();
-        mAdUnitIdToAdsAvailability.clear();
-        mAdUnitIdsForInitCallbacks.clear();
-        mAdUnitIdToAdData.clear();
-    }
-
-    @Override
     public void collectRewardedVideoBiddingData(@NonNull JSONObject config, JSONObject adData, @NotNull final BiddingDataCallback biddingDataCallback) {
         getAdapter().collectBiddingData(biddingDataCallback, AdFormat.REWARDED, null);
     }

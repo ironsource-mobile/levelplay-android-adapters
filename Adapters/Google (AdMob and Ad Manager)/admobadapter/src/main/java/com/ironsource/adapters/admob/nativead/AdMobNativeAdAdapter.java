@@ -172,9 +172,4 @@ public class AdMobNativeAdAdapter extends AbstractNativeAdAdapter<AdMobAdapter> 
         }
         return ADCHOICES_BOTTOM_LEFT;
     }
-
-    // release memory will not be called for native ads at the moment
-    @Override
-    public void releaseMemory(@NonNull IronSource.AD_UNIT adUnit, JSONObject config) {
-    }
 }

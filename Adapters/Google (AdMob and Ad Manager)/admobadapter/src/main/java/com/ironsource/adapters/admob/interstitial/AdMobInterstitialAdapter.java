@@ -153,17 +153,6 @@ public class AdMobInterstitialAdapter extends AbstractInterstitialAdapter<AdMobA
     }
 
     @Override
-    public void releaseMemory(@NonNull IronSource.AD_UNIT adUnit, JSONObject config) {
-        for (InterstitialAd interstitialAd : mAdUnitIdToAd.values()) {
-            interstitialAd.setFullScreenContentCallback(null);
-        }
-        // clear interstitial maps
-        mAdUnitIdToAd.clear();
-        mAdUnitIdToListener.clear();
-        mAdUnitIdToAdsAvailability.clear();
-    }
-
-    @Override
     public void collectInterstitialBiddingData(@NonNull JSONObject config, JSONObject adData, @NotNull BiddingDataCallback biddingDataCallback) {
         getAdapter().collectBiddingData(biddingDataCallback, AdFormat.INTERSTITIAL, null);
     }
