@@ -8,7 +8,6 @@ import com.ironsource.environment.ContextProvider
 import com.ironsource.mediationsdk.AdapterUtils
 import com.ironsource.mediationsdk.ISBannerSize
 import com.ironsource.mediationsdk.IronSource
-import com.ironsource.mediationsdk.IronSourceBannerLayout
 import com.ironsource.mediationsdk.adapter.AbstractBannerAdapter
 import com.ironsource.mediationsdk.bidding.BiddingDataCallback
 import com.ironsource.mediationsdk.logger.IronLog
@@ -75,15 +74,21 @@ class MobileFuseBannerAdapter(adapter: MobileFuseAdapter) :
       config: JSONObject,
       adData: JSONObject?,
       serverData: String?,
-      banner: IronSourceBannerLayout,
+      bannerSize: ISBannerSize?,
       listener: BannerSmashListener
   ) {
     IronLog.ADAPTER_API.verbose()
 
-    val bannerSize = getBannerSize(banner.size,
+    if (bannerSize == null) {
+      IronLog.INTERNAL.error("banner size is null")
+      listener.onBannerAdLoadFailed(ErrorBuilder.unsupportedBannerSize(adapter.providerName))
+      return
+    }
+
+    val mobileFuseBannerSize = getBannerSize(bannerSize,
       AdapterUtils.isLargeScreen(ContextProvider.getInstance().applicationContext))
 
-    if (bannerSize == null) {
+    if (mobileFuseBannerSize == null) {
       listener.onBannerAdLoadFailed(ErrorBuilder.unsupportedBannerSize(adapter.providerName))
       return
     }
@@ -107,7 +112,7 @@ class MobileFuseBannerAdapter(adapter: MobileFuseAdapter) :
     val bannerAd = MobileFuseBannerAd(
       context,
       placementId,
-      bannerSize
+      mobileFuseBannerSize
     )
     mAdView = bannerAd
 
@@ -130,20 +135,6 @@ class MobileFuseBannerAdapter(adapter: MobileFuseAdapter) :
       biddingDataCallback: BiddingDataCallback
   ) {
     adapter.collectBiddingData(biddingDataCallback)
-  }
-
-  //endregion
-
-  //region memory handling
-
-  override fun releaseMemory(
-      adUnit: IronSource.AD_UNIT,
-      config: JSONObject?
-  ) {
-    IronLog.INTERNAL.verbose()
-    destroyBannerViewAd()
-    mSmashListener = null
-    mAdListener = null
   }
 
   //endregion

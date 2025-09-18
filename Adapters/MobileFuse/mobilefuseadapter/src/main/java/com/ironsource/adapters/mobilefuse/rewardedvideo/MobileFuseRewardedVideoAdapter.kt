@@ -115,12 +115,6 @@ class MobileFuseRewardedVideoAdapter(adapter: MobileFuseAdapter) :
     adapter.collectBiddingData(biddingDataCallback)
   }
 
-  override fun releaseMemory(adUnit: IronSource.AD_UNIT, config: JSONObject?) {
-    IronLog.INTERNAL.verbose()
-    destroyRewardedVideoAd()
-    mAdListener = null
-  }
-
   //endregion
 
   // region Helpers

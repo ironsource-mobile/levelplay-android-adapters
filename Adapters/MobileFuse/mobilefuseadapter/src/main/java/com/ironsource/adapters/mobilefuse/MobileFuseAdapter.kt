@@ -19,6 +19,7 @@ import com.mobilefuse.sdk.internal.MobileFuseBiddingTokenProvider
 import com.mobilefuse.sdk.internal.MobileFuseBiddingTokenRequest
 import com.mobilefuse.sdk.internal.TokenGeneratorListener
 import com.mobilefuse.sdk.privacy.MobileFusePrivacyPreferences
+import com.unity3d.mediation.LevelPlay
 import org.json.JSONObject
 import java.util.concurrent.atomic.AtomicBoolean
 
@@ -99,7 +100,7 @@ class MobileFuseAdapter(providerName: String) : AbstractAdapter(providerName),
     return getAdapterSDKVersion()
   }
 
-  override fun isUsingActivityBeforeImpression(adUnit: IronSource.AD_UNIT): Boolean = false
+  override fun isUsingActivityBeforeImpression(adFormat: LevelPlay.AdFormat): Boolean = false
 
   //endregion
 
