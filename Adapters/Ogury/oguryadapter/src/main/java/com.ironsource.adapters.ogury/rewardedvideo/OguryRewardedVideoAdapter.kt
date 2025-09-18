@@ -115,13 +115,6 @@ class OguryRewardedVideoAdapter(adapter: OguryAdapter) :
         adapter.collectBiddingData(biddingDataCallback)
     }
 
-    override fun releaseMemory(adUnit: IronSource.AD_UNIT, config: JSONObject?) {
-        IronLog.INTERNAL.verbose()
-        mAd = null
-        mSmashListener = null
-        mAdListener = null
-    }
-
     //endregion
 
 }

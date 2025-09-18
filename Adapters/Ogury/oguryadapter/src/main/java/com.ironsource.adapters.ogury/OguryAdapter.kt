@@ -22,6 +22,7 @@ import com.ogury.core.OguryLog
 import com.ogury.sdk.Ogury
 import com.ogury.sdk.OguryChildPrivacyTreatment
 import com.ogury.sdk.OguryOnStartListener
+import com.unity3d.mediation.LevelPlay
 import org.json.JSONObject
 import java.util.concurrent.atomic.AtomicBoolean
 
@@ -111,7 +112,7 @@ class OguryAdapter(providerName: String) : AbstractAdapter(providerName),
         return getAdapterSDKVersion()
     }
 
-    override fun isUsingActivityBeforeImpression(adUnit: IronSource.AD_UNIT): Boolean {
+    override fun isUsingActivityBeforeImpression(adFormat: LevelPlay.AdFormat): Boolean {
         return false
     }
 

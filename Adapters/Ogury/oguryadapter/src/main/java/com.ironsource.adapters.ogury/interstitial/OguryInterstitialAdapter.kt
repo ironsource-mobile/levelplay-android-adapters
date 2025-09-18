@@ -123,16 +123,4 @@ class OguryInterstitialAdapter(adapter: OguryAdapter) :
         adapter.collectBiddingData(biddingDataCallback)
     }
 
-    //region memory handling
-
-    override fun releaseMemory(adUnit: IronSource.AD_UNIT, config: JSONObject?) {
-        IronLog.INTERNAL.verbose()
-        mAd = null
-        mAdListener = null
-        mSmashListener = null
-
-    }
-
-    //endregion
-
 }
