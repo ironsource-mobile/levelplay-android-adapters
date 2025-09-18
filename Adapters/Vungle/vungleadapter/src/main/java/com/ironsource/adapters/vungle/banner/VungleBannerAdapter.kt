@@ -5,7 +5,6 @@ import com.ironsource.environment.ContextProvider
 import com.ironsource.mediationsdk.AdapterUtils
 import com.ironsource.mediationsdk.ISBannerSize
 import com.ironsource.mediationsdk.IronSource
-import com.ironsource.mediationsdk.IronSourceBannerLayout
 import com.ironsource.mediationsdk.adapter.AbstractBannerAdapter
 import com.ironsource.mediationsdk.bidding.BiddingDataCallback
 import com.ironsource.mediationsdk.logger.IronLog
@@ -120,41 +119,42 @@ class VungleBannerAdapter(adapter: VungleAdapter) :
         config: JSONObject,
         adData: JSONObject?,
         serverData: String?,
-        banner: IronSourceBannerLayout,
+        bannerSize: ISBannerSize?,
         listener: BannerSmashListener
     ) {
         val placementId = config.optString(VungleAdapter.PLACEMENT_ID)
         IronLog.ADAPTER_CALLBACK.verbose("placementId = $placementId")
-        loadBannerInternal(placementId, banner, listener, serverData)
+        loadBannerInternal(placementId, bannerSize, listener, serverData)
     }
 
     override fun loadBanner(
         config: JSONObject,
         adData: JSONObject?,
-        banner: IronSourceBannerLayout,
+        bannerSize: ISBannerSize?,
         listener: BannerSmashListener
     ) {
         val placementId = config.optString(VungleAdapter.PLACEMENT_ID)
         IronLog.ADAPTER_CALLBACK.verbose("placementId = $placementId")
-        loadBannerInternal(placementId, banner, listener, null)
+        loadBannerInternal(placementId, bannerSize, listener, null)
     }
 
     private fun loadBannerInternal(
         placementId: String,
-        banner: IronSourceBannerLayout?,
+        bannerSize: ISBannerSize?,
         listener: BannerSmashListener,
         serverData: String?
     ) {
         IronLog.ADAPTER_API.verbose("placementId = $placementId")
-        if (banner == null) {
-            IronLog.INTERNAL.verbose("banner is null")
+
+        if (bannerSize == null) {
+            IronLog.INTERNAL.error("banner size is null")
             listener.onBannerAdLoadFailed(ErrorBuilder.unsupportedBannerSize(adapter.providerName))
             return
         }
-        val bannerSize = getBannerSize(banner.size)
+        val vungleBannerSize = getBannerSize(bannerSize)
 
         // check if banner size is null or not
-        if (bannerSize == null) {
+        if (vungleBannerSize == null) {
             listener.onBannerAdLoadFailed(ErrorBuilder.unsupportedBannerSize(adapter.providerName))
             return
         }
@@ -162,14 +162,14 @@ class VungleBannerAdapter(adapter: VungleAdapter) :
         val vungleBanner = VungleBannerView(
             ContextProvider.getInstance().applicationContext,
             placementId,
-            bannerSize
+            vungleBannerSize
         ).apply {
 
             adListener = VungleBannerAdListener(listener, placementId, this)
         }
 
         mPlacementToBannerAd[placementId] = vungleBanner
-        IronLog.ADAPTER_API.verbose("bannerSize = $bannerSize")
+        IronLog.ADAPTER_API.verbose("size = $vungleBannerSize")
         vungleBanner.load(serverData)
     }
 
@@ -220,26 +220,4 @@ class VungleBannerAdapter(adapter: VungleAdapter) :
     ) {
         adapter.collectBiddingData(biddingDataCallback)
     }
-
-    //region memory handling
-
-    override fun releaseMemory(
-        adUnit: IronSource.AD_UNIT,
-        config: JSONObject?
-    ) {
-        IronLog.INTERNAL.verbose("adUnit = $adUnit")
-
-        if (adUnit == IronSource.AD_UNIT.BANNER) {
-            mPlacementToBannerAd.values.forEach{bannerAd ->
-                postOnUIThread {
-                    bannerAd.finishAd()
-                }
-            }
-            mBannerPlacementToListenerMap.clear()
-            mPlacementToBannerAd.clear()
-
-        }
-    }
-
-    //endregion
 }

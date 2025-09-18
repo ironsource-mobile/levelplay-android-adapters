@@ -206,17 +206,4 @@ class VungleInterstitialAdapter(adapter: VungleAdapter) :
         adapter.collectBiddingData(biddingDataCallback)
     }
 
-    //region memory handling
-
-    override fun releaseMemory(adUnit: IronSource.AD_UNIT, config: JSONObject?) {
-        IronLog.INTERNAL.verbose("adUnit = $adUnit")
-        if (adUnit == IronSource.AD_UNIT.INTERSTITIAL) {
-            mInterstitialPlacementToListenerMap.clear()
-            mPlacementToInterstitialAd.clear()
-            mPlacementIdToAdAvailability.clear()
-        }
-    }
-
-    //endregion
-
 }

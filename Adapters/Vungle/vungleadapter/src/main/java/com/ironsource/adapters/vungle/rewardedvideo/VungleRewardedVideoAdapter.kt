@@ -260,19 +260,4 @@ class VungleRewardedVideoAdapter(adapter: VungleAdapter) :
         adapter.collectBiddingData(biddingDataCallback)
     }
 
-    //region memory handling
-
-    override fun releaseMemory(adUnit: IronSource.AD_UNIT, config: JSONObject?) {
-        IronLog.INTERNAL.verbose("adUnit = $adUnit")
-        if (adUnit == IronSource.AD_UNIT.REWARDED_VIDEO) {
-            mPlacementIdToListener.clear()
-            mPlacementToRewardedVideoAd.clear()
-            mRewardedVideoPlacementToListenerMap.clear()
-            mRewardedVideoPlacementIdsForInitCallbacks.clear()
-            mPlacementIdToAdAvailability.clear()
-        }
-    }
-
-    //endregion
-
 }

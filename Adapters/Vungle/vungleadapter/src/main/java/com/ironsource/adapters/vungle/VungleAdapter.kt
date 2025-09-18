@@ -14,6 +14,7 @@ import com.ironsource.mediationsdk.bidding.BiddingDataCallback
 import com.ironsource.mediationsdk.logger.IronLog
 import com.ironsource.mediationsdk.metadata.MetaData
 import com.ironsource.mediationsdk.metadata.MetaDataUtils
+import com.unity3d.mediation.LevelPlay
 import com.vungle.ads.BidTokenCallback
 import com.vungle.ads.VungleAds
 import com.vungle.ads.VunglePrivacySettings.setCCPAStatus
@@ -89,7 +90,7 @@ class VungleAdapter(providerName: String) : AbstractAdapter(providerName),
     // Get network sdk version
     override fun getCoreSDKVersion(): String = getAdapterSDKVersion()
 
-    override fun isUsingActivityBeforeImpression(adUnit: IronSource.AD_UNIT): Boolean = false
+    override fun isUsingActivityBeforeImpression(adFormat: LevelPlay.AdFormat): Boolean = false
 
     //endregion
 
