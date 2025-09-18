@@ -21,17 +21,6 @@ class InMobiBannerAdapter (adapter: InMobiAdapter) :
     private val placementToBannerAd: ConcurrentHashMap<String, InMobiBanner> = ConcurrentHashMap()
     private val bannerPlacementToListenerMap: ConcurrentHashMap<String, BannerSmashListener> = ConcurrentHashMap()
 
-    override fun initBanners(
-        appKey: String?,
-        userId: String?,
-        config: JSONObject,
-        listener: BannerSmashListener
-    ) {
-        IronLog.ADAPTER_API.verbose()
-
-        initBannersInternal(config, listener)
-    }
-
     override fun initBannerForBidding(
         appKey: String?,
         userId: String?,
@@ -40,10 +29,6 @@ class InMobiBannerAdapter (adapter: InMobiAdapter) :
     ) {
         IronLog.ADAPTER_API.verbose("<" + config.optString(InMobiAdapter.PLACEMENT_ID) + ">")
 
-        initBannersInternal(config, listener)
-    }
-
-    private fun initBannersInternal(config: JSONObject, listener: BannerSmashListener) {
         val placementId = config.optString(InMobiAdapter.PLACEMENT_ID)
         val accountId = config.optString(InMobiAdapter.ACCOUNT_ID)
 
@@ -120,38 +105,18 @@ class InMobiBannerAdapter (adapter: InMobiAdapter) :
         }
     }
 
-    override fun loadBanner(
-        config: JSONObject,
-        adData: JSONObject?,
-        banner: IronSourceBannerLayout,
-        listener: BannerSmashListener
-    ) {
-        IronLog.ADAPTER_API.verbose()
-
-        loadBannerInternal(config, null, banner, listener)
-    }
-
     override fun loadBannerForBidding(
         config: JSONObject,
         adData: JSONObject?,
         serverData: String?,
-        banner: IronSourceBannerLayout,
+        bannerSize: ISBannerSize?,
         listener: BannerSmashListener
     ) {
         IronLog.ADAPTER_API.verbose()
 
-        loadBannerInternal(config, serverData, banner, listener)
-    }
-
-    private fun loadBannerInternal(
-        config: JSONObject,
-        serverData: String?,
-        banner: IronSourceBannerLayout,
-        listener: BannerSmashListener,
-    ) {
         val placementId = config.optString(InMobiAdapter.PLACEMENT_ID)
         val dpSize = getDPSize(
-            banner.size,
+            bannerSize,
             AdapterUtils.isLargeScreen(ContextProvider.getInstance().applicationContext)
         )
 
@@ -177,8 +142,8 @@ class InMobiBannerAdapter (adapter: InMobiAdapter) :
 
         parseToLong(placementId)?.let { placement ->
             postOnUIThread {
-                if (banner == null) {
-                    IronLog.INTERNAL.verbose("banner is null");
+                if (bannerSize == null) {
+                    IronLog.INTERNAL.error("banner size is null");
                     listener.onBannerAdLoadFailed(ErrorBuilder.unsupportedBannerSize(adapter.providerName));
                     return@postOnUIThread
                 }
@@ -218,7 +183,7 @@ class InMobiBannerAdapter (adapter: InMobiAdapter) :
                     val error =
                         ErrorBuilder.buildLoadFailedError(
                             "InMobiAdapter loadBanner exception "
-                                    + e.message
+                                + e.message
                         )
                     // banner failed with exception
                     listener.onBannerAdLoadFailed(error)
@@ -251,19 +216,8 @@ class InMobiBannerAdapter (adapter: InMobiAdapter) :
         adData: JSONObject?
     ): MutableMap<String?, Any?>? = adapter.getBiddingData()
 
-    //region memory handling
-
-    override fun releaseMemory(adUnit: IronSource.AD_UNIT, config: JSONObject?) {
-        IronLog.INTERNAL.verbose("adUnit = $adUnit")
-        config?.let { destroyBanner(it) }
-        placementToBannerAd.clear()
-        bannerPlacementToListenerMap.clear()
-    }
-
-    //endregion
-
-    private fun getDPSize(banner: ISBannerSize, largeScreen: Boolean): Size? {
-        when (banner.description) {
+    private fun getDPSize(banner: ISBannerSize?, largeScreen: Boolean): Size? {
+        when (banner?.description) {
             "BANNER", "LARGE" ->
                 return Size(320, 50)
             "RECTANGLE" ->

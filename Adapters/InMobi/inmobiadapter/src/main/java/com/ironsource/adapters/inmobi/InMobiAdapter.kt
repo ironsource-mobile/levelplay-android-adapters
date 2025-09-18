@@ -13,6 +13,7 @@ import com.ironsource.mediationsdk.LoadWhileShowSupportState
 import com.ironsource.mediationsdk.logger.IronLog
 import com.ironsource.mediationsdk.metadata.MetaData.MetaDataValueTypes
 import com.ironsource.mediationsdk.metadata.MetaDataUtils
+import com.unity3d.mediation.LevelPlay
 import org.json.JSONException
 import org.json.JSONObject
 import java.util.concurrent.atomic.AtomicBoolean
@@ -95,7 +96,7 @@ class InMobiAdapter(providerName: String) : AbstractAdapter(providerName),
     // Get network sdk version
     override fun getCoreSDKVersion(): String = getAdapterSDKVersion()
 
-    override fun isUsingActivityBeforeImpression(adUnit: IronSource.AD_UNIT): Boolean {
+    override fun isUsingActivityBeforeImpression(adFormat: LevelPlay.AdFormat): Boolean {
         return false
     }
 

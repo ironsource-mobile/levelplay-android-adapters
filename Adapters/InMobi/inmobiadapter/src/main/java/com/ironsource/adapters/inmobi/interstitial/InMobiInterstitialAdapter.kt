@@ -3,7 +3,6 @@ package com.ironsource.adapters.inmobi.interstitial
 import com.inmobi.ads.InMobiInterstitial
 import com.ironsource.adapters.inmobi.InMobiAdapter
 import com.ironsource.environment.ContextProvider
-import com.ironsource.mediationsdk.*
 import com.ironsource.mediationsdk.adapter.AbstractInterstitialAdapter
 import com.ironsource.mediationsdk.logger.IronLog
 import com.ironsource.mediationsdk.logger.IronSourceError
@@ -15,21 +14,11 @@ import java.io.UnsupportedEncodingException
 import java.util.concurrent.ConcurrentHashMap
 
 class InMobiInterstitialAdapter (adapter: InMobiAdapter) :
-AbstractInterstitialAdapter<InMobiAdapter>(adapter){
+    AbstractInterstitialAdapter<InMobiAdapter>(adapter) {
 
     private val placementToInterstitialAd: ConcurrentHashMap<String, InMobiInterstitial> = ConcurrentHashMap()
     private val interstitialPlacementToListenerMap:
             ConcurrentHashMap<String, InterstitialSmashListener> = ConcurrentHashMap()
-
-    override fun initInterstitial(
-        appKey: String?,
-        userId: String?,
-        config: JSONObject,
-        listener: InterstitialSmashListener
-    ) {
-        IronLog.ADAPTER_API.verbose()
-        initInterstitialInternal(config, listener)
-    }
 
     override fun initInterstitialForBidding(
         appKey: String?,
@@ -38,10 +27,7 @@ AbstractInterstitialAdapter<InMobiAdapter>(adapter){
         listener: InterstitialSmashListener
     ) {
         IronLog.ADAPTER_API.verbose()
-        initInterstitialInternal(config, listener)
-    }
 
-    private fun initInterstitialInternal(config: JSONObject, listener: InterstitialSmashListener) {
         val placementId = config.optString(InMobiAdapter.PLACEMENT_ID)
         val accountId = config.optString(InMobiAdapter.ACCOUNT_ID)
 
@@ -122,15 +108,6 @@ AbstractInterstitialAdapter<InMobiAdapter>(adapter){
         }
     }
 
-    override fun loadInterstitial(
-        config: JSONObject,
-        adData: JSONObject?,
-        listener: InterstitialSmashListener
-    ) {
-        IronLog.ADAPTER_API.verbose(" <" + config.optString(InMobiAdapter.PLACEMENT_ID) + ">")
-        loadInterstitialInternal(config, listener, null)
-    }
-
     override fun loadInterstitialForBidding(
         config: JSONObject,
         adData: JSONObject?,
@@ -138,14 +115,7 @@ AbstractInterstitialAdapter<InMobiAdapter>(adapter){
         listener: InterstitialSmashListener
     ) {
         IronLog.ADAPTER_API.verbose( " <" + config.optString(InMobiAdapter.PLACEMENT_ID) + ">")
-        loadInterstitialInternal(config, listener, serverData)
-    }
 
-    private fun loadInterstitialInternal(
-        config: JSONObject,
-        listener: InterstitialSmashListener,
-        serverData: String?
-    ) {
         val placementId = config.optString(InMobiAdapter.PLACEMENT_ID)
 
         parseToLong(placementId)?.let { placement ->
@@ -158,17 +128,17 @@ AbstractInterstitialAdapter<InMobiAdapter>(adapter){
 
             // post on ui thread
             postOnUIThread {
-            // create InMobi interstitial obj
-            val inMobiInterstitial = InMobiInterstitial(
-                ContextProvider.getInstance().applicationContext,
-                placement,
-                interstitialListener
-            )
-            // add InMobi interstitial obj to map
-            placementToInterstitialAd[placementId] = inMobiInterstitial
-            IronLog.ADAPTER_API.verbose(
-                "loadInterstitial InMobi ad with placement:<$placement>"
-            )
+                // create InMobi interstitial obj
+                val inMobiInterstitial = InMobiInterstitial(
+                    ContextProvider.getInstance().applicationContext,
+                    placement,
+                    interstitialListener
+                )
+                // add InMobi interstitial obj to map
+                placementToInterstitialAd[placementId] = inMobiInterstitial
+                IronLog.ADAPTER_API.verbose(
+                    "loadInterstitial InMobi ad with placement:<$placement>"
+                )
                 serverData?.let {
                     // Load InMobi interstitial bidding
                     try {
@@ -188,8 +158,8 @@ AbstractInterstitialAdapter<InMobiAdapter>(adapter){
                     inMobiInterstitial.setExtras(map)
                     inMobiInterstitial.load()
                 }
+            }
         }
-    }
     }
 
     override fun showInterstitial(config: JSONObject, listener: InterstitialSmashListener) {
@@ -245,14 +215,5 @@ AbstractInterstitialAdapter<InMobiAdapter>(adapter){
         }
         return placementIdLong
     }
-
-    //region memory handling
-
-    override fun releaseMemory(adUnit: IronSource.AD_UNIT, config: JSONObject?) {
-        IronLog.INTERNAL.verbose("adUnit = $adUnit")
-
-    }
-
-    //endregion
 
 }

@@ -3,9 +3,9 @@ package com.ironsource.adapters.inmobi.rewardedvideo
 import com.inmobi.ads.InMobiInterstitial
 import com.ironsource.adapters.inmobi.InMobiAdapter
 import com.ironsource.environment.ContextProvider
-import com.ironsource.mediationsdk.IronSource.AD_UNIT
 import com.ironsource.mediationsdk.adapter.AbstractRewardedVideoAdapter
 import com.ironsource.mediationsdk.logger.IronLog
+import com.ironsource.mediationsdk.logger.IronSourceError
 import com.ironsource.mediationsdk.sdk.RewardedVideoSmashListener
 import com.ironsource.mediationsdk.utils.ErrorBuilder
 import com.ironsource.mediationsdk.utils.IronSourceConstants
@@ -98,91 +98,18 @@ class InMobiRewardedVideoAdapter (adapter: InMobiAdapter) :
                 adapter.setAgeRestricted(it)
             }
         }
-        rewardedVideoPlacementToListenerMap.entries.forEach { (rewardedVideoPlacement, rewardVideoListener) ->
-            if (rewardedVideoPlacementsForInitCallbacks.contains(rewardedVideoPlacement)) {
-                rewardVideoListener.onRewardedVideoInitSuccess()
-            } else {
-                loadRewardedVideoInternal(rewardedVideoPlacement, null, rewardVideoListener)
-            }
+        rewardedVideoPlacementToListenerMap.values.forEach { rewardedListener ->
+            rewardedListener.onRewardedVideoInitSuccess()
         }
     }
 
     override fun onNetworkInitCallbackFailed(error: String?) {
-        rewardedVideoPlacementToListenerMap.forEach { (rewardedVideoPlacement, rewardVideoListener) ->
-            if (rewardedVideoPlacementsForInitCallbacks.contains(rewardedVideoPlacement)) {
-                rewardVideoListener.onRewardedVideoInitFailed(
-                    ErrorBuilder.buildInitFailedError(
-                        error,
-                        IronSourceConstants.REWARDED_VIDEO_AD_UNIT
-                    )
-                )
-            } else {
-                rewardVideoListener.onRewardedVideoAvailabilityChanged(false)
-            }
+        val message = "init failed: $error"
+        rewardedVideoPlacementToListenerMap.values.forEach { rewardedListener ->
+            rewardedListener.onRewardedVideoInitFailed(
+                IronSourceError(IronSourceError.ERROR_CODE_INIT_FAILED, message)
+            )
         }
-    }
-
-    override fun initAndLoadRewardedVideo(
-        appKey: String?,
-        userId: String?,
-        config: JSONObject,
-        adData: JSONObject?,
-        listener: RewardedVideoSmashListener
-    ) {
-        val placementId = config.optString(InMobiAdapter.PLACEMENT_ID)
-        val accountId = config.optString(InMobiAdapter.ACCOUNT_ID)
-
-        // verified placementId
-        if (!isValidPlacementId(placementId)) {
-            IronLog.INTERNAL.error(getAdUnitIdMissingErrorString(InMobiAdapter.PLACEMENT_ID))
-
-            listener.onRewardedVideoAvailabilityChanged(false)
-            return
-        }
-
-        // verified accountId
-        if (accountId.isEmpty()) {
-            IronLog.INTERNAL.error(getAdUnitIdMissingErrorString(InMobiAdapter.ACCOUNT_ID))
-
-            listener.onRewardedVideoAvailabilityChanged(false)
-            return
-        }
-
-        IronLog.ADAPTER_API.verbose("placementId = <$placementId>")
-
-        // add listener to map
-        rewardedVideoPlacementToListenerMap[placementId] = listener
-
-        // notify listener about init state
-        when (InMobiAdapter.initState) {
-            InMobiAdapter.InitState.INIT_STATE_SUCCESS -> {
-                IronLog.ADAPTER_API.verbose("initRewardedVideo: load rv $placementId")
-
-                // call load rewarded video
-                loadRewardedVideoInternal(placementId, null, listener)
-            }
-            InMobiAdapter.InitState.INIT_STATE_ERROR -> {
-                IronLog.ADAPTER_API.verbose("initRewardedVideo - onRewardedVideoAvailabilityChanged(false)")
-
-                // set availability false
-                listener.onRewardedVideoAvailabilityChanged(false)
-            }
-            else -> {
-                adapter.initSDK(ContextProvider.getInstance().applicationContext, accountId)
-            }
-        }
-    }
-
-    override fun loadRewardedVideo(
-        config: JSONObject,
-        adData: JSONObject?,
-        listener: RewardedVideoSmashListener
-    ) {
-        val placementId = config.optString(InMobiAdapter.PLACEMENT_ID)
-        IronLog.ADAPTER_API.verbose("placementId = <$placementId>")
-
-        // call load rewarded video
-        loadRewardedVideoInternal(placementId, null, listener)
     }
 
     override fun loadRewardedVideoForBidding(
@@ -192,56 +119,44 @@ class InMobiRewardedVideoAdapter (adapter: InMobiAdapter) :
         listener: RewardedVideoSmashListener
     ) {
         val placementId = config.optString(InMobiAdapter.PLACEMENT_ID)
+
         IronLog.ADAPTER_API.verbose("placementId = <$placementId>")
 
-            // call load rewarded video
-            loadRewardedVideoInternal(placementId, serverData, listener)
-    }
+        parseToLong(placementId)?.let { placement ->
+            val rewardedVideoListener =
+                InMobiRewardedVideoAdListener(listener, placementId)
 
-    private fun loadRewardedVideoInternal(
-        placementId: String,
-        serverData: String?,
-        smashListener: RewardedVideoSmashListener
-    ) {
-        IronLog.ADAPTER_API.verbose("loadRewardedVideo with ${InMobiAdapter.PLACEMENT_ID}: $placementId")
+            // post on ui thread
+            postOnUIThread {
+                val inMobiRewardedVideo = InMobiInterstitial(
+                    ContextProvider.getInstance().applicationContext,
+                    placement,
+                    rewardedVideoListener
+                )
 
-        IronLog.ADAPTER_API.verbose("create InMobi ad with ${InMobiAdapter.PLACEMENT_ID}: $placementId")
+                // add InMobi rewarded video obj to map
+                placementToRewardedVideoAd[placementId] = inMobiRewardedVideo
+                IronLog.ADAPTER_API.verbose(
+                    "loadRewardedVideo InMobi ad with ${InMobiAdapter.PLACEMENT_ID}:" +
+                        " $placementId"
+                )
 
-            parseToLong(placementId)?.let { placement ->
-                val rewardedVideoListener =
-                    InMobiRewardedVideoAdListener(smashListener, placementId)
-
-                // post on ui thread
-                postOnUIThread {
-                    val inMobiRewardedVideo = InMobiInterstitial(
-                        ContextProvider.getInstance().applicationContext,
-                        placement,
-                        rewardedVideoListener
-                    )
-
-                    // add InMobi rewarded video obj to map
-                    placementToRewardedVideoAd[placementId] = inMobiRewardedVideo
-                    IronLog.ADAPTER_API.verbose(
-                        "loadRewardedVideo InMobi ad with ${InMobiAdapter.PLACEMENT_ID}:" +
-                                " $placementId"
-                    )
-
-                    serverData?.let {
-                        // Load InMobi rewarded video with bidding
-                        try {
-                            val bytes = it.toByteArray(Charsets.UTF_8)
-                            inMobiRewardedVideo.load(bytes)
-                        } catch (e: UnsupportedEncodingException) {
-                            smashListener.onRewardedVideoAvailabilityChanged(false)
-                        }
-                    } ?: run {
-                        // Load InMobi rewarded video
-                        val map = adapter.getExtrasMap()
-                        inMobiRewardedVideo.setExtras(map)
-                        inMobiRewardedVideo.load()
+                serverData?.let {
+                    // Load InMobi rewarded video with bidding
+                    try {
+                        val bytes = it.toByteArray(Charsets.UTF_8)
+                        inMobiRewardedVideo.load(bytes)
+                    } catch (e: UnsupportedEncodingException) {
+                        listener.onRewardedVideoAvailabilityChanged(false)
                     }
+                } ?: run {
+                    // Load InMobi rewarded video
+                    val map = adapter.getExtrasMap()
+                    inMobiRewardedVideo.setExtras(map)
+                    inMobiRewardedVideo.load()
                 }
             }
+        }
     }
 
     override fun showRewardedVideo(config: JSONObject, listener: RewardedVideoSmashListener) {
@@ -282,14 +197,6 @@ class InMobiRewardedVideoAdapter (adapter: InMobiAdapter) :
         adData: JSONObject?
     ): MutableMap<String?, Any?>? {
         return adapter.getBiddingData()
-    }
-
-    //endregion
-
-    //region memory handling
-
-    override fun releaseMemory(adUnit: AD_UNIT, config: JSONObject?) {
-        IronLog.INTERNAL.verbose("adUnit = $adUnit")
     }
 
     //endregion
