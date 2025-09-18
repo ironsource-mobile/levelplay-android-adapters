@@ -124,17 +124,6 @@ class BigoRewardedVideoAdapter(adapter: BigoAdapter) :
         return adapter.getBiddingData()
     }
 
-    //region memory handling
-
-    override fun releaseMemory(adUnit: IronSource.AD_UNIT, config: JSONObject?) {
-        IronLog.INTERNAL.verbose("adUnit = $adUnit")
-        destroyRewardedVideoAd()
-        mAdListener = null
-        mSmashListener = null
-    }
-
-    //endregion
-
     // region Helpers
 
     internal fun setRewardedVideoAd(ad: RewardVideoAd) {

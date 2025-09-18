@@ -8,7 +8,6 @@ import com.ironsource.environment.ContextProvider
 import com.ironsource.mediationsdk.AbstractAdapter
 import com.ironsource.mediationsdk.INetworkInitCallbackListener
 import com.ironsource.mediationsdk.IntegrationData
-import com.ironsource.mediationsdk.IronSource
 import com.ironsource.mediationsdk.LoadWhileShowSupportState
 import com.ironsource.mediationsdk.logger.IronLog
 import com.ironsource.mediationsdk.logger.IronSourceError
@@ -118,7 +117,7 @@ class BigoAdapter(providerName: String) : AbstractAdapter(providerName),
         return getAdapterSDKVersion()
     }
 
-    override fun isUsingActivityBeforeImpression(adUnit: IronSource.AD_UNIT): Boolean {
+    override fun isUsingActivityBeforeImpression(adFormat: LevelPlay.AdFormat): Boolean {
         return false
     }
 

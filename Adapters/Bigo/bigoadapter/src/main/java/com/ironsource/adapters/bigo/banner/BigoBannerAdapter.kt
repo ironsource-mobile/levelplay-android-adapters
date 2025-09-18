@@ -65,11 +65,17 @@ class BigoBannerAdapter(adapter: BigoAdapter) :
         config: JSONObject,
         adData: JSONObject?,
         serverData: String?,
-        banner: IronSourceBannerLayout,
+        bannerSize: ISBannerSize?,
         listener: BannerSmashListener
     ) {
 
         IronLog.ADAPTER_API.verbose()
+
+        if (bannerSize == null) {
+            IronLog.INTERNAL.error("banner size is null")
+            listener.onBannerAdLoadFailed(ErrorBuilder.unsupportedBannerSize(adapter.providerName))
+            return
+        }
 
         if (serverData.isNullOrEmpty()) {
             val error = "serverData is empty"
@@ -78,16 +84,16 @@ class BigoBannerAdapter(adapter: BigoAdapter) :
             return
         }
 
-        val bannerSize = getBannerSize(banner.size)
-        if (bannerSize == null) {
+        val bigoBannerSize = getBannerSize(bannerSize)
+        if (bigoBannerSize == null) {
             listener.onBannerAdLoadFailed(ErrorBuilder.unsupportedBannerSize(adapter.providerName))
             return
         }
 
         val context = ContextProvider.getInstance().applicationContext
         val layoutParams = FrameLayout.LayoutParams(
-            AdapterUtils.dpToPixels(context, bannerSize.width),
-            AdapterUtils.dpToPixels(context, bannerSize.height),
+            AdapterUtils.dpToPixels(context, bigoBannerSize.width),
+            AdapterUtils.dpToPixels(context, bigoBannerSize.height),
             Gravity.CENTER
         )
 
@@ -112,7 +118,7 @@ class BigoBannerAdapter(adapter: BigoAdapter) :
             BannerAdRequest.Builder()
                 .withBid(serverData)
                 .withSlotId(slotId)
-                .withAdSizes(bannerSize).build()
+                .withAdSizes(bigoBannerSize).build()
 
         bannerAdLoader.loadAd(bannerAdRequest)
     }
@@ -127,20 +133,6 @@ class BigoBannerAdapter(adapter: BigoAdapter) :
         adData: JSONObject?
     ): MutableMap<String?, Any?>? {
         return adapter.getBiddingData()
-    }
-
-    //endregion
-
-    //region memory handling
-
-    override fun releaseMemory(
-        adUnit: IronSource.AD_UNIT,
-        config: JSONObject?
-    ) {
-        IronLog.INTERNAL.verbose("adUnit = $adUnit")
-        destroyBannerViewAd()
-        mSmashListener = null
-        mAdListener = null
     }
 
     //endregion

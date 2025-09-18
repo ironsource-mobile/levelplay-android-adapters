@@ -125,17 +125,6 @@ class BigoInterstitialAdapter(adapter: BigoAdapter) :
         return adapter.getBiddingData()
     }
 
-    //region memory handling
-
-    override fun releaseMemory(adUnit: IronSource.AD_UNIT, config: JSONObject?) {
-        IronLog.INTERNAL.verbose("adUnit = $adUnit")
-        destroyInterstitialAd()
-        mAdListener = null
-        mSmashListener = null
-    }
-
-    //end region
-
     //region Helpers
 
     internal fun setInterstitialAd(ad: InterstitialAd) {
