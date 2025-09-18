@@ -18,7 +18,6 @@ import com.bytedance.sdk.openadsdk.api.reward.PAGRewardedAd
 import com.bytedance.sdk.openadsdk.api.reward.PAGRewardedRequest
 import com.ironsource.environment.ContextProvider
 import com.ironsource.mediationsdk.*
-import com.ironsource.mediationsdk.IronSource.AD_UNIT
 import com.ironsource.mediationsdk.bidding.BiddingDataCallback
 import com.ironsource.mediationsdk.logger.IronLog
 import com.ironsource.mediationsdk.logger.IronSourceError
@@ -28,6 +27,7 @@ import com.ironsource.mediationsdk.sdk.InterstitialSmashListener
 import com.ironsource.mediationsdk.sdk.RewardedVideoSmashListener
 import com.ironsource.mediationsdk.utils.ErrorBuilder
 import com.ironsource.mediationsdk.utils.IronSourceConstants
+import com.unity3d.mediation.LevelPlay
 import org.json.JSONArray
 import org.json.JSONException
 import org.json.JSONObject
@@ -142,7 +142,7 @@ class PangleAdapter(providerName: String) : AbstractAdapter(providerName),
         return getAdapterSDKVersion()
     }
 
-    override fun isUsingActivityBeforeImpression(adUnit: IronSource.AD_UNIT): Boolean {
+    override fun isUsingActivityBeforeImpression(adFormat: LevelPlay.AdFormat): Boolean {
         return false
     }
 
@@ -610,15 +610,15 @@ class PangleAdapter(providerName: String) : AbstractAdapter(providerName),
         config: JSONObject,
         adData: JSONObject?,
         serverData: String?,
-        banner: IronSourceBannerLayout?,
+        bannerSize: ISBannerSize?,
         listener: BannerSmashListener
     ) {
         val slotId = config.optString(SLOT_ID_KEY)
         IronLog.ADAPTER_API.verbose("slotId = $slotId")
 
-        if (banner == null) {
-            IronLog.INTERNAL.error("banner is null")
-            listener.onBannerAdLoadFailed(ErrorBuilder.buildNoConfigurationAvailableError("banner is null"))
+        if (bannerSize == null) {
+            IronLog.INTERNAL.error("banner size is null")
+            listener.onBannerAdLoadFailed(ErrorBuilder.buildNoConfigurationAvailableError("banner size is null"))
             return
         }
 
@@ -628,18 +628,18 @@ class PangleAdapter(providerName: String) : AbstractAdapter(providerName),
             return
         }
 
-        val layoutParams: FrameLayout.LayoutParams = getBannerLayoutParams(banner.size)
+        val layoutParams: FrameLayout.LayoutParams = getBannerLayoutParams(bannerSize)
         val bannerAdListener = PangleBannerAdListener(listener, WeakReference(this), slotId, layoutParams)
         mSlotIdToBannerAdListener[slotId] = bannerAdListener
 
-        val adSize = getBannerSize(banner.size)
-        val bannerRequest = PAGBannerRequest(adSize)
+        val pangleBannerSize = getBannerSize(bannerSize)
+        val bannerRequest = PAGBannerRequest(pangleBannerSize)
         bannerRequest.adString = serverData
 
         postOnUIThread {
-            if(banner == null){
-                IronLog.INTERNAL.error("banner is null")
-                listener.onBannerAdLoadFailed(ErrorBuilder.buildNoConfigurationAvailableError("banner is null"))
+            if(bannerSize == null){
+                IronLog.INTERNAL.error("banner size is null")
+                listener.onBannerAdLoadFailed(ErrorBuilder.buildNoConfigurationAvailableError("banner size is null"))
                 return@postOnUIThread
             }
             PAGBannerAd.loadAd(slotId, bannerRequest, bannerAdListener)
@@ -673,44 +673,6 @@ class PangleAdapter(providerName: String) : AbstractAdapter(providerName),
             biddingDataCallback: BiddingDataCallback
     ) {
         collectBiddingData(biddingDataCallback, config)
-    }
-
-    //endregion
-
-    //region memory handling
-
-    override fun releaseMemory(adUnit: AD_UNIT, config: JSONObject?) {
-        IronLog.INTERNAL.verbose("adUnit = $adUnit")
-
-        when (adUnit) {
-            AD_UNIT.REWARDED_VIDEO -> {
-                mSlotIdToRewardedVideoAd.forEach { (_, rewardVideoAd) -> rewardVideoAd.setAdInteractionListener(null) }
-                mSlotIdToRewardedVideoListener.clear()
-                mSlotIdToRewardedVideoAdListener.clear()
-                mSlotIdToRewardedVideoAd.clear()
-                mSlotIdToRewardedVideoAdAvailability.clear()
-                mRewardedVideoSlotIdsForInitCallbacks.clear()
-            }
-            AD_UNIT.INTERSTITIAL -> {
-                mSlotIdToInterstitialAd.forEach { (_, interstitialAd) -> interstitialAd.setAdInteractionListener(null) }
-                mSlotIdToInterstitialListener.clear()
-                mSlotIdToInterstitialAdListener.clear()
-                mSlotIdToInterstitialAd.clear()
-                mSlotIdToInterstitialAdAvailability.clear()
-            }
-            AD_UNIT.BANNER -> {
-                mSlotIdToBannerView.forEach { (_, bannerAd) ->
-                    postOnUIThread {
-                        bannerAd.setAdInteractionListener(null)
-                        bannerAd.destroy()
-                        mSlotIdToBannerListener.clear()
-                        mSlotIdToBannerAdListener.clear()
-                        mSlotIdToBannerView.clear()
-                    }
-                }
-            }
-            else -> {}
-        }
     }
 
     //endregion
