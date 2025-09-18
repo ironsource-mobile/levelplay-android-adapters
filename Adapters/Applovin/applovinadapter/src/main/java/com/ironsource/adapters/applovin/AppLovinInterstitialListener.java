@@ -73,7 +73,6 @@ public class AppLovinInterstitialListener implements AppLovinAdLoadListener, App
         int adapterErrorCode = errorCode == AppLovinErrorCodes.NO_FILL ? IronSourceError.ERROR_IS_LOAD_NO_FILL : errorCode;
         IronSourceError ironSourceError = new IronSourceError(adapterErrorCode, mAdapter.get().getErrorString(errorCode));
 
-        mAdapter.get().disposeInterstitialAd(mZoneId);
         mAdapter.get().updateInterstitialAvailability(mZoneId, false);
         mListener.onInterstitialAdLoadFailed(ironSourceError);
     }
@@ -154,7 +153,6 @@ public class AppLovinInterstitialListener implements AppLovinAdLoadListener, App
             return;
         }
 
-        mAdapter.get().disposeInterstitialAd(mZoneId);
         mListener.onInterstitialAdClosed();
     }
 }

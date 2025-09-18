@@ -21,7 +21,6 @@ import com.ironsource.mediationsdk.AbstractAdapter;
 import com.ironsource.mediationsdk.ISBannerSize;
 import com.ironsource.mediationsdk.IntegrationData;
 import com.ironsource.mediationsdk.IronSource;
-import com.ironsource.mediationsdk.IronSourceBannerLayout;
 import com.ironsource.mediationsdk.INetworkInitCallbackListener;
 import com.ironsource.mediationsdk.LoadWhileShowSupportState;
 import com.ironsource.mediationsdk.logger.IronLog;
@@ -33,6 +32,8 @@ import com.ironsource.mediationsdk.sdk.RewardedVideoSmashListener;
 import com.ironsource.mediationsdk.AdapterUtils;
 import com.ironsource.mediationsdk.utils.ErrorBuilder;
 import com.ironsource.mediationsdk.utils.IronSourceConstants;
+import com.unity3d.mediation.LevelPlay;
+
 import org.jetbrains.annotations.NotNull;
 import org.json.JSONObject;
 import java.util.HashSet;
@@ -137,7 +138,7 @@ public class AppLovinAdapter extends AbstractAdapter implements INetworkInitCall
         return AppLovinSdk.VERSION;
     }
 
-    public boolean isUsingActivityBeforeImpression(@NotNull IronSource.AD_UNIT adUnit) {
+    public boolean isUsingActivityBeforeImpression(@NotNull LevelPlay.AdFormat adFormat) {
         return false;
     }
 
@@ -284,7 +285,7 @@ public class AppLovinAdapter extends AbstractAdapter implements INetworkInitCall
         }
 
         IronLog.ADAPTER_API.verbose("zoneId = " + zoneId);
-        
+
         mRewardedVideoSmashListener = listener;
         mShouldNotifyOnRewardedVideoInitCallback = true;
 
@@ -350,16 +351,16 @@ public class AppLovinAdapter extends AbstractAdapter implements INetworkInitCall
     }
 
     private void loadRewardedVideoInternal(String zoneId, RewardedVideoSmashListener listener) {
-        IronLog.ADAPTER_API.verbose("zoneId = " + zoneId);
+      IronLog.ADAPTER_API.verbose("zoneId = " + zoneId);
 
-        mRewardedVideoZoneId = zoneId;
-        mRewardedVideoSmashListener = listener;
-        mRewardedVideoAd = new AppLovinIncentivizedInterstitial(zoneId);
+      mRewardedVideoZoneId = zoneId;
+      mRewardedVideoSmashListener = listener;
+      mRewardedVideoAd = new AppLovinIncentivizedInterstitial(zoneId);
 
-        // create AppLovin rewarded video ad listener
-        mAppLovinRewardedVideoListener = new AppLovinRewardedVideoListener(AppLovinAdapter.this, listener, zoneId);
-        // load rewarded video
-        mAppLovinSdk.getAdService().loadNextAdForZoneId(zoneId, mAppLovinRewardedVideoListener);
+      // create AppLovin rewarded video ad listener
+      mAppLovinRewardedVideoListener = new AppLovinRewardedVideoListener(AppLovinAdapter.this, listener, zoneId);
+      // load rewarded video
+      mAppLovinSdk.getAdService().loadNextAdForZoneId(zoneId, mAppLovinRewardedVideoListener);
     }
 
     @Override
@@ -491,16 +492,12 @@ public class AppLovinAdapter extends AbstractAdapter implements INetworkInitCall
             && isInterstitialZoneIdExist(zoneId);
     }
 
-    public void disposeInterstitialAd(JSONObject config) {
+    public void destroyInterstitialAd(JSONObject config) {
         String zoneId = "";
         if(config != null) {
             zoneId = config.optString(ZONE_ID);
         }
 
-        disposeInterstitialAd(zoneId);
-    }
-
-    void disposeInterstitialAd(String zoneId) {
         IronLog.ADAPTER_API.verbose("Dispose interstitial ad of " + getProviderName() + ", zoneId = " + zoneId);
         mInterstitialAds.removeAd(this);
     }
@@ -575,21 +572,21 @@ public class AppLovinAdapter extends AbstractAdapter implements INetworkInitCall
     }
 
     @Override
-    public void loadBanner(final JSONObject config, final JSONObject adData, final IronSourceBannerLayout banner, final BannerSmashListener listener) {
+    public void loadBanner(final JSONObject config, final JSONObject adData, final ISBannerSize bannerSize, final BannerSmashListener listener) {
         final String zoneId = getZoneId(config);
         IronLog.ADAPTER_API.verbose("zoneId = " + zoneId);
 
-        if (banner == null) {
-            IronLog.INTERNAL.error("banner layout is null");
-            listener.onBannerAdLoadFailed(ErrorBuilder.buildNoConfigurationAvailableError("banner layout is null"));
+        if (bannerSize == null) {
+            IronLog.INTERNAL.error("banner size is null");
+            listener.onBannerAdLoadFailed(ErrorBuilder.unsupportedBannerSize(getProviderName()));
             return;
         }
 
         // get size
-        final AppLovinAdSize bannerSize = calculateBannerSize(banner.getSize(), AdapterUtils.isLargeScreen(ContextProvider.getInstance().getApplicationContext()));
+        final AppLovinAdSize appLovinBannerSize = calculateBannerSize(bannerSize, AdapterUtils.isLargeScreen(ContextProvider.getInstance().getApplicationContext()));
 
         // verify if size is null
-        if (bannerSize == null) {
+        if (appLovinBannerSize == null) {
             IronLog.INTERNAL.error("size not supported, size is null");
             listener.onBannerAdLoadFailed(ErrorBuilder.unsupportedBannerSize(getProviderName()));
             return;
@@ -597,17 +594,17 @@ public class AppLovinAdapter extends AbstractAdapter implements INetworkInitCall
 
         postOnUIThread(() -> {
             try {
-                if(banner == null){
-                    IronLog.INTERNAL.verbose("banner is null");
+                if(bannerSize == null){
+                    IronLog.INTERNAL.verbose("banner size is null");
                     listener.onBannerAdLoadFailed(ErrorBuilder.unsupportedBannerSize(getProviderName()));
                     return;
                 }
                 // create ad view
-                FrameLayout.LayoutParams layoutParams = getBannerLayoutParams(banner.getSize());
+                FrameLayout.LayoutParams layoutParams = getBannerLayoutParams(bannerSize);
                 // create banner listener
                 AppLovinBannerListener bannerListener = new AppLovinBannerListener(AppLovinAdapter.this, listener, zoneId, layoutParams);
                 // create ad view
-                AppLovinAdView adView = new AppLovinAdView(bannerSize);
+                AppLovinAdView adView = new AppLovinAdView(appLovinBannerSize);
                 adView.setAdDisplayListener(bannerListener);
                 adView.setAdClickListener(bannerListener);
                 adView.setAdViewEventListener(bannerListener);
@@ -616,7 +613,7 @@ public class AppLovinAdapter extends AbstractAdapter implements INetworkInitCall
                 mZoneIdToBannerAd.put(zoneId, adView);
                 mZoneIdToBannerLayout.put(zoneId, layoutParams);
                 mZoneIdToAppLovinBannerListener.put(zoneId, bannerListener);
-                mZoneIdToBannerSize.put(zoneId, bannerSize);
+                mZoneIdToBannerSize.put(zoneId, appLovinBannerSize);
 
                 // load ad
                 mAppLovinSdk.getAdService().loadNextAdForZoneId(zoneId, bannerListener);
@@ -643,41 +640,6 @@ public class AppLovinAdapter extends AbstractAdapter implements INetworkInitCall
             mZoneIdToAppLovinBannerListener.remove(zoneId);
             mZoneIdToBannerSize.remove(zoneId);
         });
-    }
-
-    //endregion
-
-    //region Memory Handling
-
-    @Override
-    public void releaseMemory(IronSource.AD_UNIT adUnit, JSONObject config) {
-        IronLog.INTERNAL.verbose("adUnit = " + adUnit);
-
-        if (adUnit == IronSource.AD_UNIT.REWARDED_VIDEO) {
-            mAppLovinRewardedVideoListener = null;
-            mRewardedVideoSmashListener = null;
-            mRewardedVideoAd = null;
-            mRewardedVideoZoneId = null;
-
-        } else if (adUnit == IronSource.AD_UNIT.INTERSTITIAL) {
-            mZoneIdToAppLovinInterstitialListener.clear();
-            mZoneIdToInterstitialAdReadyStatus.clear();
-            disposeInterstitialAd(config);
-            mZoneIdToInterstitialSmashListener.clear();
-
-        } else if (adUnit == IronSource.AD_UNIT.BANNER) {
-            postOnUIThread(() -> {
-                for (AppLovinAdView adView : mZoneIdToBannerAd.values()) {
-                    adView.destroy();
-                }
-
-                mZoneIdToAppLovinBannerListener.clear();
-                mZoneIdToBannerSmashListener.clear();
-                mZoneIdToBannerLayout.clear();
-                mZoneIdToBannerAd.clear();
-            });
-
-        }
     }
 
     //endregion
