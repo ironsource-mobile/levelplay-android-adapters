@@ -1,16 +1,18 @@
 package com.ironsource.adapters.admob.rewardedvideo;
 
+import android.text.TextUtils;
 import com.google.android.gms.ads.LoadAdError;
+import com.google.android.gms.ads.ResponseInfo;
 import com.google.android.gms.ads.rewarded.RewardedAd;
 import com.google.android.gms.ads.rewarded.RewardedAdLoadCallback;
 import com.ironsource.adapters.admob.AdMobAdapter;
 import com.ironsource.mediationsdk.logger.IronLog;
 import com.ironsource.mediationsdk.logger.IronSourceError;
 import com.ironsource.mediationsdk.sdk.RewardedVideoSmashListener;
-
 import org.jetbrains.annotations.NotNull;
-
 import java.lang.ref.WeakReference;
+import java.util.HashMap;
+import java.util.Map;
 
 // AdMob rewarded video load listener
 public class AdMobRewardedVideoAdLoadListener extends RewardedAdLoadCallback {
@@ -42,7 +44,18 @@ public class AdMobRewardedVideoAdLoadListener extends RewardedAdLoadCallback {
         }
 
         mRewardedVideoAdapter.get().onRewardedVideoAdLoaded(mAdUnitId, rewardedAd);
-        mListener.onRewardedVideoAvailabilityChanged(true);
+
+        ResponseInfo responseInfo = rewardedAd.getResponseInfo();
+        String creativeId = (responseInfo != null) ? responseInfo.getResponseId() : null;
+
+        if (TextUtils.isEmpty(creativeId)) {
+            mListener.onRewardedVideoAvailabilityChanged(true);
+        } else {
+            Map<String, Object> extraData = new HashMap<>();
+            extraData.put(AdMobAdapter.CREATIVE_ID_KEY, creativeId);
+            IronLog.ADAPTER_CALLBACK.verbose(AdMobAdapter.CREATIVE_ID_KEY + " = " + creativeId);
+            mListener.onRewardedVideoAvailabilityChanged(true, extraData);
+        }
     }
 
     //rewarded video ad failed to load

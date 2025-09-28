@@ -58,6 +58,7 @@ public class AdMobAdapter extends AbstractAdapter {
 
     private static final String GitHash = BuildConfig.GitHash;
     private static final String AD_UNIT_ID = "adUnitId";
+    public static final String CREATIVE_ID_KEY = "creativeId";
     private static final String EMPTY_STRING = "";
 
     // Init configuration flags
