@@ -1,5 +1,7 @@
 package com.ironsource.adapters.chartboost;
 
+import android.text.TextUtils;
+
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
@@ -18,6 +20,8 @@ import com.ironsource.mediationsdk.logger.IronSourceError;
 import com.ironsource.mediationsdk.sdk.InterstitialSmashListener;
 import com.ironsource.mediationsdk.utils.ErrorBuilder;
 import com.ironsource.mediationsdk.utils.IronSourceConstants;
+import java.util.HashMap;
+import java.util.Map;
 
 final class ChartboostInterstitialAdListener implements InterstitialCallback {
 
@@ -32,7 +36,8 @@ final class ChartboostInterstitialAdListener implements InterstitialCallback {
 
     @Override
     public void onAdLoaded(@NonNull CacheEvent cacheEvent, @Nullable CacheError cacheError) {
-        IronLog.ADAPTER_CALLBACK.verbose("locationId = " + mLocationId);
+        String creativeId = cacheEvent.getAdID();
+        IronLog.ADAPTER_CALLBACK.verbose("locationId = " + mLocationId + " creativeId = " + creativeId);
 
         if (mListener == null) {
             IronLog.INTERNAL.verbose("listener is null");
@@ -52,7 +57,13 @@ final class ChartboostInterstitialAdListener implements InterstitialCallback {
 
             mListener.onInterstitialAdLoadFailed(isError);
         } else {
-            mListener.onInterstitialAdReady();
+            if (TextUtils.isEmpty(creativeId)) {
+                mListener.onInterstitialAdReady();
+            } else {
+                Map<String, Object> extraData = new HashMap<>();
+                extraData.put(ChartboostAdapter.CREATIVE_ID_KEY, creativeId);
+                mListener.onInterstitialAdReady(extraData);
+            }
         }
     }
 
@@ -78,15 +89,23 @@ final class ChartboostInterstitialAdListener implements InterstitialCallback {
 
     @Override
     public void onImpressionRecorded(@NonNull ImpressionEvent impressionEvent) {
-        IronLog.ADAPTER_CALLBACK.verbose("locationId = " + mLocationId);
-
         if (mListener == null) {
             IronLog.INTERNAL.verbose("listener is null");
             return;
         }
 
-        mListener.onInterstitialAdOpened();
-        mListener.onInterstitialAdShowSucceeded();
+        String creativeId = impressionEvent.getAdID();
+        IronLog.ADAPTER_CALLBACK.verbose("locationId = " + mLocationId + " creativeId = " + creativeId);
+
+        if (TextUtils.isEmpty(creativeId)) {
+            mListener.onInterstitialAdOpened();
+            mListener.onInterstitialAdShowSucceeded();
+        } else {
+            Map<String, Object> extraData = new HashMap<>();
+            extraData.put(ChartboostAdapter.CREATIVE_ID_KEY, creativeId);
+            mListener.onInterstitialAdOpened(extraData);
+            mListener.onInterstitialAdShowSucceeded(extraData);
+        }
     }
 
     @Override

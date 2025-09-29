@@ -27,7 +27,6 @@ import com.ironsource.mediationsdk.AdapterUtils;
 import com.ironsource.mediationsdk.INetworkInitCallbackListener;
 import com.ironsource.mediationsdk.ISBannerSize;
 import com.ironsource.mediationsdk.IntegrationData;
-import com.ironsource.mediationsdk.IronSource;
 import com.ironsource.mediationsdk.LoadWhileShowSupportState;
 import com.ironsource.mediationsdk.logger.IronLog;
 import com.ironsource.mediationsdk.metadata.MetaDataUtils;
@@ -63,6 +62,7 @@ public class ChartboostAdapter extends AbstractAdapter implements INetworkInitCa
     private final String APP_ID = "appID";
     private final String APP_SIGNATURE = "appSignature";
     private final String AD_LOCATION = "adLocation";
+    public static final String CREATIVE_ID_KEY = "creativeId";
 
     // Meta data flags
     private static final String CHARTBOOST_COPPA_FLAG = "chartboost_coppa";

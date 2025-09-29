@@ -1,5 +1,6 @@
 package com.ironsource.adapters.chartboost;
 
+import android.text.TextUtils;
 import android.widget.FrameLayout;
 
 import androidx.annotation.NonNull;
@@ -21,6 +22,8 @@ import com.ironsource.mediationsdk.sdk.BannerSmashListener;
 import com.ironsource.mediationsdk.utils.ErrorBuilder;
 
 import java.lang.ref.WeakReference;
+import java.util.HashMap;
+import java.util.Map;
 
 final class ChartboostBannerAdListener implements BannerCallback {
 
@@ -39,7 +42,8 @@ final class ChartboostBannerAdListener implements BannerCallback {
 
     @Override
     public void onAdLoaded(@NonNull CacheEvent cacheEvent, @Nullable CacheError cacheError) {
-        IronLog.ADAPTER_CALLBACK.verbose("locationId = " + mLocationId);
+        String creativeId = cacheEvent.getAdID();
+        IronLog.ADAPTER_CALLBACK.verbose("locationId = " + mLocationId + " creativeId = " + creativeId);
 
         if (mListener == null) {
             IronLog.INTERNAL.verbose("listener is null");
@@ -76,7 +80,13 @@ final class ChartboostBannerAdListener implements BannerCallback {
 
             mListener.onBannerAdLoadFailed(error);
         } else {
-            mListener.onBannerAdLoaded(bannerView, mBannerLayoutParams);
+            if (TextUtils.isEmpty(creativeId)) {
+                mListener.onBannerAdLoaded(bannerView, mBannerLayoutParams);
+            } else {
+                Map<String, Object> extraData = new HashMap<>();
+                extraData.put(ChartboostAdapter.CREATIVE_ID_KEY, creativeId);
+                mListener.onBannerAdLoaded(bannerView, mBannerLayoutParams, extraData);
+            }
             bannerView.show();
         }
     }
@@ -93,14 +103,21 @@ final class ChartboostBannerAdListener implements BannerCallback {
 
     @Override
     public void onImpressionRecorded(@NonNull ImpressionEvent impressionEvent) {
-        IronLog.ADAPTER_CALLBACK.verbose("locationId = " + mLocationId);
-
         if (mListener == null) {
             IronLog.INTERNAL.verbose("listener is null");
             return;
         }
 
-        mListener.onBannerAdShown();
+        String creativeId = impressionEvent.getAdID();
+        IronLog.ADAPTER_CALLBACK.verbose("locationId = " + mLocationId + " creativeId = " + creativeId);
+
+        if (TextUtils.isEmpty(creativeId)) {
+            mListener.onBannerAdShown();
+        } else {
+            Map<String, Object> extraData = new HashMap<>();
+            extraData.put(ChartboostAdapter.CREATIVE_ID_KEY, creativeId);
+            mListener.onBannerAdShown(extraData);
+        }
     }
 
     @Override

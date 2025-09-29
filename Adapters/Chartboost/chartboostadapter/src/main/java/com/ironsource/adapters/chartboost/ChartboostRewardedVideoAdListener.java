@@ -2,6 +2,8 @@ package com.ironsource.adapters.chartboost;
 
 import static com.ironsource.mediationsdk.logger.IronSourceError.ERROR_RV_EXPIRED_ADS;
 
+import android.text.TextUtils;
+
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
@@ -21,6 +23,8 @@ import com.ironsource.mediationsdk.logger.IronSourceError;
 import com.ironsource.mediationsdk.sdk.RewardedVideoSmashListener;
 import com.ironsource.mediationsdk.utils.ErrorBuilder;
 import com.ironsource.mediationsdk.utils.IronSourceConstants;
+import java.util.HashMap;
+import java.util.Map;
 
 final class ChartboostRewardedVideoAdListener implements RewardedCallback {
 
@@ -35,7 +39,8 @@ final class ChartboostRewardedVideoAdListener implements RewardedCallback {
 
     @Override
     public void onAdLoaded(@NonNull CacheEvent cacheEvent, @Nullable CacheError cacheError) {
-        IronLog.ADAPTER_CALLBACK.verbose("locationId = " + mLocationId);
+        String creativeId = cacheEvent.getAdID();
+        IronLog.ADAPTER_CALLBACK.verbose("locationId = " + mLocationId + " creativeId = " + creativeId);
 
         if (mListener == null) {
             IronLog.INTERNAL.verbose("listener is null");
@@ -57,7 +62,13 @@ final class ChartboostRewardedVideoAdListener implements RewardedCallback {
             mListener.onRewardedVideoLoadFailed(isError);
             
         } else {
-            mListener.onRewardedVideoAvailabilityChanged(true);
+            if (TextUtils.isEmpty(creativeId)) {
+                mListener.onRewardedVideoAvailabilityChanged(true);
+            } else {
+                Map<String, Object> extraData = new HashMap<>();
+                extraData.put(ChartboostAdapter.CREATIVE_ID_KEY, creativeId);
+                mListener.onRewardedVideoAvailabilityChanged(true, extraData);
+            }
         }
     }
 
@@ -83,14 +94,21 @@ final class ChartboostRewardedVideoAdListener implements RewardedCallback {
 
     @Override
     public void onImpressionRecorded(@NonNull ImpressionEvent impressionEvent) {
-        IronLog.ADAPTER_CALLBACK.verbose("locationId = " + mLocationId);
-
         if (mListener == null) {
             IronLog.INTERNAL.verbose("listener is null");
             return;
         }
 
-        mListener.onRewardedVideoAdOpened();
+       String creativeId = impressionEvent.getAdID();
+        IronLog.ADAPTER_CALLBACK.verbose("locationId = " + mLocationId + " creativeId = " + creativeId);
+
+        if (TextUtils.isEmpty(creativeId)) {
+            mListener.onRewardedVideoAdOpened();
+        } else {
+            Map<String, Object> extraData = new HashMap<>();
+            extraData.put(ChartboostAdapter.CREATIVE_ID_KEY, creativeId);
+            mListener.onRewardedVideoAdOpened(extraData);
+        }
     }
 
     @Override
