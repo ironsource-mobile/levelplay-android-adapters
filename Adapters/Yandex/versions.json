@@ -1,5 +1,5 @@
 {
-    "mediationsdk": "9.0.0",
-    "adapter": "5.0.0",
-    "sdk": "7.15.2"
+  "mediationsdk": "9.0.0",
+  "adapter": "5.1.0",
+  "sdk": "7.16.0"
 }
