@@ -2,6 +2,7 @@ package com.ironsource.adapters.vungle.banner
 
 import android.view.Gravity
 import android.widget.FrameLayout
+import com.ironsource.adapters.vungle.VungleAdapter
 import com.ironsource.environment.ContextProvider
 import com.ironsource.mediationsdk.AdapterUtils
 import com.ironsource.mediationsdk.logger.IronLog
@@ -26,15 +27,21 @@ class VungleBannerAdListener(
      * @param baseAd - identifier for which the advertisement assets have been downloaded.
      */
     override fun onAdLoaded(baseAd: BaseAd) {
-        IronLog.ADAPTER_CALLBACK.verbose("placementId = $mPlacementId")
         val context = ContextProvider.getInstance().applicationContext
         val layoutParams = FrameLayout.LayoutParams(
             AdapterUtils.dpToPixels(context, bannerView.getAdViewSize().width),
             AdapterUtils.dpToPixels(context, bannerView.getAdViewSize().height),
             Gravity.CENTER
         )
+        val creativeId = baseAd.creativeId
+        IronLog.ADAPTER_CALLBACK.verbose("placementId = $mPlacementId, creativeId = $creativeId")
 
-        mListener.onBannerAdLoaded(bannerView, layoutParams)
+        if (creativeId.isNullOrEmpty()) {
+            mListener.onBannerAdLoaded(bannerView, layoutParams)
+        } else {
+            val extraData: Map<String, Any> = mapOf(VungleAdapter.CREATIVE_ID_KEY to creativeId)
+            mListener.onBannerAdLoaded(bannerView, layoutParams, extraData)
+        }
     }
 
     /**

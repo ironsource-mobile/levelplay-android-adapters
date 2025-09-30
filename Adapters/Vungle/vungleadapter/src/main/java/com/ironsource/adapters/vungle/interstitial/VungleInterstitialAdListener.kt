@@ -1,5 +1,6 @@
 package com.ironsource.adapters.vungle.interstitial
 
+import com.ironsource.adapters.vungle.VungleAdapter
 import com.ironsource.mediationsdk.logger.IronLog
 import com.ironsource.mediationsdk.logger.IronSourceError
 import com.ironsource.mediationsdk.sdk.InterstitialSmashListener
@@ -23,9 +24,16 @@ class VungleInterstitialAdListener(
      * @param baseAd - identifier for which the advertisement assets have been downloaded.
      */
     override fun onAdLoaded(baseAd: BaseAd) {
-        IronLog.ADAPTER_CALLBACK.verbose("placementId = $mPlacementId")
         mAdapter.get()?.setInterstitialAdAvailability(mPlacementId,true)
-        mListener.onInterstitialAdReady()
+        val creativeId = baseAd.creativeId
+        IronLog.ADAPTER_CALLBACK.verbose("placementId = $mPlacementId, creativeId = $creativeId")
+
+        if (creativeId.isNullOrEmpty()) {
+            mListener.onInterstitialAdReady()
+        } else {
+            val extraData: Map<String, Any> = mapOf(VungleAdapter.CREATIVE_ID_KEY to creativeId)
+            mListener.onInterstitialAdReady(extraData)
+        }
     }
 
     /**

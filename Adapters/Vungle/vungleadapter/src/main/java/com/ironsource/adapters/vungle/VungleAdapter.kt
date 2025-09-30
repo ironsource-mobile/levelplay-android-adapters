@@ -60,6 +60,8 @@ class VungleAdapter(providerName: String) : AbstractAdapter(providerName),
 
         internal var mInitState = InitState.INIT_STATE_NONE
 
+        const val CREATIVE_ID_KEY = "creativeId"
+
         // Handle init callback for all adapter instances for each init that was called
         internal val initCallbackListeners = HashSet<INetworkInitCallbackListener>()
 
