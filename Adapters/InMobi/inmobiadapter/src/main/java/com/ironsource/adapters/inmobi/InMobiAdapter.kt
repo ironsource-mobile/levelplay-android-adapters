@@ -8,7 +8,6 @@ import com.ironsource.adapters.inmobi.rewardedvideo.InMobiRewardedVideoAdapter
 import com.ironsource.mediationsdk.AbstractAdapter
 import com.ironsource.mediationsdk.INetworkInitCallbackListener
 import com.ironsource.mediationsdk.IntegrationData
-import com.ironsource.mediationsdk.IronSource
 import com.ironsource.mediationsdk.LoadWhileShowSupportState
 import com.ironsource.mediationsdk.logger.IronLog
 import com.ironsource.mediationsdk.metadata.MetaData.MetaDataValueTypes
@@ -57,6 +56,7 @@ class InMobiAdapter(providerName: String) : AbstractAdapter(providerName),
         private const val INMOBI_KEYWORD = "InMobi"
 
         const val EMPTY_STRING = ""
+        const val CREATIVE_ID_KEY = "creativeId"
 
         // Indicates whether init was called once- prevents from perform additional init
         private var isInitiated = AtomicBoolean(false)

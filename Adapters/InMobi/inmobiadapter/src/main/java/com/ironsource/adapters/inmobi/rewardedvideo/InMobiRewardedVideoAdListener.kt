@@ -20,9 +20,15 @@ class InMobiRewardedVideoAdListener(
         inMobiInterstitial: InMobiInterstitial,
         adMetaInfo: AdMetaInfo
     ) {
-        IronLog.ADAPTER_CALLBACK.verbose("${InMobiAdapter.PLACEMENT_ID} = $placementId")
+        val creativeId = adMetaInfo.creativeID
+        IronLog.ADAPTER_CALLBACK.verbose("${InMobiAdapter.PLACEMENT_ID} = $placementId, creativeId = $creativeId")
 
-        listener.onRewardedVideoAvailabilityChanged(true)
+        if (creativeId.isNullOrEmpty()) {
+            listener.onRewardedVideoAvailabilityChanged(true)
+        } else {
+            val extraData: Map<String, Any> = mapOf(InMobiAdapter.CREATIVE_ID_KEY to creativeId)
+            listener.onRewardedVideoAvailabilityChanged(true, extraData)
+        }
     }
 
     /**

@@ -27,9 +27,15 @@ internal class InMobiBannerAdListener(
         inMobiBanner: InMobiBanner,
         adMetaInfo: AdMetaInfo
     ) {
-        IronLog.ADAPTER_CALLBACK.verbose("${InMobiAdapter.PLACEMENT_ID} = $placementId")
+        val creativeId = adMetaInfo.creativeID
+        IronLog.ADAPTER_CALLBACK.verbose("${InMobiAdapter.PLACEMENT_ID} = $placementId, creativeId = $creativeId")
 
-        listener.onBannerAdLoaded(inMobiBanner, layoutParams)
+        if (creativeId.isNullOrEmpty()) {
+            listener.onBannerAdLoaded(inMobiBanner, layoutParams)
+        } else {
+            val extraData: Map<String, Any> = mapOf(InMobiAdapter.CREATIVE_ID_KEY to creativeId)
+            listener.onBannerAdLoaded(inMobiBanner, layoutParams, extraData)
+        }
     }
 
     /**
