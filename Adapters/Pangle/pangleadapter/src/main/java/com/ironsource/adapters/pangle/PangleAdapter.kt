@@ -101,6 +101,9 @@ class PangleAdapter(providerName: String) : AbstractAdapter(providerName),
         // Pangle Builder
         private val mPAGConfigBuilder = PAGConfig.Builder()
 
+        // Error messages
+        private const val BANNER_SIZE_IS_NULL_ERROR_MSG = "banner size is null, banner has been destroyed"
+
         // Handle init callback for all adapter instances
         private val mWasInitCalled: AtomicBoolean = AtomicBoolean(false)
         private var mInitState: InitState = InitState.INIT_STATE_NONE
@@ -617,8 +620,8 @@ class PangleAdapter(providerName: String) : AbstractAdapter(providerName),
         IronLog.ADAPTER_API.verbose("slotId = $slotId")
 
         if (bannerSize == null) {
-            IronLog.INTERNAL.error("banner size is null")
-            listener.onBannerAdLoadFailed(ErrorBuilder.buildNoConfigurationAvailableError("banner size is null"))
+            IronLog.INTERNAL.error(BANNER_SIZE_IS_NULL_ERROR_MSG)
+            listener.onBannerAdLoadFailed(ErrorBuilder.buildLoadFailedError(BANNER_SIZE_IS_NULL_ERROR_MSG))
             return
         }
 
@@ -638,8 +641,8 @@ class PangleAdapter(providerName: String) : AbstractAdapter(providerName),
 
         postOnUIThread {
             if(bannerSize == null){
-                IronLog.INTERNAL.error("banner size is null")
-                listener.onBannerAdLoadFailed(ErrorBuilder.buildNoConfigurationAvailableError("banner size is null"))
+                IronLog.INTERNAL.error(BANNER_SIZE_IS_NULL_ERROR_MSG)
+                listener.onBannerAdLoadFailed(ErrorBuilder.buildLoadFailedError(BANNER_SIZE_IS_NULL_ERROR_MSG))
                 return@postOnUIThread
             }
             PAGBannerAd.loadAd(slotId, bannerRequest, bannerAdListener)
