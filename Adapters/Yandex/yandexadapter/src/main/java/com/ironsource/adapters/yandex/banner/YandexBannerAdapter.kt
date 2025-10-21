@@ -28,6 +28,10 @@ class YandexBannerAdapter (adapter: YandexAdapter) :
     private var mYandexAdListener : YandexBannerAdListener? = null
     private var mAdView: BannerAdView? = null
 
+    companion object {
+        private const val BANNER_SIZE_IS_NULL_ERROR_MSG = "banner size is null, banner has been destroyed"
+    }
+
     override fun initBannerForBidding(
         appKey: String?,
         userId: String?,
@@ -90,8 +94,8 @@ class YandexBannerAdapter (adapter: YandexAdapter) :
         IronLog.ADAPTER_API.verbose()
 
         if (bannerSize == null) {
-            IronLog.INTERNAL.error("banner size is null")
-            listener.onBannerAdLoadFailed(ErrorBuilder.unsupportedBannerSize(adapter.providerName))
+            IronLog.INTERNAL.error(BANNER_SIZE_IS_NULL_ERROR_MSG)
+            listener.onBannerAdLoadFailed(ErrorBuilder.buildLoadFailedError(BANNER_SIZE_IS_NULL_ERROR_MSG))
             return
         }
 
@@ -132,8 +136,8 @@ class YandexBannerAdapter (adapter: YandexAdapter) :
 
         postOnUIThread {
             if (bannerSize == null) {
-                IronLog.INTERNAL.error("banner size is null")
-                listener.onBannerAdLoadFailed(ErrorBuilder.unsupportedBannerSize(adapter.providerName))
+                IronLog.INTERNAL.error(BANNER_SIZE_IS_NULL_ERROR_MSG)
+                listener.onBannerAdLoadFailed(ErrorBuilder.buildLoadFailedError(BANNER_SIZE_IS_NULL_ERROR_MSG))
                 return@postOnUIThread
             }
             bannerAdView.loadAd(adRequest)
