@@ -11,9 +11,9 @@ import com.ironsource.mediationsdk.logger.IronLog
 import com.ironsource.mediationsdk.sdk.BannerSmashListener
 import com.ironsource.mediationsdk.utils.ErrorBuilder
 import com.ironsource.mediationsdk.utils.IronSourceConstants
-import io.bidmachine.AdsFormat
+import io.bidmachine.AdPlacementConfig
+import io.bidmachine.BannerAdSize
 import io.bidmachine.banner.BannerRequest
-import io.bidmachine.banner.BannerSize
 import io.bidmachine.banner.BannerView
 import org.json.JSONObject
 import java.lang.ref.WeakReference
@@ -25,6 +25,10 @@ class BidMachineBannerAdapter(adapter: BidMachineAdapter) :
     private var mBannerAdListener : BidMachineBannerAdListener? = null
     private var mBannerViewAd: BannerView? = null
     private var mBannerRequest: BannerRequest? = null
+
+    companion object {
+        private const val BANNER_SIZE_IS_NULL_ERROR_MSG = "banner size is null, banner has been destroyed"
+    }
 
     override fun initBannerForBidding(
         appKey: String?,
@@ -72,8 +76,8 @@ class BidMachineBannerAdapter(adapter: BidMachineAdapter) :
         IronLog.ADAPTER_API.verbose()
 
         if (bannerSize == null) {
-            IronLog.INTERNAL.error("banner size is null")
-            listener.onBannerAdLoadFailed(ErrorBuilder.unsupportedBannerSize(adapter.providerName))
+            IronLog.INTERNAL.error(BANNER_SIZE_IS_NULL_ERROR_MSG)
+            listener.onBannerAdLoadFailed(ErrorBuilder.buildLoadFailedError(BANNER_SIZE_IS_NULL_ERROR_MSG))
             return
         }
 
@@ -95,22 +99,16 @@ class BidMachineBannerAdapter(adapter: BidMachineAdapter) :
 
         val bannerView = BannerView(ContextProvider.getInstance().applicationContext)
         bannerView.setListener(bannerAdListener)
-
-        val placementId = config.optString(BidMachineAdapter.getPlacementIdKey())
-        val bannerRequestBuilder = BannerRequest.Builder()
-            .setSize(bidMachineBannerSize)
+        val adPlacementConfig = createBannerPlacementConfig(config, bidMachineBannerSize)
+        val bannerRequestBuilder = BannerRequest.Builder(adPlacementConfig)
             .setBidPayload(serverData)
-
-        if(!placementId.isNullOrEmpty()) {
-            bannerRequestBuilder.setPlacementId(placementId)
-        }
 
         mBannerRequest = bannerRequestBuilder.build()
 
         postOnUIThread {
             if (bannerSize == null) {
-                IronLog.INTERNAL.error("banner size is null")
-                listener.onBannerAdLoadFailed(ErrorBuilder.unsupportedBannerSize(adapter.providerName))
+                IronLog.INTERNAL.error(BANNER_SIZE_IS_NULL_ERROR_MSG)
+                listener.onBannerAdLoadFailed(ErrorBuilder.buildLoadFailedError(BANNER_SIZE_IS_NULL_ERROR_MSG))
                 return@postOnUIThread
             }
             bannerView.load(mBannerRequest)
@@ -141,13 +139,8 @@ class BidMachineBannerAdapter(adapter: BidMachineAdapter) :
             biddingDataCallback.onFailure("$error - BidMachine")
             return
         }
-        val format = when (bidMachineBannerSize) {
-            BannerSize.Size_320x50 -> AdsFormat.Banner_320x50
-            BannerSize.Size_300x250 -> AdsFormat.Banner_300x250
-            BannerSize.Size_728x90 -> AdsFormat.Banner_728x90
-        }
-
-        adapter.collectBiddingData(biddingDataCallback, format, config)
+        val adPlacementConfig = createBannerPlacementConfig(config, bidMachineBannerSize)
+        adapter.collectBiddingData(biddingDataCallback, adPlacementConfig)
     }
 
     //endregion
@@ -166,7 +159,7 @@ class BidMachineBannerAdapter(adapter: BidMachineAdapter) :
         mBannerViewAd = ad
     }
 
-    private fun getBannerSize(bannerSize: ISBannerSize): BannerSize? {
+    private fun getBannerSize(bannerSize: ISBannerSize): BannerAdSize? {
 
         if(bannerSize == null) {
             IronLog.INTERNAL.verbose("Banner size is null")
@@ -174,17 +167,26 @@ class BidMachineBannerAdapter(adapter: BidMachineAdapter) :
         }
 
         return when (bannerSize.description) {
-            "BANNER" -> BannerSize.Size_320x50
-            "RECTANGLE" -> BannerSize.Size_300x250
-            "LEADERBOARD" -> BannerSize.Size_728x90
+            "BANNER" -> BannerAdSize.Banner
+            "RECTANGLE" -> BannerAdSize.MediumRectangle
+            "LEADERBOARD" -> BannerAdSize.Leaderboard
             "SMART" ->
                 (if (AdapterUtils.isLargeScreen(ContextProvider.getInstance().applicationContext)) {
-                    BannerSize.Size_728x90
+                    BannerAdSize.Leaderboard
                 } else {
-                    BannerSize.Size_320x50
+                    BannerAdSize.Banner
                 })
             else -> null
         }
+    }
+
+    private fun createBannerPlacementConfig(config: JSONObject, bannerSize: BannerAdSize): AdPlacementConfig {
+        val placementId = config.optString(BidMachineAdapter.getPlacementIdKey())
+        val adPlacementConfigBuilder = AdPlacementConfig.bannerBuilder(bannerSize)
+        if(!placementId.isNullOrEmpty()) {
+            adPlacementConfigBuilder.withPlacementId(placementId)
+        }
+        return adPlacementConfigBuilder.build()
     }
 
     //endregion

@@ -22,9 +22,15 @@ class BidMachineBannerAdListener(
      * @param ad - BannerView instance
      */
     override fun onAdLoaded(ad: BannerView) {
-        IronLog.ADAPTER_CALLBACK.verbose()
+        val creativeId = ad.auctionResult?.creativeId
+        IronLog.ADAPTER_CALLBACK.verbose("creativeId = $creativeId")
         mAdapter.get()?.setBannerView(ad)
-        mListener.onBannerAdLoaded(ad, mLayoutParams)
+        if (creativeId.isNullOrEmpty()) {
+            mListener.onBannerAdLoaded(ad, mLayoutParams)
+        } else {
+            val extraData: Map<String, Any> = mapOf(BidMachineAdapter.CREATIVE_ID_KEY to creativeId)
+            mListener.onBannerAdLoaded(ad, mLayoutParams, extraData)
+        }
     }
 
     /**

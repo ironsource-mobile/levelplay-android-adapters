@@ -13,10 +13,8 @@ import com.ironsource.mediationsdk.metadata.MetaData
 import com.ironsource.mediationsdk.metadata.MetaDataUtils
 import com.unity3d.mediation.LevelPlay
 import io.bidmachine.AdPlacementConfig
-import io.bidmachine.AdsFormat
 import io.bidmachine.BidMachine
 import io.bidmachine.utils.BMError
-import org.json.JSONObject
 import java.util.concurrent.atomic.AtomicBoolean
 
 class BidMachineAdapter(providerName: String) : AbstractAdapter(providerName),
@@ -50,6 +48,8 @@ class BidMachineAdapter(providerName: String) : AbstractAdapter(providerName),
         private val mWasInitCalled: AtomicBoolean = AtomicBoolean(false)
         private var mInitState: InitState = InitState.INIT_STATE_NONE
         private val initCallbackListeners = HashSet<INetworkInitCallbackListener>()
+
+        const val CREATIVE_ID_KEY = "creativeId"
 
         // Init state possible values
         enum class InitState {
@@ -207,7 +207,7 @@ class BidMachineAdapter(providerName: String) : AbstractAdapter(providerName),
     //endregion
 
     // region Helpers
-    fun collectBiddingData(biddingDataCallback: BiddingDataCallback, adsFormat: AdsFormat, config: JSONObject) {
+    fun collectBiddingData(biddingDataCallback: BiddingDataCallback, adPlacementConfig: AdPlacementConfig) {
         if (mInitState != InitState.INIT_STATE_SUCCESS) {
             val error = "returning null as token since init isn't completed"
             IronLog.INTERNAL.verbose(error)
@@ -216,13 +216,6 @@ class BidMachineAdapter(providerName: String) : AbstractAdapter(providerName),
         }
 
         val context = ContextProvider.getInstance().applicationContext
-        val placementId = config.optString(PLACEMENT_ID_KEY)
-        val adPlacementConfigBuilder = AdPlacementConfig.Builder(adsFormat)
-        if(!placementId.isNullOrEmpty()) {
-            adPlacementConfigBuilder.withPlacementId(placementId)
-        }
-
-        val adPlacementConfig = adPlacementConfigBuilder.build()
         BidMachine.getBidToken(context, adPlacementConfig) { token ->
             if (token.isNullOrEmpty()) {
                 val error = "failed to receive token - returned null/empty token"

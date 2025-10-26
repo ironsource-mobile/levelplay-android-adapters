@@ -3,17 +3,15 @@ package com.ironsource.adapters.bidmachine.interstitial
 import android.text.TextUtils
 import com.ironsource.adapters.bidmachine.BidMachineAdapter
 import com.ironsource.environment.ContextProvider
-import com.ironsource.mediationsdk.IronSource
 import com.ironsource.mediationsdk.adapter.AbstractInterstitialAdapter
 import com.ironsource.mediationsdk.bidding.BiddingDataCallback
 import com.ironsource.mediationsdk.logger.IronLog
 import com.ironsource.mediationsdk.sdk.InterstitialSmashListener
 import com.ironsource.mediationsdk.utils.ErrorBuilder
 import com.ironsource.mediationsdk.utils.IronSourceConstants
-import io.bidmachine.AdsFormat
+import io.bidmachine.AdPlacementConfig
 import io.bidmachine.interstitial.InterstitialAd
 import io.bidmachine.interstitial.InterstitialRequest
-import io.bidmachine.rewarded.RewardedRequest
 import org.json.JSONObject
 import java.lang.ref.WeakReference
 
@@ -24,7 +22,7 @@ class BidMachineInterstitialAdapter(adapter: BidMachineAdapter) :
     private var mInterstitialListener : InterstitialSmashListener? = null
     private var mInterstitialAdListener : BidMachineInterstitialAdListener? = null
     private var mInterstitialAd: InterstitialAd? = null
-    private var isinterstitialAdAvailable = false
+    private var isInterstitialAdAvailable = false
     private var mInterstitialRequest: InterstitialRequest? = null
 
     override fun initInterstitialForBidding(
@@ -79,13 +77,9 @@ class BidMachineInterstitialAdapter(adapter: BidMachineAdapter) :
         interstitial.setListener(interstitialAdListener)
         mInterstitialAdListener = interstitialAdListener
 
-        val placementId = config.optString(BidMachineAdapter.getPlacementIdKey())
-        val interstitialRequestBuilder = InterstitialRequest.Builder()
+        val adPlacementConfig = createInterstitialPlacementConfig(config)
+        val interstitialRequestBuilder = InterstitialRequest.Builder(adPlacementConfig)
             .setBidPayload(serverData)
-
-        if(!placementId.isNullOrEmpty()) {
-            interstitialRequestBuilder.setPlacementId(placementId)
-        }
 
         mInterstitialRequest = interstitialRequestBuilder.build()
         interstitial.load(mInterstitialRequest)
@@ -108,7 +102,7 @@ class BidMachineInterstitialAdapter(adapter: BidMachineAdapter) :
     }
 
     override fun isInterstitialReady(config: JSONObject): Boolean {
-        return isinterstitialAdAvailable &&
+        return isInterstitialAdAvailable &&
             mInterstitialAd?.let { interstitialAd ->
                 interstitialAd.canShow() && !interstitialAd.isExpired
             } ?: false
@@ -120,17 +114,18 @@ class BidMachineInterstitialAdapter(adapter: BidMachineAdapter) :
         adData: JSONObject?,
         biddingDataCallback: BiddingDataCallback
     ) {
-        adapter.collectBiddingData(biddingDataCallback, AdsFormat.Interstitial, config)
+        val adPlacementConfig = createInterstitialPlacementConfig(config)
+        adapter.collectBiddingData(biddingDataCallback, adPlacementConfig)
     }
 
     //region Helpers
 
     internal fun setInterstitialAdAvailability(isAvailable: Boolean) {
-        isinterstitialAdAvailable = isAvailable
+        isInterstitialAdAvailable = isAvailable
     }
 
-    internal fun setInterstitialAd(InterstitialAd: InterstitialAd) {
-        mInterstitialAd = InterstitialAd
+    internal fun setInterstitialAd(interstitialAd: InterstitialAd) {
+        mInterstitialAd = interstitialAd
     }
 
     internal fun destroyInterstitialAd() {
@@ -138,6 +133,17 @@ class BidMachineInterstitialAdapter(adapter: BidMachineAdapter) :
         mInterstitialAd?.destroy()
         mInterstitialAd = null
     }
+
+
+    private fun createInterstitialPlacementConfig(config: JSONObject): AdPlacementConfig {
+        val placementId = config.optString(BidMachineAdapter.getPlacementIdKey())
+        val adPlacementConfigBuilder = AdPlacementConfig.interstitialBuilder()
+        if(!placementId.isNullOrEmpty()) {
+            adPlacementConfigBuilder.withPlacementId(placementId)
+        }
+        return adPlacementConfigBuilder.build()
+    }
+
 
     //end region
 }

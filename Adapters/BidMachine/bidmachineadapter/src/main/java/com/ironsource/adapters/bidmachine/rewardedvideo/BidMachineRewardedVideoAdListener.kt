@@ -21,10 +21,16 @@ class BidMachineRewardedVideoAdListener(
      * @param ad - RewardedAd instance
      */
     override fun onAdLoaded(ad: RewardedAd) {
-        IronLog.ADAPTER_CALLBACK.verbose()
+        val creativeId = ad.auctionResult?.creativeId
+        IronLog.ADAPTER_CALLBACK.verbose("creativeId = $creativeId")
         mAdapter.get()?.setRewardedVideoAd(ad)
         mAdapter.get()?.setRewardedVideoAdAvailability(true)
-        mListener.onRewardedVideoAvailabilityChanged(true)
+        if (creativeId.isNullOrEmpty()) {
+            mListener.onRewardedVideoAvailabilityChanged(true)
+        } else {
+            val extraData: Map<String, Any> = mapOf(BidMachineAdapter.CREATIVE_ID_KEY to creativeId)
+            mListener.onRewardedVideoAvailabilityChanged(true, extraData)
+        }
     }
 
     /**

@@ -2,14 +2,13 @@ package com.ironsource.adapters.bidmachine.rewardedvideo
 
 import com.ironsource.adapters.bidmachine.BidMachineAdapter
 import com.ironsource.environment.ContextProvider
-import com.ironsource.mediationsdk.IronSource
 import com.ironsource.mediationsdk.adapter.AbstractRewardedVideoAdapter
 import com.ironsource.mediationsdk.bidding.BiddingDataCallback
 import com.ironsource.mediationsdk.logger.IronLog
 import com.ironsource.mediationsdk.sdk.RewardedVideoSmashListener
 import com.ironsource.mediationsdk.utils.ErrorBuilder
 import com.ironsource.mediationsdk.utils.IronSourceConstants
-import io.bidmachine.AdsFormat
+import io.bidmachine.AdPlacementConfig
 import io.bidmachine.rewarded.RewardedAd
 import io.bidmachine.rewarded.RewardedRequest
 import org.json.JSONObject
@@ -79,12 +78,9 @@ class BidMachineRewardedVideoAdapter(adapter: BidMachineAdapter) :
         rewardedVideo.setListener(rewardedVideoAdListener)
         mRewardedVideoAdListener = rewardedVideoAdListener
 
-        val placementId = config.optString(BidMachineAdapter.getPlacementIdKey())
-        val rewardedRequestBuilder = RewardedRequest.Builder()
+        val adPlacementConfig = createRewardedPlacementConfig(config)
+        val rewardedRequestBuilder = RewardedRequest.Builder(adPlacementConfig)
             .setBidPayload(serverData)
-        if(!placementId.isNullOrEmpty()) {
-            rewardedRequestBuilder.setPlacementId(placementId)
-        }
 
         mRewardedRequest = rewardedRequestBuilder.build()
         rewardedVideo.load(mRewardedRequest)
@@ -117,10 +113,20 @@ class BidMachineRewardedVideoAdapter(adapter: BidMachineAdapter) :
         adData: JSONObject?,
         biddingDataCallback: BiddingDataCallback
     ) {
-        adapter.collectBiddingData(biddingDataCallback, AdsFormat.RewardedVideo, config)
+        val adPlacementConfig = createRewardedPlacementConfig(config)
+        adapter.collectBiddingData(biddingDataCallback, adPlacementConfig)
     }
 
     // region Helpers
+
+    private fun createRewardedPlacementConfig(config: JSONObject): AdPlacementConfig {
+        val placementId = config.optString(BidMachineAdapter.getPlacementIdKey())
+        val adPlacementConfigBuilder = AdPlacementConfig.rewardedBuilder()
+        if(!placementId.isNullOrEmpty()) {
+            adPlacementConfigBuilder.withPlacementId(placementId)
+        }
+        return adPlacementConfigBuilder.build()
+    }
 
     internal fun setRewardedVideoAd(rewardedVideoAd: RewardedAd) {
         mRewardedVideoAd = rewardedVideoAd
