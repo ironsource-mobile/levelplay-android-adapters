@@ -235,6 +235,7 @@ class MolocoAdapter(providerName: String) : AbstractAdapter(providerName),
             biddingDataCallback.onFailure("$error - Moloco")
             return
         }
+
         Moloco.getBidToken(mediationInfo, ContextProvider.getInstance().applicationContext) { bidToken, error ->
             if (error == null) {
                 val biddingDataMap: MutableMap<String?, Any?> = HashMap()
