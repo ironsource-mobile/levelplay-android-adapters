@@ -1,0 +1,91 @@
+import groovy.json.JsonSlurper
+
+apply plugin: 'com.android.library'
+apply plugin: 'kotlin-android'
+
+def versionsFile = file("../versions.json")
+def versionsData = new JsonSlurper().parse(versionsFile)
+
+ext {
+    mediationsdkVersion = versionsData.mediationsdk
+    adapterVersion = versionsData.adapter
+    sdkVersion = versionsData.sdk
+}
+
+def getGitHash = { ->
+    def stdout = new ByteArrayOutputStream()
+    exec {
+        commandLine 'git', 'rev-parse', '--short', 'HEAD'
+        standardOutput = stdout
+    }
+    return stdout.toString().trim()
+}
+
+
+repositories {
+    mavenCentral()
+}
+
+android {
+    namespace "com.ironsource.adapters.line"
+    compileSdk 35
+    buildToolsVersion = "34.0.0"
+
+    buildFeatures {
+        buildConfig true
+    }
+    defaultConfig {
+        minSdkVersion 21
+        targetSdkVersion 35
+        versionCode 1
+        versionName adapterVersion
+        buildConfigField "String", "GitHash", "\"${getGitHash()}\""
+        buildConfigField("String","VERSION_NAME","\"${defaultConfig.versionName}\"")
+    }
+
+    compileOptions {
+        targetCompatibility JavaVersion.VERSION_17
+        sourceCompatibility JavaVersion.VERSION_17
+    }
+    kotlinOptions {
+        jvmTarget = '17'
+    }
+    buildTypes {
+        debug{
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+        }
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+        }
+    }
+
+    packagingOptions {
+        exclude 'META-INF/**'
+    }
+}
+
+ dependencies {
+     implementation "com.unity3d.ads-mediation:mediation-sdk:${mediationsdkVersion}"
+     implementation "com.linecorp.adsnetwork:fivead:${sdkVersion}"
+ }
+
+task sourcesJar(type: Jar) {
+    archiveClassifier = 'sources'
+    from android.sourceSets.main.java.srcDirs
+    exclude 'META-INF.com.android.build.gradle.aar-metadata.properties'
+}
+
+task createAAR(type: Copy,group:'buildTasks') {
+
+    dependsOn (":${project.name}:assembleRelease")
+    from "build/outputs/aar"
+    into '../ReleaseCandidates/'
+    include '*.aar'
+    rename { String fileName ->
+        fileName.replace('release', adapterVersion)
+    }
+}
+
+
