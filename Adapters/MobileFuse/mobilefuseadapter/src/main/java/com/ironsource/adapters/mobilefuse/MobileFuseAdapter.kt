@@ -42,6 +42,7 @@ class MobileFuseAdapter(providerName: String) : AbstractAdapter(providerName),
     // MobileFuse Keys
     private const val NETWORK_NAME: String = "MobileFuse"
     private const val PLACEMENT_ID: String = "placementId"
+    private const val SDK_ADAPTER_NAME: String = "unity_bidding"
 
     // Meta data flags
     private const val DO_NOT_SELL_YES_VALUE: String = "1YY-"
@@ -107,6 +108,8 @@ class MobileFuseAdapter(providerName: String) : AbstractAdapter(providerName),
   //region Initializations methods and callbacks
 
   fun initSdk(config: JSONObject) {
+
+    MobileFuseSettings.setSdkAdapter(SDK_ADAPTER_NAME, getVersion())
 
     // Add self to the init listeners only in case the initialization has not finished yet
     if (mInitState == InitState.INIT_STATE_NONE || mInitState == InitState.INIT_STATE_IN_PROGRESS) {
