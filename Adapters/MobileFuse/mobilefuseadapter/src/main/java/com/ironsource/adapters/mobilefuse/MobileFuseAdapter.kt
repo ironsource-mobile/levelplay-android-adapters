@@ -109,8 +109,6 @@ class MobileFuseAdapter(providerName: String) : AbstractAdapter(providerName),
 
   fun initSdk(config: JSONObject) {
 
-    MobileFuseSettings.setSdkAdapter(SDK_ADAPTER_NAME, getVersion())
-
     // Add self to the init listeners only in case the initialization has not finished yet
     if (mInitState == InitState.INIT_STATE_NONE || mInitState == InitState.INIT_STATE_IN_PROGRESS) {
       initCallbackListeners.add(this)
@@ -118,6 +116,9 @@ class MobileFuseAdapter(providerName: String) : AbstractAdapter(providerName),
 
     if (mWasInitCalled.compareAndSet(false, true)) {
       mInitState = InitState.INIT_STATE_IN_PROGRESS
+
+      // set adapter name
+      MobileFuseSettings.setSdkAdapter(SDK_ADAPTER_NAME, getVersion())
 
       // Init MobileFuse SDK
       MobileFuse.init(this)
