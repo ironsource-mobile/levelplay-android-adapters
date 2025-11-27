@@ -209,8 +209,7 @@ class MobileFuseAdapter(providerName: String) : AbstractAdapter(providerName),
 
   fun collectBiddingData(biddingDataCallback: BiddingDataCallback) {
     val tokenRequest = MobileFuseBiddingTokenRequest(getPrivacyData(), TEST_MODE)
-
-      MobileFuseBiddingTokenProvider.getToken(
+    MobileFuseBiddingTokenProvider.getToken(
         tokenRequest,
         ContextProvider.getInstance().currentActiveActivity.applicationContext,
         object : TokenGeneratorListener {

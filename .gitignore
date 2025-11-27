@@ -24,6 +24,10 @@ hs_err_pid*
 
 */ReleaseCandidates
 *.idea
+*.gradle
+*/*/gradle/
+**/build/
+**/local.properties
 *.iml
 *.idea
 *.log
