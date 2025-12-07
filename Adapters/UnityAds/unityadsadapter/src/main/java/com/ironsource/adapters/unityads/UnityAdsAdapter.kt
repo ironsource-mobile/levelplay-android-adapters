@@ -9,8 +9,6 @@ import com.ironsource.mediationsdk.AdapterUtils
 import com.ironsource.mediationsdk.INetworkInitCallbackListener
 import com.ironsource.mediationsdk.ISBannerSize
 import com.ironsource.mediationsdk.IntegrationData
-import com.ironsource.mediationsdk.IronSource.AD_UNIT
-import com.ironsource.mediationsdk.IronSourceBannerLayout
 import com.ironsource.mediationsdk.LoadWhileShowSupportState
 import com.ironsource.mediationsdk.bidding.BiddingDataCallback
 import com.ironsource.mediationsdk.logger.IronLog
@@ -111,7 +109,7 @@ class UnityAdsAdapter(providerName: String) : AbstractAdapter(providerName),
     // get network sdk version
     override fun getCoreSDKVersion(): String = getAdapterSDKVersion()
 
-    override fun isUsingActivityBeforeImpression(adUnit: AD_UNIT): Boolean = false
+    override fun isUsingActivityBeforeImpression(adFormat: LevelPlay.AdFormat): Boolean = false
 
     //endregion
 
@@ -205,57 +203,9 @@ class UnityAdsAdapter(providerName: String) : AbstractAdapter(providerName),
         listener?.onRewardedVideoInitSuccess()
     }
 
-    // used for flows when the mediation doesn't need to get a callback for init
-    override fun initAndLoadRewardedVideo(
-        appKey: String?,
-        userId: String?,
-        config: JSONObject?,
-        adData: JSONObject?,
-        listener: RewardedVideoSmashListener?
-    ) {
-        val placementId = config?.optString(PLACEMENT_ID)
-        val gameId = config?.optString(GAME_ID)
-
-        if (placementId.isNullOrEmpty()) {
-            IronLog.ADAPTER_API.error("Missing param - $PLACEMENT_ID")
-            listener?.onRewardedVideoAvailabilityChanged(false)
-            return
-        }
-
-        if (gameId.isNullOrEmpty()) {
-            IronLog.ADAPTER_API.error("Missing param - $GAME_ID")
-            listener?.onRewardedVideoAvailabilityChanged(false)
-            return
-        }
-
-        IronLog.ADAPTER_API.verbose("placementId = $placementId")
-
-        if (!UnityAds.isInitialized) {
-            initSDK(config)
-        }
-
-        loadRewardedVideoInternal(config, null, listener)
-    }
-
     override fun loadRewardedVideoForBidding(
         config: JSONObject?,
         adData: JSONObject?,
-        serverData: String?,
-        listener: RewardedVideoSmashListener?
-    ) {
-        loadRewardedVideoInternal(config, serverData, listener)
-    }
-
-    override fun loadRewardedVideo(
-        config: JSONObject?,
-        adData: JSONObject?,
-        listener: RewardedVideoSmashListener?
-    ) {
-        loadRewardedVideoInternal(config, null, listener)
-    }
-
-    private fun loadRewardedVideoInternal(
-        config: JSONObject?,
         serverData: String?,
         listener: RewardedVideoSmashListener?
     ) {
@@ -366,22 +316,6 @@ class UnityAdsAdapter(providerName: String) : AbstractAdapter(providerName),
         config: JSONObject?,
         listener: InterstitialSmashListener?
     ) {
-        initInterstitialInternal(config, listener)
-    }
-
-    override fun initInterstitial(
-        appKey: String?,
-        userId: String?,
-        config: JSONObject?,
-        listener: InterstitialSmashListener?
-    ) {
-        initInterstitialInternal(config, listener)
-    }
-
-    private fun initInterstitialInternal(
-        config: JSONObject?,
-        listener: InterstitialSmashListener?
-    ) {
         val placementId = config?.optString(PLACEMENT_ID)
         val gameId = config?.optString(GAME_ID)
 
@@ -409,22 +343,6 @@ class UnityAdsAdapter(providerName: String) : AbstractAdapter(providerName),
     override fun loadInterstitialForBidding(
         config: JSONObject?,
         adData: JSONObject?,
-        serverData: String?,
-        listener: InterstitialSmashListener?
-    ) {
-        loadInterstitialInternal(config, serverData, listener)
-    }
-
-    override fun loadInterstitial(
-        config: JSONObject?,
-        adData: JSONObject?,
-        listener: InterstitialSmashListener?
-    ) {
-        loadInterstitialInternal(config, null, listener)
-    }
-
-    private fun loadInterstitialInternal(
-        config: JSONObject?,
         serverData: String?,
         listener: InterstitialSmashListener?
     ) {
@@ -515,22 +433,6 @@ class UnityAdsAdapter(providerName: String) : AbstractAdapter(providerName),
         config: JSONObject?,
         listener: BannerSmashListener?
     ) {
-        initBannersInternal(config, listener)
-    }
-
-    override fun initBanners(
-        appKey: String?,
-        userId: String?,
-        config: JSONObject?,
-        listener: BannerSmashListener?
-    ) {
-        initBannersInternal(config, listener)
-    }
-
-    private fun initBannersInternal(
-        config: JSONObject?,
-        listener: BannerSmashListener?
-    ) {
         val placementId = config?.optString(PLACEMENT_ID)
         val gameId = config?.optString(GAME_ID)
 
@@ -559,25 +461,7 @@ class UnityAdsAdapter(providerName: String) : AbstractAdapter(providerName),
         config: JSONObject?,
         adData: JSONObject?,
         serverData: String?,
-        banner: IronSourceBannerLayout?,
-        listener: BannerSmashListener?
-    ) {
-        loadBannerInternal(config, banner, serverData, listener)
-    }
-
-    override fun loadBanner(
-        config: JSONObject?,
-        adData: JSONObject?,
-        banner: IronSourceBannerLayout?,
-        listener: BannerSmashListener?
-    ) {
-        loadBannerInternal(config, banner, null, listener)
-    }
-
-    private fun loadBannerInternal(
-        config: JSONObject?,
-        banner: IronSourceBannerLayout?,
-        serverData: String?,
+        bannerSize: ISBannerSize?,
         listener: BannerSmashListener?
     ) {
         val placementId = config?.optString(PLACEMENT_ID)
@@ -588,16 +472,9 @@ class UnityAdsAdapter(providerName: String) : AbstractAdapter(providerName),
             return
         }
 
-        // check banner
-        if (banner == null) {
-            IronLog.ADAPTER_API.error("banner is null")
-            listener?.onBannerAdLoadFailed(ErrorBuilder.buildNoConfigurationAvailableError("banner is null"))
-            return
-        }
-
         // check size
-        if (!isBannerSizeSupported(banner.size)) {
-            IronLog.ADAPTER_API.error("size not supported, size = " + banner.size.description)
+        if (bannerSize == null || !isBannerSizeSupported(bannerSize)) {
+            IronLog.ADAPTER_API.error("size not supported, size = " + bannerSize?.description)
             listener?.onBannerAdLoadFailed(ErrorBuilder.unsupportedBannerSize(providerName))
             return
         }
@@ -605,7 +482,7 @@ class UnityAdsAdapter(providerName: String) : AbstractAdapter(providerName),
         IronLog.ADAPTER_API.verbose("placementId = $placementId")
 
         // create banner
-        val bannerView = getBannerView(banner, placementId, listener)
+        val bannerView = getBannerView(bannerSize, placementId, listener)
         val loadOptions = UnityAdsLoadOptions()
 
         // objectId is used to identify a loaded ad and to show it
@@ -637,38 +514,6 @@ class UnityAdsAdapter(providerName: String) : AbstractAdapter(providerName),
         biddingDataCallback: BiddingDataCallback
     ) {
         collectBiddingData(AdFormat.BANNER, config, biddingDataCallback)
-    }
-
-    //endregion
-
-    // region memory handling
-
-    override fun releaseMemory(
-        adUnit: AD_UNIT,
-        config: JSONObject?) {
-        IronLog.INTERNAL.verbose("adUnit = $adUnit")
-
-        when (adUnit) {
-            AD_UNIT.REWARDED_VIDEO -> {
-                placementIdToRewardedVideoAdListener.clear()
-                rewardedVideoPlacementIdToLoadedAdObjectId.clear()
-                placementIdToRewardedVideoAdAvailability.clear()
-            }
-            AD_UNIT.INTERSTITIAL -> {
-                placementIdToInterstitialAdListener.clear()
-                interstitialPlacementIdToLoadedAdObjectId.clear()
-                placementIdToInterstitialAdAvailability.clear()
-            }
-            AD_UNIT.BANNER -> {
-                for (adView in placementIdToBannerAd.values) {
-                    adView?.destroy()
-                }
-
-                placementIdToBannerAdListener.clear()
-                placementIdToBannerAd.clear()
-            }
-            else -> {}
-        }
     }
 
     //endregion
@@ -777,7 +622,7 @@ class UnityAdsAdapter(providerName: String) : AbstractAdapter(providerName),
     }
 
     private fun getBannerView(
-        banner: IronSourceBannerLayout,
+        bannerSize: ISBannerSize,
         placementId: String,
         listener: BannerSmashListener?
     ): BannerView {
@@ -788,7 +633,7 @@ class UnityAdsAdapter(providerName: String) : AbstractAdapter(providerName),
         }
 
         // get size
-        val unityBannerSize = getBannerSize(banner.size,
+        val unityBannerSize = getBannerSize(bannerSize,
                 AdapterUtils.isLargeScreen(ContextProvider.getInstance().applicationContext))
 
         // create banner
