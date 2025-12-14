@@ -25,12 +25,17 @@ repositories {
 }
 
 android {
-    compileSdkVersion 34
-    buildToolsVersion "30.0.3"
+    namespace "com.ironsource.adapters.admob"
+    compileSdk 35
+    buildToolsVersion = "34.0.0"
+
+    buildFeatures {
+        buildConfig true
+    }
 
     defaultConfig {
         minSdkVersion 23
-        targetSdkVersion 33
+        targetSdkVersion 35
         versionCode 1
         versionName adapterVersion
         
