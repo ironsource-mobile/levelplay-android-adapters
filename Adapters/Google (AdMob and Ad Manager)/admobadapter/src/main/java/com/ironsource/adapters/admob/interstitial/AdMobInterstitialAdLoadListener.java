@@ -1,6 +1,9 @@
 package com.ironsource.adapters.admob.interstitial;
 
+import android.text.TextUtils;
+
 import com.google.android.gms.ads.LoadAdError;
+import com.google.android.gms.ads.ResponseInfo;
 import com.google.android.gms.ads.interstitial.InterstitialAd;
 import com.google.android.gms.ads.interstitial.InterstitialAdLoadCallback;
 import com.ironsource.adapters.admob.AdMobAdapter;
@@ -11,6 +14,8 @@ import com.ironsource.mediationsdk.sdk.InterstitialSmashListener;
 import org.jetbrains.annotations.NotNull;
 
 import java.lang.ref.WeakReference;
+import java.util.HashMap;
+import java.util.Map;
 
 // AdMob interstitial load listener
 public class AdMobInterstitialAdLoadListener extends InterstitialAdLoadCallback {
@@ -44,7 +49,17 @@ public class AdMobInterstitialAdLoadListener extends InterstitialAdLoadCallback 
 
         mAdapter.get().onInterstitialAdLoaded(mAdUnitId, interstitialAd);
 
-        mListener.onInterstitialAdReady();
+        ResponseInfo responseInfo = interstitialAd.getResponseInfo();
+        String creativeId = (responseInfo != null) ? responseInfo.getResponseId() : null;
+
+        if (TextUtils.isEmpty(creativeId)) {
+            mListener.onInterstitialAdReady();
+        } else {
+            Map<String, Object> extraData = new HashMap<>();
+            extraData.put(AdMobAdapter.CREATIVE_ID_KEY, creativeId);
+            IronLog.ADAPTER_CALLBACK.verbose(AdMobAdapter.CREATIVE_ID_KEY + " = " + creativeId);
+            mListener.onInterstitialAdReady(extraData);
+        }
     }
 
     //interstitial ad failed to load
@@ -74,7 +89,3 @@ public class AdMobInterstitialAdLoadListener extends InterstitialAdLoadCallback 
         mListener.onInterstitialAdLoadFailed(new IronSourceError(errorCode, adapterError));
     }
 }
-
-
-
-

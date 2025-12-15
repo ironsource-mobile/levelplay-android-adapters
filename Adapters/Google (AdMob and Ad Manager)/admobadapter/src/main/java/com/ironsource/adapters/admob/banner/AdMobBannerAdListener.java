@@ -1,16 +1,21 @@
 package com.ironsource.adapters.admob.banner;
 
+import android.text.TextUtils;
 import android.view.Gravity;
 import android.widget.FrameLayout;
 
 import com.google.android.gms.ads.AdListener;
 import com.google.android.gms.ads.AdView;
 import com.google.android.gms.ads.LoadAdError;
+import com.google.android.gms.ads.ResponseInfo;
 import com.ironsource.adapters.admob.AdMobAdapter;
 import com.ironsource.mediationsdk.logger.IronLog;
 import com.ironsource.mediationsdk.logger.IronSourceError;
 import com.ironsource.mediationsdk.sdk.BannerSmashListener;
 import com.ironsource.mediationsdk.utils.ErrorBuilder;
+
+import java.util.HashMap;
+import java.util.Map;
 
 // AdMob banner listener
 public class AdMobBannerAdListener extends AdListener {
@@ -42,7 +47,18 @@ public class AdMobBannerAdListener extends AdListener {
 
         FrameLayout.LayoutParams layoutParams = new FrameLayout.LayoutParams(FrameLayout.LayoutParams.WRAP_CONTENT, FrameLayout.LayoutParams.WRAP_CONTENT);
         layoutParams.gravity = Gravity.CENTER;
-        mListener.onBannerAdLoaded(mAdView, layoutParams);
+
+        ResponseInfo responseInfo = mAdView.getResponseInfo();
+        String creativeId = (responseInfo != null) ? responseInfo.getResponseId() : null;
+
+        if (TextUtils.isEmpty(creativeId)) {
+            mListener.onBannerAdLoaded(mAdView, layoutParams);
+        } else {
+            Map<String, Object> extraData = new HashMap<>();
+            extraData.put(AdMobAdapter.CREATIVE_ID_KEY, creativeId);
+            IronLog.ADAPTER_CALLBACK.verbose(AdMobAdapter.CREATIVE_ID_KEY + " = " + creativeId);
+            mListener.onBannerAdLoaded(mAdView, layoutParams, extraData);
+        }
     }
 
     // ad request failed
@@ -65,14 +81,14 @@ public class AdMobBannerAdListener extends AdListener {
             }
 
             ironSourceErrorObject = AdMobAdapter.isNoFillError(loadAdError.getCode()) ?
-                    new IronSourceError(IronSourceError.ERROR_BN_LOAD_NO_FILL, adapterError) :
-                    ErrorBuilder.buildLoadFailedError(adapterError);
+                new IronSourceError(IronSourceError.ERROR_BN_LOAD_NO_FILL, adapterError) :
+                ErrorBuilder.buildLoadFailedError(adapterError);
         } else {
             adapterError = "Banner failed to load (loadAdError is null)";
             ironSourceErrorObject = ErrorBuilder.buildLoadFailedError(adapterError);
         }
 
-        IronLog.ADAPTER_CALLBACK.error(adapterError + adapterError);
+        IronLog.ADAPTER_CALLBACK.error(adapterError);
         mListener.onBannerAdLoadFailed(ironSourceErrorObject);
     }
 
