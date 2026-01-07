@@ -42,6 +42,7 @@ class MobileFuseAdapter(providerName: String) : AbstractAdapter(providerName),
     // MobileFuse Keys
     private const val NETWORK_NAME: String = "MobileFuse"
     private const val PLACEMENT_ID: String = "placementId"
+    private const val SDK_ADAPTER_NAME: String = "unity_bidding"
 
     // Meta data flags
     private const val DO_NOT_SELL_YES_VALUE: String = "1YY-"
@@ -115,6 +116,9 @@ class MobileFuseAdapter(providerName: String) : AbstractAdapter(providerName),
 
     if (mWasInitCalled.compareAndSet(false, true)) {
       mInitState = InitState.INIT_STATE_IN_PROGRESS
+
+      // set adapter name
+      MobileFuseSettings.setSdkAdapter(SDK_ADAPTER_NAME, getVersion())
 
       // Init MobileFuse SDK
       MobileFuse.init(this)
