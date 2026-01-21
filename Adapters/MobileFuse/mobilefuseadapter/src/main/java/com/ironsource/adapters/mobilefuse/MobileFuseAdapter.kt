@@ -15,6 +15,7 @@ import com.ironsource.mediationsdk.logger.IronLog
 import com.ironsource.mediationsdk.metadata.MetaData
 import com.ironsource.mediationsdk.metadata.MetaDataUtils
 import com.mobilefuse.sdk.MobileFuse
+import com.mobilefuse.sdk.MobileFuseSettings
 import com.mobilefuse.sdk.internal.MobileFuseBiddingTokenProvider
 import com.mobilefuse.sdk.internal.MobileFuseBiddingTokenRequest
 import com.mobilefuse.sdk.internal.TokenGeneratorListener
@@ -42,6 +43,7 @@ class MobileFuseAdapter(providerName: String) : AbstractAdapter(providerName),
     // MobileFuse Keys
     private const val NETWORK_NAME: String = "MobileFuse"
     private const val PLACEMENT_ID: String = "placementId"
+    private const val MEDIATION_NAME: String = "unity_bidding"
 
     // Meta data flags
     private const val DO_NOT_SELL_YES_VALUE: String = "1YY-"
@@ -115,6 +117,8 @@ class MobileFuseAdapter(providerName: String) : AbstractAdapter(providerName),
 
     if (mWasInitCalled.compareAndSet(false, true)) {
       mInitState = InitState.INIT_STATE_IN_PROGRESS
+
+      MobileFuseSettings.setSdkAdapter(MEDIATION_NAME, version)
 
       // Init MobileFuse SDK
       MobileFuse.init(this)
