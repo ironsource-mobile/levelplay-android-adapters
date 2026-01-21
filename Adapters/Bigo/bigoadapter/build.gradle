@@ -26,16 +26,29 @@ repositories {
 }
 
 android {
-    compileSdkVersion 33
-    buildToolsVersion "30.0.3"
+    namespace "com.ironsource.adapters.bigo"
+    compileSdk 36
+    buildToolsVersion = "34.0.0"
+
+    buildFeatures {
+        buildConfig true
+    }
 
     defaultConfig {
         minSdkVersion 19
-        targetSdkVersion 31
+        targetSdkVersion 36
         versionCode 1
         versionName adapterVersion
         buildConfigField "String", "GitHash", "\"${getGitHash()}\""
         buildConfigField("String","VERSION_NAME","\"${defaultConfig.versionName}\"")
+    }
+
+    compileOptions {
+        targetCompatibility JavaVersion.VERSION_17
+        sourceCompatibility JavaVersion.VERSION_17
+    }
+    kotlinOptions {
+        jvmTarget = '17'
     }
     
     buildTypes {
