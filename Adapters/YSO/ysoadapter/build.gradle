@@ -29,7 +29,7 @@ repositories {
 
 android {
     namespace "com.ironsource.adapters.yso"
-    compileSdk 35
+    compileSdk 36
     buildToolsVersion = "34.0.0"
 
     buildFeatures {
@@ -37,7 +37,7 @@ android {
     }
     defaultConfig {
         minSdkVersion 21
-        targetSdkVersion 35
+        targetSdkVersion 36
         versionCode 1
         versionName adapterVersion
         buildConfigField "String", "GitHash", "\"${getGitHash()}\""

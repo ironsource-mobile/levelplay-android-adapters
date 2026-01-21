@@ -5,7 +5,7 @@ import com.ironsource.adapters.yso.YSOAdapter
 import com.ironsource.mediationsdk.logger.IronLog
 import com.ironsource.mediationsdk.logger.IronSourceError
 import com.ironsource.mediationsdk.sdk.RewardedVideoSmashListener
-import com.ysocorp.ysonetwork.YNManager
+import com.ysocorp.ysonetwork.YsoNetwork
 import com.ysocorp.ysonetwork.enums.YNEnumActionError
 import java.lang.ref.WeakReference
 
@@ -13,7 +13,7 @@ class YSORewardedVideoAdListener (
   private val mListener: RewardedVideoSmashListener,
   private val mPlacementKey: String,
   private val mAdapter: WeakReference<YSORewardedVideoAdapter>,
-) : YNManager.ActionLoad, YNManager.ActionDisplay {
+) : YsoNetwork.ActionLoad, YsoNetwork.ActionDisplay {
 
   override fun onLoad(error: YNEnumActionError) {
     if (error == YNEnumActionError.None) {
