@@ -4,10 +4,11 @@ import android.view.Gravity
 import android.widget.FrameLayout
 import com.ironsource.adapters.ogury.OguryAdapter
 import com.ironsource.adapters.ogury.OguryAdapter.Companion.LOG_INIT_FAILED
+import com.ironsource.adapters.ogury.OguryAdapter.Companion.MEDIATION_NAME
+import com.ironsource.adapters.ogury.OguryAdapter.Companion.getAdapterVersion
 import com.ironsource.environment.ContextProvider
 import com.ironsource.mediationsdk.AdapterUtils
 import com.ironsource.mediationsdk.ISBannerSize
-import com.ironsource.mediationsdk.IronSource
 import com.ironsource.mediationsdk.adapter.AbstractBannerAdapter
 import com.ironsource.mediationsdk.bidding.BiddingDataCallback
 import com.ironsource.mediationsdk.logger.IronLog
@@ -16,6 +17,8 @@ import com.ironsource.mediationsdk.utils.ErrorBuilder
 import com.ironsource.mediationsdk.utils.IronSourceConstants
 import com.ogury.ad.OguryBannerAdSize
 import com.ogury.ad.OguryBannerAdView
+import com.ogury.ad.common.OguryMediation
+import com.unity3d.mediation.LevelPlay
 import org.json.JSONObject
 import java.lang.ref.WeakReference
 
@@ -25,6 +28,11 @@ class OguryBannerAdapter(adapter: OguryAdapter) :
     private var mSmashListener : BannerSmashListener? = null
     private var mAdListener : OguryBannerAdListener? = null
     private var mAdView: OguryBannerAdView? = null
+
+    companion object {
+        // Error messages
+        private const val BANNER_SIZE_IS_NULL_ERROR_MSG = "banner size is null, banner has been destroyed"
+    }
 
     //region Banner API
 
@@ -73,8 +81,8 @@ class OguryBannerAdapter(adapter: OguryAdapter) :
         IronLog.ADAPTER_API.verbose()
         
         if (bannerSize == null) {
-            IronLog.INTERNAL.error("banner size is null")
-            listener.onBannerAdLoadFailed(ErrorBuilder.unsupportedBannerSize(adapter.providerName))
+            IronLog.INTERNAL.error(BANNER_SIZE_IS_NULL_ERROR_MSG)
+            listener.onBannerAdLoadFailed(ErrorBuilder.buildLoadFailedError(BANNER_SIZE_IS_NULL_ERROR_MSG))
             return
         }
         val oguryBannerSize = getBannerSize(bannerSize)
@@ -100,7 +108,7 @@ class OguryBannerAdapter(adapter: OguryAdapter) :
         val adUnitIdKey = OguryAdapter.getAdUnitIdKey()
         val adUnitId = getConfigStringValueFromKey(config, adUnitIdKey)
 
-        mAdView = OguryBannerAdView(context, adUnitId, oguryBannerSize)
+        mAdView = OguryBannerAdView(context, adUnitId, oguryBannerSize, OguryMediation(MEDIATION_NAME, LevelPlay.getSdkVersion(), getAdapterVersion()))
 
         val bannerAdListener = OguryBannerAdListener(
             listener,
@@ -113,8 +121,8 @@ class OguryBannerAdapter(adapter: OguryAdapter) :
         mAdView?.setListener(mAdListener)
         postOnUIThread {
             if (bannerSize == null) {
-                IronLog.INTERNAL.error("banner size is null")
-                listener.onBannerAdLoadFailed(ErrorBuilder.unsupportedBannerSize(adapter.providerName))
+                IronLog.INTERNAL.error(BANNER_SIZE_IS_NULL_ERROR_MSG)
+                listener.onBannerAdLoadFailed(ErrorBuilder.buildLoadFailedError(BANNER_SIZE_IS_NULL_ERROR_MSG))
                 return@postOnUIThread
             }
             mAdView?.load(serverData) ?: run {

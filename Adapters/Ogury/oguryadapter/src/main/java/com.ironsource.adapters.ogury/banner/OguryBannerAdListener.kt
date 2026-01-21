@@ -18,9 +18,9 @@ class OguryBannerAdListener(
 
     /**
      * The SDK is ready to display the ad provided by the ad server.
-     * @param bannerAd - bannerAd instance
+     * @param ad - bannerAd instance
      */
-    override fun onAdLoaded(bannerAd: OguryBannerAdView) {
+    override fun onAdLoaded(ad: OguryBannerAdView) {
         IronLog.ADAPTER_CALLBACK.verbose()
         mAdView?.let { mAdapter.get()?.setBannerView(it) }
         mListener.onBannerAdLoaded(mAdView, mLayoutParams)
@@ -28,10 +28,10 @@ class OguryBannerAdListener(
 
     /**
      * The ad failed to load or display.
-     * @param bannerAd - bannerAd instance
+     * @param ad - bannerAd instance
      * @param error - Ogury Ad Error
      */
-    override fun onAdError(bannerAd: OguryBannerAdView, error: OguryAdError) {
+    override fun onAdError(ad: OguryBannerAdView, error: OguryAdError) {
         IronLog.ADAPTER_CALLBACK.verbose("Failed to load, errorMessage = ${error.message}, " +
             "errorCode = ${error.code}")
         mListener.onBannerAdLoadFailed(OguryAdapter.getLoadError(error))
@@ -39,27 +39,27 @@ class OguryBannerAdListener(
 
     /**
      * The ad has been displayed on the screen.
-     * @param bannerAd - bannerAd instance
+     * @param ad - bannerAd instance
      */
-    override fun onAdImpression(bannerAd: OguryBannerAdView) {
+    override fun onAdImpression(ad: OguryBannerAdView) {
         IronLog.ADAPTER_CALLBACK.verbose()
         mListener.onBannerAdShown()
     }
 
     /**
      * The ad has been clicked by the user.
-     * @param bannerAd - bannerAd instance
+     * @param ad - bannerAd instance
      */
-    override fun onAdClicked(bannerAd: OguryBannerAdView) {
+    override fun onAdClicked(ad: OguryBannerAdView) {
         IronLog.ADAPTER_CALLBACK.verbose()
         mListener.onBannerAdClicked()
     }
 
     /**
      * The ad has been closed by the user.
-     * @param bannerAd - bannerAd instance
+     * @param ad - bannerAd instance
      */
-    override fun onAdClosed(bannerAd: OguryBannerAdView) {
+    override fun onAdClosed(ad: OguryBannerAdView) {
         IronLog.ADAPTER_CALLBACK.verbose()
         mListener.onBannerAdScreenDismissed()
     }

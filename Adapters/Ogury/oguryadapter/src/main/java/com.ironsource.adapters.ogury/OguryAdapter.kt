@@ -45,7 +45,7 @@ class OguryAdapter(providerName: String) : AbstractAdapter(providerName),
         private const val VERSION: String = BuildConfig.VERSION_NAME
         private const val GitHash: String = BuildConfig.GitHash
 
-        // Verve Keys
+        // Ogury Keys
         private const val NETWORK_NAME: String = "Ogury"
         private const val ASSET_KEY: String = "assetKey"
         private const val AD_UNIT_ID: String = "adUnitId"
@@ -91,6 +91,9 @@ class OguryAdapter(providerName: String) : AbstractAdapter(providerName),
 
         fun getAdUnitIdKey(): String {
             return AD_UNIT_ID
+        }
+        fun getAdapterVersion(): String {
+            return VERSION
         }
 
         fun getLoadError(error: Throwable?): IronSourceError {

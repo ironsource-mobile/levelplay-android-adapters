@@ -13,19 +13,19 @@ class OguryInterstitialAdListener (
 
     /**
      * The SDK is ready to display the ad provided by the ad server.
-     * @param interstitalAd - InterstitialAd instance
+     * @param ad - InterstitialAd instance
      */
-    override fun onAdLoaded(interstitalAd: OguryInterstitialAd) {
+    override fun onAdLoaded(ad: OguryInterstitialAd) {
         IronLog.ADAPTER_CALLBACK.verbose()
         mListener.onInterstitialAdReady()
     }
 
     /**
      * The ad failed to load or display.
-     * @param interstitalAd - InterstitialAd instance
+     * @param ad - InterstitialAd instance
      * @param error - Ogury Ad Error
      */
-    override fun onAdError(interstitalAd: OguryInterstitialAd, error: OguryAdError) {
+    override fun onAdError(ad: OguryInterstitialAd, error: OguryAdError) {
         IronLog.ADAPTER_CALLBACK.verbose("Failed to ${error.type}, errorMessage = ${error.message}," +
             " errorCode = ${error.code}")
         if(error.type == OguryAdError.Type.LOAD_ERROR) {
@@ -37,10 +37,10 @@ class OguryInterstitialAdListener (
 
     /**
      * Called when Ad Impression has been tracked.
-     * @param interstitalAd - InterstitialAd instance
+     * @param ad - InterstitialAd instance
      *
      */
-    override fun onAdImpression(interstitalAd: OguryInterstitialAd) {
+    override fun onAdImpression(ad: OguryInterstitialAd) {
         IronLog.ADAPTER_CALLBACK.verbose()
         mListener.onInterstitialAdOpened()
         mListener.onInterstitialAdShowSucceeded()
@@ -48,18 +48,18 @@ class OguryInterstitialAdListener (
 
     /**
      * The ad has been clicked by the user.
-     * @param interstitalAd - InterstitialAd instance
+     * @param ad - InterstitialAd instance
      */
-    override fun onAdClicked(interstitalAd: OguryInterstitialAd) {
+    override fun onAdClicked(ad: OguryInterstitialAd) {
         IronLog.ADAPTER_CALLBACK.verbose()
         mListener.onInterstitialAdClicked()
     }
 
     /**
      * The ad has been closed by the user.
-     * @param interstitalAd - InterstitialAd instance
+     * @param ad - InterstitialAd instance
      */
-    override fun onAdClosed(interstitalAd: OguryInterstitialAd) {
+    override fun onAdClosed(ad: OguryInterstitialAd) {
         IronLog.ADAPTER_CALLBACK.verbose()
         mListener.onInterstitialAdClosed()
     }

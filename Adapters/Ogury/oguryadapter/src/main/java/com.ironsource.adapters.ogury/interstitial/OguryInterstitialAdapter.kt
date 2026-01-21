@@ -3,11 +3,12 @@ package com.ironsource.adapters.ogury.interstitial
 import com.ironsource.adapters.ogury.OguryAdapter
 import com.ironsource.adapters.ogury.OguryAdapter.Companion.LOG_INIT_FAILED
 import com.ironsource.adapters.ogury.OguryAdapter.Companion.MEDIATION_NAME
+import com.ironsource.adapters.ogury.OguryAdapter.Companion.getAdapterVersion
 import com.ironsource.environment.ContextProvider
-import com.ironsource.mediationsdk.IronSource
 import com.ironsource.mediationsdk.adapter.AbstractInterstitialAdapter
 import com.ironsource.mediationsdk.bidding.BiddingDataCallback
 import com.ironsource.mediationsdk.logger.IronLog
+import com.ironsource.mediationsdk.logger.IronSourceError
 import com.ironsource.mediationsdk.sdk.InterstitialSmashListener
 import com.ironsource.mediationsdk.utils.ErrorBuilder
 import com.ironsource.mediationsdk.utils.IronSourceConstants
@@ -82,11 +83,7 @@ class OguryInterstitialAdapter(adapter: OguryAdapter) :
         val adUnitIdKey = OguryAdapter.getAdUnitIdKey()
         val adUnitId = getConfigStringValueFromKey(config, adUnitIdKey)
 
-        mAd = OguryInterstitialAd(
-            context,
-            adUnitId,
-            OguryMediation(MEDIATION_NAME, LevelPlay.getSdkVersion())
-        )
+        mAd = OguryInterstitialAd(context, adUnitId, OguryMediation(MEDIATION_NAME, LevelPlay.getSdkVersion(), getAdapterVersion()))
         mAd?.setListener(mAdListener)
         mAd?.load(serverData)?: run {
             listener.onInterstitialAdLoadFailed(ErrorBuilder.buildLoadFailedError("Ad is null"))
@@ -106,7 +103,7 @@ class OguryInterstitialAdapter(adapter: OguryAdapter) :
         }
         mAd?.show() ?: run {
             listener.onInterstitialAdShowFailed(
-                ErrorBuilder.buildNoAdsToShowError(IronSourceConstants.INTERSTITIAL_AD_UNIT)
+                IronSourceError(IronSourceError.ERROR_CODE_GENERIC, "Ad is null")
             )
         }
     }

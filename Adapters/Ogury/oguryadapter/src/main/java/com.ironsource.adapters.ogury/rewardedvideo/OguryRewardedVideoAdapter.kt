@@ -3,11 +3,12 @@ package com.ironsource.adapters.ogury.rewardedvideo
 import com.ironsource.adapters.ogury.OguryAdapter
 import com.ironsource.adapters.ogury.OguryAdapter.Companion.LOG_INIT_FAILED
 import com.ironsource.adapters.ogury.OguryAdapter.Companion.MEDIATION_NAME
+import com.ironsource.adapters.ogury.OguryAdapter.Companion.getAdapterVersion
 import com.ironsource.environment.ContextProvider
-import com.ironsource.mediationsdk.IronSource
 import com.ironsource.mediationsdk.adapter.AbstractRewardedVideoAdapter
 import com.ironsource.mediationsdk.bidding.BiddingDataCallback
 import com.ironsource.mediationsdk.logger.IronLog
+import com.ironsource.mediationsdk.logger.IronSourceError
 import com.ironsource.mediationsdk.sdk.RewardedVideoSmashListener
 import com.ironsource.mediationsdk.utils.ErrorBuilder
 import com.ironsource.mediationsdk.utils.IronSourceConstants
@@ -78,7 +79,7 @@ class OguryRewardedVideoAdapter(adapter: OguryAdapter) :
         mAdListener = rewardedVideoAdListener
 
         val context = ContextProvider.getInstance().applicationContext
-        mAd = OguryRewardedAd(context,adUnitId, OguryMediation(MEDIATION_NAME, LevelPlay.getSdkVersion()))
+        mAd = OguryRewardedAd(context, adUnitId, OguryMediation(MEDIATION_NAME, LevelPlay.getSdkVersion(), getAdapterVersion()))
         mAd?.setListener(mAdListener)
         mAd?.load(serverData)?: run {
             listener.onRewardedVideoLoadFailed(ErrorBuilder.buildLoadFailedError("Ad is null"))
@@ -98,7 +99,7 @@ class OguryRewardedVideoAdapter(adapter: OguryAdapter) :
         mAdListener = rewardedAdShowListener
         mAd?.show() ?: run {
             listener.onRewardedVideoAdShowFailed(
-                ErrorBuilder.buildNoAdsToShowError(IronSourceConstants.REWARDED_VIDEO_AD_UNIT)
+                IronSourceError(IronSourceError.ERROR_CODE_GENERIC, "Ad is null")
             )
         }
     }
