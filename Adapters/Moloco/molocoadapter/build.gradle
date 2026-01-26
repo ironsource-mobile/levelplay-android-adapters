@@ -25,31 +25,18 @@ repositories {
 }
 
 android {
-    namespace "com.ironsource.adapters.moloco"
-    compileSdk 36
-    buildToolsVersion = "34.0.0"
-
-    buildFeatures {
-        buildConfig true
-    }
+    compileSdkVersion 34
+    buildToolsVersion "30.0.3"
 
     defaultConfig {
         minSdkVersion 23
-        targetSdkVersion 36
+        targetSdkVersion 34
         versionCode 1
         versionName adapterVersion
         buildConfigField "String", "GitHash", "\"${getGitHash()}\""
         buildConfigField("String","VERSION_NAME","\"${defaultConfig.versionName}\"")
     }
-
-    compileOptions {
-        targetCompatibility JavaVersion.VERSION_17
-        sourceCompatibility JavaVersion.VERSION_17
-    }
-    kotlinOptions {
-        jvmTarget = '17'
-    }
-
+    
     buildTypes {
         debug{
             minifyEnabled false
