@@ -19,9 +19,23 @@ class YandexBannerAdListener(
 ) : BannerAdEventListener {
 
     override fun onAdLoaded() {
-        IronLog.ADAPTER_CALLBACK.verbose()
         mAdapter.get()?.setBannerView(mAdView)
-        mListener.onBannerAdLoaded(mAdView, mLayoutParams)
+
+        // Extract creative IDs and pass as extra data if available
+        val creativeId = try {
+            YandexAdapter.buildCreativeIdString(mAdView.adInfo.creatives.map { it.creativeId })
+        } catch (e: Exception) {
+            IronLog.ADAPTER_CALLBACK.verbose("Failed to extract creativeId: ${e.message}")
+            ""
+        }
+        IronLog.ADAPTER_CALLBACK.verbose("creativeId = $creativeId")
+
+        if (creativeId.isEmpty()) {
+            mListener.onBannerAdLoaded(mAdView, mLayoutParams)
+        } else {
+            val extraData: Map<String, Any> = mapOf(YandexAdapter.CREATIVE_ID_KEY to creativeId)
+            mListener.onBannerAdLoaded(mAdView, mLayoutParams, extraData)
+        }
     }
 
     override fun onAdFailedToLoad(error: AdRequestError) {

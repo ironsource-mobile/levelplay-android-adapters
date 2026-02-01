@@ -20,10 +20,24 @@ class YandexInterstitialAdListener(
 ) : InterstitialAdLoadListener, InterstitialAdEventListener {
 
     override fun onAdLoaded(interstitialAd: InterstitialAd) {
-        IronLog.ADAPTER_CALLBACK.verbose()
         mAdapter.get()?.setInterstitialAd(interstitialAd)
         mAdapter.get()?.setInterstitialAdAvailability(true)
-        mListener.onInterstitialAdReady()
+
+        // Extract creative IDs and pass as extra data if available
+        val creativeId = try {
+            YandexAdapter.buildCreativeIdString(interstitialAd.info.creatives.map { it.creativeId })
+        } catch (e: Exception) {
+            IronLog.ADAPTER_CALLBACK.verbose("Failed to extract creativeId: ${e.message}")
+            ""
+        }
+        IronLog.ADAPTER_CALLBACK.verbose("creativeId = $creativeId")
+
+        if (creativeId.isEmpty()) {
+            mListener.onInterstitialAdReady()
+        } else {
+            val extraData: Map<String, Any> = mapOf(YandexAdapter.CREATIVE_ID_KEY to creativeId)
+            mListener.onInterstitialAdReady(extraData)
+        }
     }
 
     override fun onAdFailedToLoad(error: AdRequestError) {

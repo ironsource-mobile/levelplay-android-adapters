@@ -21,10 +21,24 @@ class YandexRewardedVideoAdListener (
 ) : RewardedAdLoadListener, RewardedAdEventListener {
 
     override fun onAdLoaded(rewarded: RewardedAd) {
-        IronLog.ADAPTER_CALLBACK.verbose()
         mAdapter.get()?.setRewardedVideoAd(rewarded)
         mAdapter.get()?.setRewardedVideoAdAvailability(true)
-        mListener.onRewardedVideoAvailabilityChanged(true)
+
+        // Extract creative IDs and pass as extra data if available
+        val creativeId = try {
+            YandexAdapter.buildCreativeIdString(rewarded.info.creatives.map { it.creativeId })
+        } catch (e: Exception) {
+            IronLog.ADAPTER_CALLBACK.verbose("Failed to extract creativeId: ${e.message}")
+            ""
+        }
+        IronLog.ADAPTER_CALLBACK.verbose("creativeId = $creativeId")
+
+        if (creativeId.isEmpty()) {
+            mListener.onRewardedVideoAvailabilityChanged(true)
+        } else {
+            val extraData: Map<String, Any> = mapOf(YandexAdapter.CREATIVE_ID_KEY to creativeId)
+            mListener.onRewardedVideoAvailabilityChanged(true, extraData)
+        }
     }
 
     override fun onAdFailedToLoad(error: AdRequestError) {

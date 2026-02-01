@@ -1,6 +1,7 @@
 package com.ironsource.adapters.yandex
 
 import android.content.Context
+import android.text.TextUtils
 import com.ironsource.adapters.yandex.banner.YandexBannerAdapter
 import com.ironsource.adapters.yandex.interstitial.YandexInterstitialAdapter
 import com.ironsource.adapters.yandex.rewardedvideo.YandexRewardedVideoAdapter
@@ -52,6 +53,7 @@ class YandexAdapter(providerName: String) : AbstractAdapter(providerName),
         private const val MEDIATION_NAME: String = "ironsource"
         private const val APP_ID_KEY: String = "appId"
         private const val AD_UNIT_ID_KEY: String = "adUnitId"
+        internal const val CREATIVE_ID_KEY: String = "creativeId"
 
         // Meta data flags
         private const val META_DATA_YANDEX_COPPA_KEY = "Yandex_COPPA"
@@ -92,6 +94,12 @@ class YandexAdapter(providerName: String) : AbstractAdapter(providerName),
                 )
                 else -> IronSourceError(error.code, error.description)
             }
+        }
+
+        internal fun buildCreativeIdString(creativeIds: List<String?>): String {
+            return creativeIds
+                .filter { !TextUtils.isEmpty(it) }
+                .joinToString(",")
         }
     }
     //region Adapter Methods
