@@ -28,15 +28,16 @@ repositories {
 
 android {
     namespace "com.ironsource.adapters.inmobi"
-    compileSdk 35
+    compileSdk 36
     buildToolsVersion = "34.0.0"
 
     buildFeatures {
         buildConfig true
     }
+
     defaultConfig {
-        minSdkVersion 21
-        targetSdkVersion 35
+        minSdkVersion 19
+        targetSdkVersion 36
         versionCode 1
         versionName adapterVersion
         buildConfigField "String", "GitHash", "\"${getGitHash()}\""
@@ -50,6 +51,7 @@ android {
     kotlinOptions {
         jvmTarget = '17'
     }
+
     buildTypes {
         debug{
             minifyEnabled false
