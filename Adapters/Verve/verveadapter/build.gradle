@@ -28,12 +28,16 @@ repositories {
 }
 
 android {
-    compileSdkVersion 34
-    buildToolsVersion "30.0.3"
+    namespace "com.ironsource.adapters.verve"
+    compileSdk 36
+
+    buildFeatures {
+        buildConfig true
+    }
 
     defaultConfig {
         minSdkVersion 21
-        targetSdkVersion 34
+        targetSdkVersion 36
         versionCode 1
         versionName adapterVersion
         buildConfigField "String", "GitHash", "\"${getGitHash()}\""
