@@ -30,7 +30,6 @@ repositories {
 android {
     namespace "com.ironsource.adapters.yso"
     compileSdk 36
-    buildToolsVersion = "34.0.0"
 
     buildFeatures {
         buildConfig true
