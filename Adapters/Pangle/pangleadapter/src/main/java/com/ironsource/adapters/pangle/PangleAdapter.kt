@@ -3,7 +3,6 @@ package com.ironsource.adapters.pangle
 import android.content.Context
 import android.view.Gravity
 import android.widget.FrameLayout
-import com.bytedance.sdk.openadsdk.api.PAGConstant.PAGGDPRConsentType.*
 import com.bytedance.sdk.openadsdk.api.PAGConstant.PAGPAConsentType.*
 import com.bytedance.sdk.openadsdk.api.banner.PAGBannerAd
 import com.bytedance.sdk.openadsdk.api.banner.PAGBannerRequest
@@ -744,15 +743,15 @@ class PangleAdapter(providerName: String) : AbstractAdapter(providerName),
         val gdprValueString : String
 
         if (consent) {
-            gdprValue = PAG_GDPR_CONSENT_TYPE_CONSENT
-            gdprValueString = "PAG_GDPR_CONSENT_TYPE_CONSENT"
+            gdprValue = PAG_PA_CONSENT_TYPE_CONSENT
+            gdprValueString = "PAG_PA_CONSENT_TYPE_CONSENT"
         } else {
-            gdprValue = PAG_GDPR_CONSENT_TYPE_NO_CONSENT
-            gdprValueString = "PAG_GDPR_CONSENT_TYPE_NO_CONSENT"
+            gdprValue = PAG_PA_CONSENT_TYPE_NO_CONSENT
+            gdprValueString = "PAG_PA_CONSENT_TYPE_NO_CONSENT"
         }
 
         IronLog.ADAPTER_API.verbose("consent = $gdprValueString")
-        mPAGConfigBuilder.setGDPRConsent(gdprValue)
+        mPAGConfigBuilder.setPAConsent(gdprValue)
     }
 
     /**
