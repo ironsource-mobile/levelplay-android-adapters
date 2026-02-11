@@ -25,12 +25,16 @@ repositories {
 }
 
 android {
-    compileSdkVersion 34
-    buildToolsVersion "30.0.3"
+    namespace "com.ironsource.adapters.facebook"
+    compileSdk 36
+
+    buildFeatures {
+        buildConfig true
+    }
 
     defaultConfig {
         minSdkVersion 19
-        targetSdkVersion 34
+        targetSdkVersion 36
         versionCode 1
         versionName adapterVersion
         buildConfigField "String", "GitHash", "\"${getGitHash()}\""
