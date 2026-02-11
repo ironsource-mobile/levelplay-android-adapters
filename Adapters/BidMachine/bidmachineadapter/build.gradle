@@ -30,8 +30,7 @@ repositories {
 
 android {
     namespace "com.ironsource.adapters.bidmachine"
-    compileSdk 35
-    buildToolsVersion = "34.0.0"
+    compileSdk 36
 
     buildFeatures {
         buildConfig true
@@ -39,7 +38,7 @@ android {
 
     defaultConfig {
         minSdkVersion 21
-        targetSdkVersion 35
+        targetSdkVersion 36
         versionCode 1
         multiDexEnabled true
         versionName adapterVersion
