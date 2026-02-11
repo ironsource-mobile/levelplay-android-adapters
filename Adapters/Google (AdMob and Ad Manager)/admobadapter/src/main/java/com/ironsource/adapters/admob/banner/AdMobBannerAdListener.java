@@ -58,7 +58,7 @@ public class AdMobBannerAdListener extends AdListener {
             extraData.put(AdMobAdapter.CREATIVE_ID_KEY, creativeId);
             IronLog.ADAPTER_CALLBACK.verbose(AdMobAdapter.CREATIVE_ID_KEY + " = " + creativeId);
             mListener.onBannerAdLoaded(mAdView, layoutParams, extraData);
-        }
+          }
     }
 
     // ad request failed
@@ -81,8 +81,8 @@ public class AdMobBannerAdListener extends AdListener {
             }
 
             ironSourceErrorObject = AdMobAdapter.isNoFillError(loadAdError.getCode()) ?
-                new IronSourceError(IronSourceError.ERROR_BN_LOAD_NO_FILL, adapterError) :
-                ErrorBuilder.buildLoadFailedError(adapterError);
+                    new IronSourceError(IronSourceError.ERROR_BN_LOAD_NO_FILL, adapterError) :
+                    ErrorBuilder.buildLoadFailedError(adapterError);
         } else {
             adapterError = "Banner failed to load (loadAdError is null)";
             ironSourceErrorObject = ErrorBuilder.buildLoadFailedError(adapterError);

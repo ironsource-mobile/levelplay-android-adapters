@@ -9,7 +9,9 @@ import com.ironsource.adapters.admob.AdMobAdapter;
 import com.ironsource.mediationsdk.logger.IronLog;
 import com.ironsource.mediationsdk.logger.IronSourceError;
 import com.ironsource.mediationsdk.sdk.RewardedVideoSmashListener;
+
 import org.jetbrains.annotations.NotNull;
+
 import java.lang.ref.WeakReference;
 import java.util.HashMap;
 import java.util.Map;
@@ -49,12 +51,12 @@ public class AdMobRewardedVideoAdLoadListener extends RewardedAdLoadCallback {
         String creativeId = (responseInfo != null) ? responseInfo.getResponseId() : null;
 
         if (TextUtils.isEmpty(creativeId)) {
-            mListener.onRewardedVideoAvailabilityChanged(true);
+          mListener.onRewardedVideoAvailabilityChanged(true);
         } else {
-            Map<String, Object> extraData = new HashMap<>();
-            extraData.put(AdMobAdapter.CREATIVE_ID_KEY, creativeId);
-            IronLog.ADAPTER_CALLBACK.verbose(AdMobAdapter.CREATIVE_ID_KEY + " = " + creativeId);
-            mListener.onRewardedVideoAvailabilityChanged(true, extraData);
+          Map<String, Object> extraData = new HashMap<>();
+          extraData.put(AdMobAdapter.CREATIVE_ID_KEY, creativeId);
+          IronLog.ADAPTER_CALLBACK.verbose(AdMobAdapter.CREATIVE_ID_KEY + " = " + creativeId);
+          mListener.onRewardedVideoAvailabilityChanged(true, extraData);
         }
     }
 
@@ -92,3 +94,6 @@ public class AdMobRewardedVideoAdLoadListener extends RewardedAdLoadCallback {
         mListener.onRewardedVideoLoadFailed(new IronSourceError(errorCode, adapterError));
     }
 }
+
+
+

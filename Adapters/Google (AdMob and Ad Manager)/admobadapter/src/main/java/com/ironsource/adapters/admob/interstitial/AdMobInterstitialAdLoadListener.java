@@ -48,17 +48,16 @@ public class AdMobInterstitialAdLoadListener extends InterstitialAdLoadCallback 
         }
 
         mAdapter.get().onInterstitialAdLoaded(mAdUnitId, interstitialAd);
-
         ResponseInfo responseInfo = interstitialAd.getResponseInfo();
         String creativeId = (responseInfo != null) ? responseInfo.getResponseId() : null;
 
         if (TextUtils.isEmpty(creativeId)) {
-            mListener.onInterstitialAdReady();
+          mListener.onInterstitialAdReady();
         } else {
-            Map<String, Object> extraData = new HashMap<>();
-            extraData.put(AdMobAdapter.CREATIVE_ID_KEY, creativeId);
-            IronLog.ADAPTER_CALLBACK.verbose(AdMobAdapter.CREATIVE_ID_KEY + " = " + creativeId);
-            mListener.onInterstitialAdReady(extraData);
+          Map<String, Object> extraData = new HashMap<>();
+          extraData.put(AdMobAdapter.CREATIVE_ID_KEY, creativeId);
+          IronLog.ADAPTER_CALLBACK.verbose(AdMobAdapter.CREATIVE_ID_KEY + " = " + creativeId);
+          mListener.onInterstitialAdReady(extraData);
         }
     }
 
@@ -89,3 +88,7 @@ public class AdMobInterstitialAdLoadListener extends InterstitialAdLoadCallback 
         mListener.onInterstitialAdLoadFailed(new IronSourceError(errorCode, adapterError));
     }
 }
+
+
+
+
