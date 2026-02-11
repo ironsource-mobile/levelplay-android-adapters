@@ -27,7 +27,6 @@ repositories {
 android {
     namespace "com.ironsource.adapters.mobilefuse"
     compileSdk 36
-    buildToolsVersion = "34.0.0"
 
     buildFeatures {
         buildConfig true
