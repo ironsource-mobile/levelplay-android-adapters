@@ -28,15 +28,14 @@ repositories {
 
 android {
     namespace "com.ironsource.adapters.pubmatic"
-    compileSdk 35
-    buildToolsVersion = "34.0.0"
+    compileSdk 36
 
     buildFeatures {
         buildConfig true
     }
     defaultConfig {
         minSdkVersion 19
-        targetSdkVersion 35
+        targetSdkVersion 36
         versionCode 1
         versionName adapterVersion
         buildConfigField "String", "GitHash", "\"${getGitHash()}\""
