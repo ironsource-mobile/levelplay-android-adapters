@@ -87,7 +87,8 @@ class LineAdapter(providerName: String) : AbstractAdapter(providerName),
 
         fun getFiveAdConfig(appId: String): FiveAdConfig {
             return fiveAdConfig ?: FiveAdConfig(appId).also {
-                fiveAdConfig = it }
+                fiveAdConfig = it
+            }
         }
 
         fun getAdLoader(appId: String): AdLoader? {
@@ -140,8 +141,13 @@ class LineAdapter(providerName: String) : AbstractAdapter(providerName),
         val lineConfig = getFiveAdConfig(appId)
 
         try {
-            FiveAd.initialize(context, lineConfig)
-            initializationSuccess()
+            val adLoader = forConfig(context, lineConfig)
+            if (adLoader == null) {
+                IronLog.ADAPTER_API.verbose("Initialization failed: AdLoader is null")
+                initializationFailure()
+            } else {
+                initializationSuccess()
+            }
         } catch (e: IllegalArgumentException) {
             IronLog.ADAPTER_API.verbose("Initialization failed: ${e.message}")
             initializationFailure()
@@ -180,10 +186,10 @@ class LineAdapter(providerName: String) : AbstractAdapter(providerName),
 
     // region Helpers
 
-    fun collectBiddingData(biddingDataCallback: BiddingDataCallback,config: JSONObject){
+    fun collectBiddingData(biddingDataCallback: BiddingDataCallback, config: JSONObject) {
         val appId = config.optString(getAppIdKey())
         val adLoader = getAdLoader(appId)
-        if(adLoader == null){
+        if (adLoader == null) {
             biddingDataCallback.onFailure("failed to receive token adLoader is null - Line")
             return
         }
