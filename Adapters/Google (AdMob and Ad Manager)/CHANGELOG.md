@@ -1,5 +1,8 @@
 # Changelog
 
+## Version 5.6.0
+* Supporting SDK version 25.0.0
+
 ## Version 5.5.0
 * fixed bug not allowing creative ID collection
 
