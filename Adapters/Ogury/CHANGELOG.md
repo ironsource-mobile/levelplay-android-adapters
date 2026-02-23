@@ -1,5 +1,8 @@
 # Changelog
 
+## Version 5.3.0
+* Supporting SDK version 6.2.2
+
 ## Version 5.2.0
 * Supporting SDK version 6.2.1
 * Replace unsupportedBannerSize error with buildLoadFailedError for null banner size
