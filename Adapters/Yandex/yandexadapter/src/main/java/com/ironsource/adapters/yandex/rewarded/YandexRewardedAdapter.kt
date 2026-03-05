@@ -1,4 +1,4 @@
-package com.ironsource.adapters.yandex.interstitial
+package com.ironsource.adapters.yandex.rewarded
 
 import android.app.Activity
 import android.content.Context
@@ -6,33 +6,33 @@ import android.os.Handler
 import android.os.Looper
 import com.ironsource.adapters.yandex.YandexAdapter
 import com.ironsource.adapters.yandex.YandexConstants
-import com.ironsource.mediationsdk.adunit.adapter.listener.InterstitialAdListener
+import com.ironsource.mediationsdk.adunit.adapter.listener.RewardedVideoAdListener
 import com.ironsource.mediationsdk.adunit.adapter.utility.AdData
 import com.ironsource.mediationsdk.adunit.adapter.utility.AdapterErrorType
 import com.ironsource.mediationsdk.adunit.adapter.utility.AdapterErrors
 import com.ironsource.mediationsdk.bidding.BiddingDataCallback
 import com.ironsource.mediationsdk.logger.IronLog
 import com.ironsource.mediationsdk.model.NetworkSettings
-import com.unity3d.mediation.adapters.levelplay.LevelPlayBaseInterstitial
+import com.unity3d.mediation.adapters.levelplay.LevelPlayBaseRewardedVideo
 import com.yandex.mobile.ads.common.AdRequestConfiguration
 import com.yandex.mobile.ads.common.AdType
 import com.yandex.mobile.ads.common.BidderTokenRequestConfiguration
-import com.yandex.mobile.ads.interstitial.InterstitialAd
-import com.yandex.mobile.ads.interstitial.InterstitialAdLoader
+import com.yandex.mobile.ads.rewarded.RewardedAd
+import com.yandex.mobile.ads.rewarded.RewardedAdLoader
 import java.lang.ref.WeakReference
 
-class YandexInterstitialAdapter(networkSettings: NetworkSettings) :
-    LevelPlayBaseInterstitial<YandexAdapter>(networkSettings) {
+class YandexRewardedAdapter(networkSettings: NetworkSettings) :
+    LevelPlayBaseRewardedVideo<YandexAdapter>(networkSettings) {
 
     private val mainHandler = Handler(Looper.getMainLooper())
-    private var interstitialAdListener: YandexInterstitialListener? = null
-    private var adLoader: InterstitialAdLoader? = null
-    private var ad: InterstitialAd? = null
+    private var rewardedAdListener: YandexRewardedListener? = null
+    private var adLoader: RewardedAdLoader? = null
+    private var ad: RewardedAd? = null
     private var isAdAvailableFlag = false
 
     // region Adapter Methods
 
-    override fun loadAd(adData: AdData, context: Context, listener: InterstitialAdListener) {
+    override fun loadAd(adData: AdData, context: Context, listener: RewardedVideoAdListener) {
         val adUnitId = adData.getString(YandexConstants.AD_UNIT_ID_KEY)
         IronLog.ADAPTER_API.verbose(YandexConstants.Logs.AD_UNIT_ID.format(adUnitId ?: ""))
 
@@ -68,16 +68,16 @@ class YandexInterstitialAdapter(networkSettings: NetworkSettings) :
             return
         }
 
-        setInterstitialAdAvailability(false)
+        setRewardedAdAvailability(false)
 
-        val interstitialListener = YandexInterstitialListener(listener, WeakReference(this))
-        interstitialAdListener = interstitialListener
+        val rewardedListener = YandexRewardedListener(listener, WeakReference(this))
+        rewardedAdListener = rewardedListener
 
-        val interstitialLoader = InterstitialAdLoader(context.applicationContext).apply {
-            setAdLoadListener(interstitialAdListener)
+        val rewardedLoader = RewardedAdLoader(context.applicationContext).apply {
+            setAdLoadListener(rewardedAdListener)
         }
 
-        adLoader = interstitialLoader
+        adLoader = rewardedLoader
 
         val adRequest: AdRequestConfiguration = AdRequestConfiguration.Builder(adUnitId)
             .setBiddingData(serverData)
@@ -85,11 +85,11 @@ class YandexInterstitialAdapter(networkSettings: NetworkSettings) :
             .build()
 
         mainHandler.post {
-            interstitialLoader.loadAd(adRequest)
+            rewardedLoader.loadAd(adRequest)
         }
     }
 
-    override fun showAd(adData: AdData, activity: Activity, listener: InterstitialAdListener) {
+    override fun showAd(adData: AdData, activity: Activity, listener: RewardedVideoAdListener) {
         IronLog.ADAPTER_API.verbose()
 
         if (!isAdAvailable(adData)) {
@@ -100,7 +100,7 @@ class YandexInterstitialAdapter(networkSettings: NetworkSettings) :
         } else {
             mainHandler.post {
                 ad?.apply {
-                    setAdEventListener(interstitialAdListener)
+                    setAdEventListener(rewardedAdListener)
                     show(activity)
                 }
             }
@@ -113,7 +113,7 @@ class YandexInterstitialAdapter(networkSettings: NetworkSettings) :
 
     override fun destroyAd(adData: AdData) {
         IronLog.ADAPTER_API.verbose()
-        destroyInterstitialAd()
+        destroyRewardedAd()
     }
 
     override fun collectBiddingData(
@@ -129,7 +129,7 @@ class YandexInterstitialAdapter(networkSettings: NetworkSettings) :
             return
         }
 
-        val bidderTokenRequest = BidderTokenRequestConfiguration.Builder(AdType.INTERSTITIAL)
+        val bidderTokenRequest = BidderTokenRequestConfiguration.Builder(AdType.REWARDED)
             .setParameters(networkAdapter.getConfigParams())
             .build()
 
@@ -140,15 +140,15 @@ class YandexInterstitialAdapter(networkSettings: NetworkSettings) :
 
     // region Helper Methods
 
-    internal fun setInterstitialAdAvailability(isAvailable: Boolean) {
+    internal fun setRewardedAdAvailability(isAvailable: Boolean) {
         isAdAvailableFlag = isAvailable
     }
 
-    internal fun setInterstitialAd(interstitialAd: InterstitialAd) {
-        ad = interstitialAd
+    internal fun setRewardedAd(rewardedAd: RewardedAd) {
+        ad = rewardedAd
     }
 
-    internal fun destroyInterstitialAd() {
+    internal fun destroyRewardedAd() {
         adLoader?.setAdLoadListener(null)
         adLoader = null
         ad?.setAdEventListener(null)

@@ -2,97 +2,46 @@ package com.ironsource.adapters.yandex
 
 import android.content.Context
 import android.text.TextUtils
-import com.ironsource.adapters.yandex.banner.YandexBannerAdapter
-import com.ironsource.adapters.yandex.interstitial.YandexInterstitialAdapter
-import com.ironsource.adapters.yandex.rewardedvideo.YandexRewardedVideoAdapter
-import com.ironsource.environment.ContextProvider
-import com.ironsource.mediationsdk.AbstractAdapter
-import com.ironsource.mediationsdk.INetworkInitCallbackListener
-import com.ironsource.mediationsdk.IntegrationData
-import com.ironsource.mediationsdk.IronSource
-import com.ironsource.mediationsdk.LoadWhileShowSupportState
+import com.ironsource.mediationsdk.adunit.adapter.listener.NetworkInitializationListener
+import com.ironsource.mediationsdk.adunit.adapter.utility.AdData
+import com.ironsource.mediationsdk.adunit.adapter.utility.AdapterErrorType
 import com.ironsource.mediationsdk.bidding.BiddingDataCallback
 import com.ironsource.mediationsdk.logger.IronLog
-import com.ironsource.mediationsdk.logger.IronSourceError
 import com.ironsource.mediationsdk.metadata.MetaData
 import com.ironsource.mediationsdk.metadata.MetaDataUtils
 import com.unity3d.mediation.LevelPlay
+import com.unity3d.mediation.adapters.levelplay.LevelPlayBaseAdapter
 import com.yandex.mobile.ads.common.AdRequestError
 import com.yandex.mobile.ads.common.BidderTokenLoadListener
 import com.yandex.mobile.ads.common.BidderTokenLoader
 import com.yandex.mobile.ads.common.BidderTokenRequestConfiguration
 import com.yandex.mobile.ads.common.MobileAds
+import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.atomic.AtomicBoolean
 
-class YandexAdapter(providerName: String) : AbstractAdapter(providerName),
-    INetworkInitCallbackListener {
-
-    // Init state possible values
-    enum class InitState {
-        INIT_STATE_NONE,
-        INIT_STATE_IN_PROGRESS,
-        INIT_STATE_SUCCESS
-    }
-
-    init {
-        setRewardedVideoAdapter(YandexRewardedVideoAdapter(this))
-        setInterstitialAdapter(YandexInterstitialAdapter(this))
-        setBannerAdapter(YandexBannerAdapter(this))
-
-        // The network's capability to load a Rewarded Video ad while another Rewarded Video ad of that network is showing
-        mLWSSupportState = LoadWhileShowSupportState.LOAD_WHILE_SHOW_BY_NETWORK
-    }
+class YandexAdapter() : LevelPlayBaseAdapter() {
 
     companion object {
 
-        // Adapter version
-        private const val VERSION: String = BuildConfig.VERSION_NAME
+        // Init state possible values
+        enum class InitState {
+            INIT_STATE_NONE,
+            INIT_STATE_IN_PROGRESS,
+            INIT_STATE_SUCCESS
+        }
+
         private const val GitHash: String = BuildConfig.GitHash
 
-        // Yandex keys
-        private const val MEDIATION_NAME: String = "ironsource"
-        private const val APP_ID_KEY: String = "appId"
-        private const val AD_UNIT_ID_KEY: String = "adUnitId"
-        internal const val CREATIVE_ID_KEY: String = "creativeId"
-
-        // Meta data flags
-        private const val META_DATA_YANDEX_COPPA_KEY = "Yandex_COPPA"
-
         // Handle init callback for all adapter instances
-        private val mWasInitCalled: AtomicBoolean = AtomicBoolean(false)
-        private var mInitState: InitState = InitState.INIT_STATE_NONE
-        private val initCallbackListeners = HashSet<INetworkInitCallbackListener>()
+        private val wasInitCalled: AtomicBoolean = AtomicBoolean(false)
+        private var initState: InitState = InitState.INIT_STATE_NONE
+        private val initCallbackListeners = CopyOnWriteArrayList<NetworkInitializationListener>()
 
         @JvmStatic
-        fun startAdapter(providerName: String): YandexAdapter {
-            return YandexAdapter(providerName)
-        }
-
-        @JvmStatic
-        fun getIntegrationData(context: Context?): IntegrationData {
-            return IntegrationData("Yandex", VERSION)
-        }
-
-        @JvmStatic
-        fun getAdapterSDKVersion(): String {
-            return MobileAds.libraryVersion
-        }
-
-        fun getAppIdKey(): String {
-            return APP_ID_KEY
-        }
-
-        fun getAdUnitIdKey(): String {
-            return AD_UNIT_ID_KEY
-        }
-
-        fun getLoadErrorAndCheckNoFill(error: AdRequestError, noFillError : Int): IronSourceError {
+        fun getLoadError(error: AdRequestError): AdapterErrorType {
             return when (error.code) {
-                AdRequestError.Code.NO_FILL -> IronSourceError(
-                    noFillError,
-                    error.description
-                )
-                else -> IronSourceError(error.code, error.description)
+                AdRequestError.Code.NO_FILL -> AdapterErrorType.ADAPTER_ERROR_TYPE_NO_FILL
+                else -> AdapterErrorType.ADAPTER_ERROR_TYPE_INTERNAL
             }
         }
 
@@ -102,132 +51,124 @@ class YandexAdapter(providerName: String) : AbstractAdapter(providerName),
                 .joinToString(",")
         }
     }
-    //region Adapter Methods
 
-    // Get adapter version
-    override fun getVersion(): String {
-        return VERSION
-    }
+    // region Adapter Methods
 
-    // Get network sdk version
-    override fun getCoreSDKVersion(): String {
-        return getAdapterSDKVersion()
-    }
+    override fun getAdapterVersion(): String = YandexConstants.ADAPTER_VERSION
 
-    override fun isUsingActivityBeforeImpression(adFormat: LevelPlay.AdFormat): Boolean {
-        return false
-    }
+    override fun getNetworkSDKVersion(): String = MobileAds.libraryVersion
 
-    //endregion
+    override fun isUsingActivityBeforeImpression(adFormat: LevelPlay.AdFormat): Boolean = false
 
-    //region Initializations methods and callbacks
-
-    fun initSdk(appId: String) {
-        // Add self to the init listeners only in case the initialization has not finished yet
-        if (mInitState == InitState.INIT_STATE_NONE || mInitState == InitState.INIT_STATE_IN_PROGRESS) {
-            initCallbackListeners.add(this)
+    override fun init(
+        adData: AdData,
+        context: Context,
+        networkInitializationListener: NetworkInitializationListener?
+    ) {
+        // Add to the init listeners only if init is not finished yet
+        if (initState == InitState.INIT_STATE_NONE || initState == InitState.INIT_STATE_IN_PROGRESS) {
+            networkInitializationListener?.let { initCallbackListeners.add(it) }
         }
 
-        if (mWasInitCalled.compareAndSet(false, true)) {
-            mInitState = InitState.INIT_STATE_IN_PROGRESS
-            IronLog.ADAPTER_API.verbose("appId = $appId")
+        if (wasInitCalled.compareAndSet(false, true)) {
+            initState = InitState.INIT_STATE_IN_PROGRESS
+
+            val appId = adData.getString(YandexConstants.APP_ID_KEY)
+            IronLog.ADAPTER_API.verbose(YandexConstants.Logs.APP_ID.format(appId ?: ""))
 
             // Set log level
-            MobileAds.enableLogging(isAdaptersDebugEnabled)
+            MobileAds.enableLogging(isAdaptersDebugEnabled())
 
             // Initialize the SDK
-            MobileAds.initialize(ContextProvider.getInstance().applicationContext) {
+            MobileAds.initialize(context.applicationContext) {
                 // Yandex's initialization callback currently doesn't give any indication to initialization failure.
                 // Once this callback is called we will treat the initialization as successful
                 initializationSuccess()
             }
+        } else if (initState == InitState.INIT_STATE_SUCCESS) {
+            networkInitializationListener?.onInitSuccess()
         }
     }
 
-    private fun initializationSuccess() {
-        IronLog.ADAPTER_CALLBACK.verbose()
+    // endregion
 
-        mInitState = InitState.INIT_STATE_SUCCESS
+    // region Legal Methods
 
-        //iterate over all the adapter instances and report init success
-        for (adapter: INetworkInitCallbackListener in initCallbackListeners) {
-            adapter.onNetworkInitCallbackSuccess()
-        }
-
-        initCallbackListeners.clear()
-    }
-
-    fun getInitState(): InitState {
-        return mInitState
-    }
-
-    //endregion
-
-    //region legal
-
-    override fun setMetaData(key: String, values: List<String>) {
-        if (values.isEmpty()) {
+    override fun setMetaData(key: String?, values: MutableList<String?>?) {
+        if (values.isNullOrEmpty()) {
             return
         }
 
         // This is a list of 1 value
         val value = values[0]
-        IronLog.ADAPTER_API.verbose("key = $key, value = $value")
+        IronLog.ADAPTER_API.verbose(YandexConstants.Logs.META_DATA_SET.format(key ?: "", value ?: ""))
         val formattedValue: String = MetaDataUtils.formatValueForType(value, MetaData.MetaDataValueTypes.META_DATA_VALUE_BOOLEAN)
 
         when {
-            MetaDataUtils.isValidMetaData(key, META_DATA_YANDEX_COPPA_KEY, formattedValue) -> {
+            MetaDataUtils.isValidMetaData(key, YandexConstants.META_DATA_YANDEX_COPPA_KEY, formattedValue) -> {
                 setCOPPAValue(MetaDataUtils.getMetaDataBooleanValue(formattedValue))
             }
         }
     }
 
     override fun setConsent(consent: Boolean) {
-        IronLog.ADAPTER_API.verbose("consent = $consent")
+        IronLog.ADAPTER_API.verbose(YandexConstants.Logs.CONSENT.format(consent))
         MobileAds.setUserConsent(consent)
     }
 
     private fun setCOPPAValue(value: Boolean) {
-        IronLog.ADAPTER_API.verbose("isCoppa = $value")
+        IronLog.ADAPTER_API.verbose(YandexConstants.Logs.COPPA.format(value))
         MobileAds.setAgeRestrictedUser(value)
     }
 
-    //endregion
+    // endregion
 
-    // region Helpers
-    fun collectBiddingData(biddingDataCallback: BiddingDataCallback, bidderTokenRequest: BidderTokenRequestConfiguration) {
-        if (mInitState != InitState.INIT_STATE_SUCCESS) {
-            val error = "returning null as token since init isn't completed"
-            IronLog.INTERNAL.verbose(error)
-            biddingDataCallback.onFailure("$error - Yandex")
+    // region Helper Methods
+
+    private fun initializationSuccess() {
+        IronLog.ADAPTER_CALLBACK.verbose()
+
+        initState = InitState.INIT_STATE_SUCCESS
+
+        // Iterate over all the adapter instances and report init success
+        for (listener: NetworkInitializationListener in initCallbackListeners) {
+            listener.onInitSuccess()
+        }
+
+        initCallbackListeners.clear()
+    }
+
+    internal fun collectBiddingData(context: Context, biddingDataCallback: BiddingDataCallback, bidderTokenRequest: BidderTokenRequestConfiguration) {
+        if (initState != InitState.INIT_STATE_SUCCESS) {
+            IronLog.INTERNAL.verbose(YandexConstants.Logs.TOKEN_ERROR)
+            biddingDataCallback.onFailure(YandexConstants.Logs.TOKEN_ERROR)
             return
         }
 
         BidderTokenLoader.loadBidderToken(
-            ContextProvider.getInstance().applicationContext,
+            context.applicationContext,
             bidderTokenRequest,
             object : BidderTokenLoadListener {
                 override fun onBidderTokenLoaded(bidderToken: String) {
                     val ret: MutableMap<String?, Any?> = HashMap()
-                    IronLog.ADAPTER_API.verbose("token = $bidderToken")
-                    ret["token"] = bidderToken
+                    IronLog.ADAPTER_API.verbose(YandexConstants.Logs.TOKEN.format(bidderToken))
+                    ret[YandexConstants.TOKEN_KEY] = bidderToken
                     biddingDataCallback.onSuccess(ret)
                 }
 
                 override fun onBidderTokenFailedToLoad(failureReason: String) {
-                    biddingDataCallback.onFailure("failed to receive token - Yandex $failureReason")
+                    biddingDataCallback.onFailure(YandexConstants.Logs.TOKEN_FAILURE.format(failureReason))
                 }
             })
     }
 
-    fun getConfigParams(): Map<String, String> {
+    internal fun getConfigParams(): Map<String, String> {
         return mapOf(
-            "adapter_version" to VERSION,
-            "adapter_network_name" to MEDIATION_NAME,
-            "adapter_network_sdk_version" to LevelPlay.getSdkVersion()
+            YandexConstants.ADAPTER_VERSION_KEY to YandexConstants.ADAPTER_VERSION,
+            YandexConstants.ADAPTER_NETWORK_NAME_KEY to YandexConstants.MEDIATION_NAME,
+            YandexConstants.ADAPTER_NETWORK_SDK_VERSION_KEY to LevelPlay.getSdkVersion()
         )
     }
 
-    //endregion
-
+    // endregion
 }
