@@ -1,5 +1,8 @@
 # Changelog
 
+## Version 5.5.0
+* Fixed a crash that could occur when creativeId was returned as null.
+
 ## Version 5.4.0
 * Supporting SDK version 8.4.3
 
