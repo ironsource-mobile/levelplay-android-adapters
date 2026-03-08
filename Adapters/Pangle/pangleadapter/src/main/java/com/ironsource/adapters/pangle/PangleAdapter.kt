@@ -8,6 +8,8 @@ import com.bytedance.sdk.openadsdk.api.banner.PAGBannerAd
 import com.bytedance.sdk.openadsdk.api.banner.PAGBannerRequest
 import com.bytedance.sdk.openadsdk.api.banner.PAGBannerSize
 import com.bytedance.sdk.openadsdk.api.bidding.PAGBiddingRequest
+import com.bytedance.sdk.openadsdk.api.init.PAGBidCallback
+import com.bytedance.sdk.openadsdk.api.init.PAGBidError
 import com.bytedance.sdk.openadsdk.api.init.PAGConfig
 import com.bytedance.sdk.openadsdk.api.init.PAGSdk
 import com.bytedance.sdk.openadsdk.api.init.PAGSdk.PAGInitCallback
@@ -87,6 +89,9 @@ class PangleAdapter(providerName: String) : AbstractAdapter(providerName),
 
         // Pangle not allow child error message
         const val PANGLE_NOT_ALLOW_CHILD_ERROR_MSG = "Pangle_COPPA indicates the user is a child. Pangle SDK V71 or higher does not support child users."
+
+        // Pangle GDPR consent message
+        const val PANGLE_GDPR_CONSENT_MSG = "Manual configuration of GDPR information is no longer supported. Pangle will automatically read the settings from the CMP in the consent function."
 
         // Pangle COPPA/Child-related constants
         private const val PANGLE_CHILD_DIRECTED_TYPE_CHILD = 1
@@ -739,19 +744,7 @@ class PangleAdapter(providerName: String) : AbstractAdapter(providerName),
     }
 
     override fun setConsent(consent: Boolean) {
-        val gdprValue: Int
-        val gdprValueString : String
-
-        if (consent) {
-            gdprValue = PAG_PA_CONSENT_TYPE_CONSENT
-            gdprValueString = "PAG_PA_CONSENT_TYPE_CONSENT"
-        } else {
-            gdprValue = PAG_PA_CONSENT_TYPE_NO_CONSENT
-            gdprValueString = "PAG_PA_CONSENT_TYPE_NO_CONSENT"
-        }
-
-        IronLog.ADAPTER_API.verbose("consent = $gdprValueString")
-        mPAGConfigBuilder.setPAConsent(gdprValue)
+        IronLog.ADAPTER_API.verbose(PANGLE_GDPR_CONSENT_MSG)
     }
 
     /**
@@ -881,17 +874,23 @@ class PangleAdapter(providerName: String) : AbstractAdapter(providerName),
             adxId = LEVELPLAY_ADXID
         }
 
-        PAGSdk.getBiddingToken(ContextProvider.getInstance().applicationContext, pagBiddingRequest
-        ) { bidToken ->
-            if (!bidToken.isNullOrEmpty()) {
-                IronLog.ADAPTER_API.verbose("token = $bidToken")
-                mutableMapOf<String, Any>()
+        PAGSdk.getBiddingToken(ContextProvider.getInstance().applicationContext, pagBiddingRequest,object :
+            PAGBidCallback {
+            override fun onBiddingTokenCollected(bidToken: String?) {
+                if (!bidToken.isNullOrEmpty()) {
+                    IronLog.ADAPTER_API.verbose("token = $bidToken")
+                    mutableMapOf<String, Any>()
                         .apply { put("token", bidToken) }
                         .let { biddingDataCallback.onSuccess(it) }
-            } else {
-                biddingDataCallback.onFailure("Failed to receive token - Pangle")
+                } else {
+                    biddingDataCallback.onFailure("Failed to receive token - Pangle")
+                }
             }
+
+            override fun onBiddingTokenFailed(pagBidError: PAGBidError?) {
+                biddingDataCallback.onFailure("Failed to receive token ${pagBidError?.code} - ${pagBidError?.message} - Pangle")
             }
+        })
         }
 
     //endregion
