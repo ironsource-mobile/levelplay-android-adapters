@@ -10,11 +10,13 @@ import com.unity3d.ads.IUnityAdsShowListener
 import com.unity3d.ads.UnityAds
 import com.unity3d.ads.UnityAds.UnityAdsLoadError
 import com.unity3d.ads.UnityAds.UnityAdsShowCompletionState
+import com.unity3d.mediation.LevelPlay
 import java.lang.ref.WeakReference
 
-class UnityAdsInterstitialAdListener(private val mListener: InterstitialSmashListener?,
-                                   private val mAdapter: WeakReference<UnityAdsAdapter>?,
-                                   private val mPlacementId: String) : IUnityAdsLoadListener, IUnityAdsShowListener {
+internal class UnityAdsInterstitialAdListener(private val mListener: InterstitialSmashListener?,
+                                   private val networkBridge: WeakReference<LegacyNetworkBridge>?,
+                                   private val mPlacementId: String,
+                                   private val mErrorReporter: UnityAdsErrorReporter?) : IUnityAdsLoadListener, IUnityAdsShowListener {
 
   //region IUnityAdsLoadListener Callbacks
   /**
@@ -25,7 +27,10 @@ class UnityAdsInterstitialAdListener(private val mListener: InterstitialSmashLis
   override fun onUnityAdsAdLoaded(placementId: String?) {
     IronLog.ADAPTER_CALLBACK.verbose("placementId = $mPlacementId")
 
-    mAdapter?.get()?.setInterstitialAdAvailability(mPlacementId, true)
+    if (networkBridge?.get() == null || mListener == null) {
+      mErrorReporter?.reportMissingCallback(LevelPlay.AdFormat.INTERSTITIAL, networkBridge?.get() == null, mListener == null, "interstitial_onUnityAdsAdLoaded")
+    }
+    networkBridge?.get()?.setInterstitialAdAvailability(mPlacementId, true)
     mListener?.onInterstitialAdReady()
   }
 
@@ -41,24 +46,26 @@ class UnityAdsInterstitialAdListener(private val mListener: InterstitialSmashLis
     error: UnityAdsLoadError?,
     message: String?
   ) {
-    mAdapter?.get()?.setInterstitialAdAvailability(mPlacementId, false)
+    networkBridge?.get()?.setInterstitialAdAvailability(mPlacementId, false)
 
     val ironSourceError: IronSourceError = if (error != null) {
       val errorCode = if (error == UnityAdsLoadError.NO_FILL) {
         IronSourceError.ERROR_IS_LOAD_NO_FILL
       } else {
-        mAdapter?.get()?.getUnityAdsLoadErrorCode(error) ?: IronSourceError.ERROR_CODE_GENERIC
+        networkBridge?.get()?.getUnityAdsLoadErrorCode(error) ?: IronSourceError.ERROR_CODE_GENERIC
       }
 
       IronSourceError(errorCode, message)
     } else {
       ErrorBuilder.buildLoadFailedError(
-          IronSourceConstants.INTERSTITIAL_AD_UNIT, mAdapter?.get()?.providerName, message
+          IronSourceConstants.INTERSTITIAL_AD_UNIT, networkBridge?.get()?.providerName, message
       )
     }
 
     IronLog.ADAPTER_CALLBACK.error("placementId = $mPlacementId ironSourceError = $ironSourceError")
-
+    if (networkBridge?.get() == null || mListener == null) {
+      mErrorReporter?.reportMissingCallback(LevelPlay.AdFormat.INTERSTITIAL, networkBridge?.get() == null, mListener == null, "interstitial_onUnityAdsFailedToLoad")
+    }
     mListener?.onInterstitialAdLoadFailed(ironSourceError)
   }
 
@@ -73,6 +80,9 @@ class UnityAdsInterstitialAdListener(private val mListener: InterstitialSmashLis
   override fun onUnityAdsShowStart(placementId: String?) {
     IronLog.ADAPTER_CALLBACK.verbose("placementId = $mPlacementId")
 
+    if (mListener == null) {
+      mErrorReporter?.reportMissingCallback(LevelPlay.AdFormat.INTERSTITIAL, false, true, "interstitial_onUnityAdsShowStart")
+    }
     mListener?.onInterstitialAdOpened()
     mListener?.onInterstitialAdShowSucceeded()
   }
@@ -90,13 +100,16 @@ class UnityAdsInterstitialAdListener(private val mListener: InterstitialSmashLis
     message: String?
   ) {
     val ironSourceError = if (error != null) {
-      val errorCode = mAdapter?.get()?.getUnityAdsShowErrorCode(error) ?: IronSourceError.ERROR_CODE_GENERIC
+      val errorCode = networkBridge?.get()?.getUnityAdsShowErrorCode(error) ?: IronSourceError.ERROR_CODE_GENERIC
       IronSourceError(errorCode, message)
     } else {
       ErrorBuilder.buildShowFailedError(IronSourceConstants.INTERSTITIAL_AD_UNIT, message)
     }
 
     IronLog.ADAPTER_CALLBACK.error("placementId = $mPlacementId ironSourceError = $ironSourceError")
+    if (networkBridge?.get() == null || mListener == null) {
+      mErrorReporter?.reportMissingCallback(LevelPlay.AdFormat.INTERSTITIAL, networkBridge?.get() == null, mListener == null, "interstitial_onUnityAdsShowFailure")
+    }
     mListener?.onInterstitialAdShowFailed(ironSourceError)
   }
 
@@ -108,6 +121,9 @@ class UnityAdsInterstitialAdListener(private val mListener: InterstitialSmashLis
   override fun onUnityAdsShowClick(placementId: String?) {
     IronLog.ADAPTER_CALLBACK.verbose("placementId = $mPlacementId")
 
+    if (mListener == null) {
+      mErrorReporter?.reportMissingCallback(LevelPlay.AdFormat.INTERSTITIAL, false, true, "interstitial_onUnityAdsShowClick")
+    }
     mListener?.onInterstitialAdClicked()
   }
 
@@ -123,10 +139,10 @@ class UnityAdsInterstitialAdListener(private val mListener: InterstitialSmashLis
     completionState: UnityAdsShowCompletionState?
   ) {
     IronLog.ADAPTER_CALLBACK.verbose("placementId = $mPlacementId completionState = $completionState")
-
-    when (completionState) {
-      UnityAdsShowCompletionState.SKIPPED, UnityAdsShowCompletionState.COMPLETED -> mListener?.onInterstitialAdClosed()
-      else -> {}
+    if (mListener == null) {
+      mErrorReporter?.reportMissingCallback(LevelPlay.AdFormat.INTERSTITIAL, false, true, "interstitial_onUnityAdsShowComplete")
     }
+    mListener?.onInterstitialAdClosed()
   }
+
 }

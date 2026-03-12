@@ -10,11 +10,13 @@ import com.unity3d.ads.IUnityAdsShowListener
 import com.unity3d.ads.UnityAds
 import com.unity3d.ads.UnityAds.UnityAdsLoadError
 import com.unity3d.ads.UnityAds.UnityAdsShowCompletionState
+import com.unity3d.mediation.LevelPlay
 import java.lang.ref.WeakReference
 
-class UnityAdsRewardedVideoAdListener(private val mListener: RewardedVideoSmashListener?,
-                                    private val mAdapter: WeakReference<UnityAdsAdapter>?,
-                                    private val mPlacementId: String) : IUnityAdsLoadListener, IUnityAdsShowListener {
+internal class UnityAdsRewardedVideoAdListener(private val mListener: RewardedVideoSmashListener?,
+                                    private val networkBridge: WeakReference<LegacyNetworkBridge>?,
+                                    private val mPlacementId: String,
+                                    private val mErrorReporter: UnityAdsErrorReporter?) : IUnityAdsLoadListener, IUnityAdsShowListener {
 
   //region IUnityAdsLoadListener Callbacks
   /**
@@ -25,7 +27,11 @@ class UnityAdsRewardedVideoAdListener(private val mListener: RewardedVideoSmashL
   override fun onUnityAdsAdLoaded(placementId: String?) {
     IronLog.ADAPTER_CALLBACK.verbose("placementId = $mPlacementId")
 
-    mAdapter?.get()?.setRewardedVideoAdAvailability(mPlacementId, true)
+    if (networkBridge?.get() == null || mListener == null) {
+      mErrorReporter?.reportMissingCallback(LevelPlay.AdFormat.REWARDED, networkBridge?.get() == null, mListener == null, "rewarded_onUnityAdsAdLoaded")
+    }
+
+    networkBridge?.get()?.setRewardedVideoAdAvailability(mPlacementId, true)
     mListener?.onRewardedVideoAvailabilityChanged(true)
   }
 
@@ -41,22 +47,25 @@ class UnityAdsRewardedVideoAdListener(private val mListener: RewardedVideoSmashL
     error: UnityAdsLoadError?,
     message: String?
   ) {
-    mAdapter?.get()?.setRewardedVideoAdAvailability(mPlacementId, false)
+    networkBridge?.get()?.setRewardedVideoAdAvailability(mPlacementId, false)
     mListener?.onRewardedVideoAvailabilityChanged(false)
 
     // For Rewarded Videos, when an adapter receives a failure reason from the network, it will pass it to the Mediation.
     // This is done in addition to the load failure report of the adapter for further analysis
     if (error != null) {
-      val ironSourceError: IronSourceError;
+      val ironSourceError: IronSourceError
 
       val errorCode = if (error == UnityAdsLoadError.NO_FILL) {
         IronSourceError.ERROR_RV_LOAD_NO_FILL
       } else {
-        mAdapter?.get()?.getUnityAdsLoadErrorCode(error) ?: IronSourceError.ERROR_CODE_GENERIC
+        networkBridge?.get()?.getUnityAdsLoadErrorCode(error) ?: IronSourceError.ERROR_CODE_GENERIC
       }
       ironSourceError = IronSourceError(errorCode, message)
 
       IronLog.ADAPTER_CALLBACK.error("placementId = $mPlacementId ironSourceError = $ironSourceError")
+      if (networkBridge?.get() == null || mListener == null) {
+        mErrorReporter?.reportMissingCallback(LevelPlay.AdFormat.REWARDED, networkBridge?.get() == null, mListener == null, "rewarded_onUnityAdsFailedToLoad")
+      }
       mListener?.onRewardedVideoLoadFailed(ironSourceError)
     }
   }
@@ -72,6 +81,9 @@ class UnityAdsRewardedVideoAdListener(private val mListener: RewardedVideoSmashL
   override fun onUnityAdsShowStart(placementId: String?) {
     IronLog.ADAPTER_CALLBACK.verbose("placementId = $mPlacementId")
 
+    if (mListener == null) {
+      mErrorReporter?.reportMissingCallback(LevelPlay.AdFormat.REWARDED, false, true, "rewarded_onUnityAdsShowStart")
+    }
     mListener?.onRewardedVideoAdOpened()
     mListener?.onRewardedVideoAdStarted()
   }
@@ -89,13 +101,16 @@ class UnityAdsRewardedVideoAdListener(private val mListener: RewardedVideoSmashL
     message: String?
   ) {
     val ironSourceError = if (error != null) {
-      val errorCode = mAdapter?.get()?.getUnityAdsShowErrorCode(error) ?: IronSourceError.ERROR_CODE_GENERIC
+      val errorCode = networkBridge?.get()?.getUnityAdsShowErrorCode(error) ?: IronSourceError.ERROR_CODE_GENERIC
       IronSourceError(errorCode, message)
     } else {
       ErrorBuilder.buildShowFailedError(IronSourceConstants.REWARDED_VIDEO_AD_UNIT, message)
     }
 
     IronLog.ADAPTER_CALLBACK.error("placementId = $mPlacementId ironSourceError = $ironSourceError")
+    if (networkBridge?.get() == null || mListener == null) {
+      mErrorReporter?.reportMissingCallback(LevelPlay.AdFormat.REWARDED, networkBridge?.get() == null, mListener == null, "rewarded_onUnityAdsShowFailure")
+    }
     mListener?.onRewardedVideoAdShowFailed(ironSourceError)
   }
 
@@ -107,6 +122,9 @@ class UnityAdsRewardedVideoAdListener(private val mListener: RewardedVideoSmashL
   override fun onUnityAdsShowClick(placementId: String?) {
     IronLog.ADAPTER_CALLBACK.verbose("placementId = $mPlacementId")
 
+    if (mListener == null) {
+      mErrorReporter?.reportMissingCallback(LevelPlay.AdFormat.REWARDED, false, true, "rewarded_onUnityAdsShowClick")
+    }
     mListener?.onRewardedVideoAdClicked()
   }
 
@@ -122,15 +140,14 @@ class UnityAdsRewardedVideoAdListener(private val mListener: RewardedVideoSmashL
     completionState: UnityAdsShowCompletionState?
   ) {
     IronLog.ADAPTER_CALLBACK.verbose("placementId = $mPlacementId completionState = $completionState")
-
-    when (completionState) {
-      UnityAdsShowCompletionState.SKIPPED -> mListener?.onRewardedVideoAdClosed()
-      UnityAdsShowCompletionState.COMPLETED -> {
-        mListener?.onRewardedVideoAdEnded()
-        mListener?.onRewardedVideoAdRewarded()
-        mListener?.onRewardedVideoAdClosed()
-      }
-      else -> {}
+    if (mListener == null) {
+      mErrorReporter?.reportMissingCallback(LevelPlay.AdFormat.REWARDED, false, true, "rewarded_onUnityAdsShowComplete")
     }
+    if (completionState == UnityAdsShowCompletionState.COMPLETED) {
+      mListener?.onRewardedVideoAdRewarded()
+    }
+    mListener?.onRewardedVideoAdEnded()
+    mListener?.onRewardedVideoAdClosed()
   }
+
 }

@@ -1,5 +1,9 @@
 # Changelog
 
+## Version 5.6.0
+* Supporting SDK version 4.17.0
+* Support for upcoming Unity Ads APIs
+
 ## Version 5.5.0
 * Supporting SDK version 4.16.6
 
