@@ -2,6 +2,9 @@
 
 **Important!** As part of supporting Applovin SDK 12.4.0 and above, we have updated the Applovin initialization API to AppLovinSdkInitializationConfiguration. This update is effective for all adapters version 4.3.43 and later. If your AndroidManifest.xml contains an entry for applovin.sdk.key, it must be removed.
 
+## Version 5.5.0
+* Supporting SDK version 13.6.2
+
 ## Version 5.4.0
 * Supporting SDK version 13.6.1
 
