@@ -8,7 +8,6 @@ import com.ironsource.environment.ContextProvider
 import com.ironsource.mediationsdk.AbstractAdapter
 import com.ironsource.mediationsdk.INetworkInitCallbackListener
 import com.ironsource.mediationsdk.IntegrationData
-import com.ironsource.mediationsdk.IronSource
 import com.ironsource.mediationsdk.LoadWhileShowSupportState
 import com.ironsource.mediationsdk.bidding.BiddingDataCallback
 import com.ironsource.mediationsdk.logger.IronLog
@@ -20,7 +19,6 @@ import com.vungle.ads.VungleAds
 import com.vungle.ads.VunglePrivacySettings.setCCPAStatus
 import com.vungle.ads.VunglePrivacySettings.setCOPPAStatus
 import com.vungle.ads.VunglePrivacySettings.setGDPRStatus
-import com.vungle.ads.VungleWrapperFramework
 import java.util.concurrent.atomic.AtomicBoolean
 
 
@@ -45,6 +43,7 @@ class VungleAdapter(providerName: String) : AbstractAdapter(providerName),
         // Vungle keys
         const val APP_ID = "AppID"
         const val PLACEMENT_ID = "PlacementId"
+        private const val MEDIATION_NAME = "ironsource"
 
         // Integration data
         private const val VUNGLE_KEYWORD = "Vungle"
@@ -112,7 +111,7 @@ class VungleAdapter(providerName: String) : AbstractAdapter(providerName),
             mInitState = InitState.INIT_STATE_IN_PROGRESS
 
             VungleAds.setIntegrationName(
-                VungleWrapperFramework.ironsource, BuildConfig.VERSION_NAME
+                MEDIATION_NAME, BuildConfig.VERSION_NAME
             )
 
             // init SDK
