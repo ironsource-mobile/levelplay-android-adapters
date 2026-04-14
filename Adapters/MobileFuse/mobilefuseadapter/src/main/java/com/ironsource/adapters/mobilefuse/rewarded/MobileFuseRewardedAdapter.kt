@@ -1,30 +1,30 @@
-package com.ironsource.adapters.mobilefuse.interstitial
+package com.ironsource.adapters.mobilefuse.rewarded
 
 import android.app.Activity
 import android.content.Context
 import com.ironsource.adapters.mobilefuse.MobileFuseAdapter
 import com.ironsource.adapters.mobilefuse.MobileFuseConstants
-import com.ironsource.mediationsdk.adunit.adapter.listener.InterstitialAdListener
+import com.ironsource.mediationsdk.adunit.adapter.listener.RewardedVideoAdListener
 import com.ironsource.mediationsdk.adunit.adapter.utility.AdData
 import com.ironsource.mediationsdk.adunit.adapter.utility.AdapterErrorType
 import com.ironsource.mediationsdk.adunit.adapter.utility.AdapterErrors
 import com.ironsource.mediationsdk.bidding.BiddingDataCallback
 import com.ironsource.mediationsdk.logger.IronLog
 import com.ironsource.mediationsdk.model.NetworkSettings
-import com.mobilefuse.sdk.MobileFuseInterstitialAd
-import com.unity3d.mediation.adapters.levelplay.LevelPlayBaseInterstitial
+import com.mobilefuse.sdk.MobileFuseRewardedAd
+import com.unity3d.mediation.adapters.levelplay.LevelPlayBaseRewardedVideo
 
-class MobileFuseInterstitialAdapter(networkSettings: NetworkSettings) :
-    LevelPlayBaseInterstitial<MobileFuseAdapter>(networkSettings) {
+class MobileFuseRewardedAdapter(networkSettings: NetworkSettings) :
+    LevelPlayBaseRewardedVideo<MobileFuseAdapter>(networkSettings) {
 
-    private var interstitialAd: MobileFuseInterstitialAd? = null
+    private var rewardedAd: MobileFuseRewardedAd? = null
 
-    // region LevelPlay Interstitial API
+    // region LevelPlay Rewarded Video API
 
     override fun loadAd(
         adData: AdData,
         context: Context,
-        listener: InterstitialAdListener
+        listener: RewardedVideoAdListener
     ) {
         val placementId = adData.getString(MobileFuseConstants.PLACEMENT_ID_KEY)
         IronLog.ADAPTER_API.verbose(MobileFuseConstants.Logs.PLACEMENT_ID.format(placementId ?: ""))
@@ -50,18 +50,18 @@ class MobileFuseInterstitialAdapter(networkSettings: NetworkSettings) :
             return
         }
 
-        val ad = MobileFuseInterstitialAd(context.applicationContext, placementId)
-        interstitialAd = ad
+        val ad = MobileFuseRewardedAd(context.applicationContext, placementId)
+        rewardedAd = ad
 
-        val interstitialAdListener = MobileFuseInterstitialListener(listener)
-        ad.setListener(interstitialAdListener)
+        val rewardedVideoAdListener = MobileFuseRewardedListener(listener)
+        ad.setListener(rewardedVideoAdListener)
         ad.loadAdFromBiddingToken(serverData)
     }
 
     override fun showAd(
         adData: AdData,
         activity: Activity,
-        listener: InterstitialAdListener
+        listener: RewardedVideoAdListener
     ) {
         IronLog.ADAPTER_API.verbose()
 
@@ -73,15 +73,15 @@ class MobileFuseInterstitialAdapter(networkSettings: NetworkSettings) :
             return
         }
 
-        interstitialAd?.showAd()
+        rewardedAd?.showAd()
     }
 
-    override fun isAdAvailable(adData: AdData): Boolean = interstitialAd?.isLoaded == true
+    override fun isAdAvailable(adData: AdData): Boolean = rewardedAd?.isLoaded == true
 
     override fun destroyAd(adData: AdData) {
         IronLog.ADAPTER_API.verbose()
-        interstitialAd?.setListener(null)
-        interstitialAd = null
+        rewardedAd?.setListener(null)
+        rewardedAd = null
     }
 
     override fun collectBiddingData(
