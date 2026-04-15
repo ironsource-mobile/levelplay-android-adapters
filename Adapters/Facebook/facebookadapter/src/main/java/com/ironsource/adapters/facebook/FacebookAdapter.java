@@ -119,6 +119,12 @@ public class FacebookAdapter extends AbstractAdapter implements AudienceNetworkA
         return false;
     }
 
+    @Override
+    public void setTestMode(boolean enabled) {
+        IronLog.ADAPTER_API.verbose("setTestMode: " + enabled);
+        AdSettings.setTestMode(enabled);
+    }
+
     //endregion
 
     //region Initializations methods and callbacks

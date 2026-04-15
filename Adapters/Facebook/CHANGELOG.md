@@ -1,4 +1,6 @@
 # Changelog
+## Version 5.2.0
+* Added test mode support
 
 ## Version 5.1.0
 * Supporting Meta Audience Network SDK version 6.21.0
