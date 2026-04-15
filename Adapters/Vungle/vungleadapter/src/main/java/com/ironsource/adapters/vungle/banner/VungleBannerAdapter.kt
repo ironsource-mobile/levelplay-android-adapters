@@ -11,8 +11,10 @@ import com.ironsource.mediationsdk.logger.IronLog
 import com.ironsource.mediationsdk.sdk.BannerSmashListener
 import com.ironsource.mediationsdk.utils.ErrorBuilder
 import com.ironsource.mediationsdk.utils.IronSourceConstants
+import com.vungle.ads.VungleAds
 import com.vungle.ads.VungleAdSize
 import com.vungle.ads.VungleBannerView
+import com.vungle.ads.VungleMediationLogger
 import org.json.JSONObject
 import java.util.concurrent.ConcurrentHashMap
 
@@ -166,6 +168,15 @@ class VungleBannerAdapter(adapter: VungleAdapter) :
         ).apply {
 
             adListener = VungleBannerAdListener(listener, placementId, this)
+            adapterAdFormat = VungleAdapter.ADAPTER_FORMAT_BANNER
+        }
+
+        // Log custom banner size mismatch for non-inline placements
+        if (!VungleAds.isInline(placementId) && bannerSize.description == "CUSTOM") {
+            vungleBanner.adapterAdFormat =
+                "${VungleAdapter.ADAPTER_FORMAT_BANNER}-${bannerSize.description.lowercase()}"
+            val message = "CustomBannerSizeMismatch:w-${bannerSize.width}|h-${bannerSize.height}"
+            VungleMediationLogger.logError(vungleBanner, message)
         }
 
         mPlacementToBannerAd[placementId] = vungleBanner

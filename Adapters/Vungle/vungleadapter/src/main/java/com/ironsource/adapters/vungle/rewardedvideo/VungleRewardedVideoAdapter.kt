@@ -201,6 +201,7 @@ class VungleRewardedVideoAdapter(adapter: VungleAdapter) :
         ).apply {
 
             adListener = vungleRewardedVideoAdListener
+            adapterAdFormat = VungleAdapter.ADAPTER_FORMAT_REWARDED
         }
         mPlacementToRewardedVideoAd[placementId] = vungleRewardedVideo
         vungleRewardedVideo.load(serverData)
