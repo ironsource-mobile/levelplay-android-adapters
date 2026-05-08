@@ -1,186 +1,130 @@
 package com.ironsource.adapters.verve.banner
 
+import android.app.Activity
+import android.content.Context
+import android.os.Handler
+import android.os.Looper
 import android.view.Gravity
 import android.widget.FrameLayout
 import com.ironsource.adapters.verve.VerveAdapter
-import com.ironsource.adapters.verve.VerveAdapter.Companion.LOG_INIT_FAILED
-import com.ironsource.environment.ContextProvider
+import com.ironsource.adapters.verve.VerveConstants
 import com.ironsource.mediationsdk.AdapterUtils
 import com.ironsource.mediationsdk.ISBannerSize
-import com.ironsource.mediationsdk.IronSource
-import com.ironsource.mediationsdk.adapter.AbstractBannerAdapter
+import com.ironsource.mediationsdk.adunit.adapter.listener.BannerAdListener
+import com.ironsource.mediationsdk.adunit.adapter.utility.AdData
+import com.ironsource.mediationsdk.adunit.adapter.utility.AdapterErrorType
+import com.ironsource.mediationsdk.adunit.adapter.utility.AdapterErrors
 import com.ironsource.mediationsdk.bidding.BiddingDataCallback
 import com.ironsource.mediationsdk.logger.IronLog
-import com.ironsource.mediationsdk.sdk.BannerSmashListener
-import com.ironsource.mediationsdk.utils.ErrorBuilder
-import com.ironsource.mediationsdk.utils.IronSourceConstants
+import com.ironsource.mediationsdk.model.NetworkSettings
+import com.unity3d.mediation.adapters.levelplay.LevelPlayBaseBanner
 import net.pubnative.lite.sdk.models.AdSize
 import net.pubnative.lite.sdk.views.HyBidAdView
-import org.json.JSONObject
-import java.lang.ref.WeakReference
 
-class VerveBannerAdapter(adapter: VerveAdapter) :
-        AbstractBannerAdapter<VerveAdapter>(adapter) {
-    private var mSmashListener : BannerSmashListener? = null
-    private var mAdListener : VerveBannerAdListener? = null
-    private var mAdView: HyBidAdView? = null
+class VerveBannerAdapter(networkSettings: NetworkSettings) :
+    LevelPlayBaseBanner<VerveAdapter>(networkSettings) {
 
-    //region Banner API
+    private val mainHandler = Handler(Looper.getMainLooper())
+    private var bannerAdListener: VerveBannerListener? = null
+    private var adView: HyBidAdView? = null
 
-    override fun initBannerForBidding(
-            appKey: String?,
-            userId: String?,
-            config: JSONObject,
-            listener: BannerSmashListener
-    ) {
+    // region Adapter Methods
 
-        IronLog.ADAPTER_API.verbose()
-
-        //save interstitial listener
-        mSmashListener = listener
-
-        when (adapter.getInitState()) {
-            VerveAdapter.Companion.InitState.INIT_STATE_SUCCESS -> {
-                listener.onBannerInitSuccess()
-            }
-            VerveAdapter.Companion.InitState.INIT_STATE_FAILED -> {
-                listener.onBannerInitFailed(
-                        ErrorBuilder.buildInitFailedError(
-                                LOG_INIT_FAILED,
-                                IronSourceConstants.BANNER_AD_UNIT
-                        )
-                )
-            }
-            VerveAdapter.Companion.InitState.INIT_STATE_NONE,
-            VerveAdapter.Companion.InitState.INIT_STATE_IN_PROGRESS -> {
-                adapter.initSdk(config)
-            }
-        }
-    }
-
-    override fun onNetworkInitCallbackSuccess() {
-        mSmashListener?.onBannerInitSuccess()
-    }
-
-    override fun onNetworkInitCallbackFailed(error: String?) {
-        mSmashListener?.onBannerInitFailed(
-                ErrorBuilder.buildInitFailedError(
-                        error,
-                        IronSourceConstants.BANNER_AD_UNIT
-                )
-        )
-    }
-
-    override fun loadBannerForBidding(
-            config: JSONObject,
-            adData: JSONObject?,
-            serverData: String?,
-            bannerSize: ISBannerSize?,
-            listener: BannerSmashListener
+    override fun loadAd(
+        adData: AdData,
+        activity: Activity,
+        bannerSize: ISBannerSize,
+        listener: BannerAdListener
     ) {
         IronLog.ADAPTER_API.verbose()
 
-        if (bannerSize == null) {
-            IronLog.INTERNAL.error("banner size is null")
-            listener.onBannerAdLoadFailed(ErrorBuilder.unsupportedBannerSize(adapter.providerName))
-            return
-        }
-
-        val verveBannerSize = getBannerSize(bannerSize)
-        if (verveBannerSize == null) {
-            listener.onBannerAdLoadFailed(ErrorBuilder.unsupportedBannerSize(adapter.providerName))
-            return
-        }
-
+        val serverData = adData.serverData
         if (serverData.isNullOrEmpty()) {
-            val error = "serverData is empty"
-            IronLog.INTERNAL.error(error)
-            listener.onBannerAdLoadFailed(ErrorBuilder.buildLoadFailedError(error))
+            val errorMessage = VerveConstants.Logs.MISSING_PARAM.format(VerveConstants.SERVER_DATA)
+            IronLog.INTERNAL.error(errorMessage)
+            listener.onAdLoadFailed(
+                AdapterErrorType.ADAPTER_ERROR_TYPE_INTERNAL,
+                AdapterErrors.ADAPTER_ERROR_MISSING_PARAMS,
+                errorMessage
+            )
             return
         }
 
-        val context = ContextProvider.getInstance().applicationContext
-        val layoutParams = FrameLayout.LayoutParams(
-                AdapterUtils.dpToPixels(context, verveBannerSize.width),
-                AdapterUtils.dpToPixels(context, verveBannerSize.height),
-                Gravity.CENTER
-        )
-
-        val bannerAdView = HyBidAdView(
-            context,
-            verveBannerSize
-        )
-
-        bannerAdView.setAdSize(verveBannerSize)
-        setBannerView(bannerAdView)
-
-        val bannerAdListener = VerveBannerAdListener(
-            listener,
-            WeakReference(this),
-            mAdView,
-            layoutParams
-        )
-
-        mAdListener = bannerAdListener
-        bannerAdView.setMediation(true)
-
-        postOnUIThread {
-            bannerAdView.renderAd(
-                serverData,
-                bannerAdListener
+        val appContext = activity.applicationContext
+        val verveBannerSize = getBannerSize(bannerSize, appContext)
+        if (verveBannerSize == null) {
+            IronLog.INTERNAL.error(VerveConstants.Logs.BANNER_SIZE_NULL)
+            listener.onAdLoadFailed(
+                AdapterErrorType.ADAPTER_ERROR_TYPE_INTERNAL,
+                AdapterErrors.ADAPTER_ERROR_INTERNAL,
+                VerveConstants.Logs.BANNER_SIZE_NULL
             )
+            return
+        }
+
+        val layoutParams = FrameLayout.LayoutParams(
+            AdapterUtils.dpToPixels(appContext, verveBannerSize.width),
+            AdapterUtils.dpToPixels(appContext, verveBannerSize.height),
+            Gravity.CENTER
+        )
+
+        val bannerAdView = HyBidAdView(appContext, verveBannerSize)
+        bannerAdView.apply {
+            setAdSize(verveBannerSize)
+            setMediation(true)
+        }
+
+        adView = bannerAdView
+        val bannerListener = VerveBannerListener(listener, bannerAdView, layoutParams)
+        bannerAdListener = bannerListener
+
+        mainHandler.post {
+            bannerAdView.renderAd(serverData, bannerAdListener)
         }
     }
 
-    override fun destroyBanner(config: JSONObject) {
+    override fun destroyAd(adData: AdData) {
         IronLog.ADAPTER_API.verbose()
-        destroyBannerViewAd()
+        mainHandler.post {
+            adView?.destroy()
+            adView = null
+        }
     }
 
-    override fun collectBannerBiddingData(
-            config: JSONObject,
-            adData: JSONObject?,
-            biddingDataCallback: BiddingDataCallback
+    override fun collectBiddingData(
+        adData: AdData?,
+        context: Context,
+        biddingDataCallback: BiddingDataCallback
     ) {
-        adapter.collectBiddingData(biddingDataCallback)
-    }
+        IronLog.ADAPTER_API.verbose()
 
-    //endregion
-
-    // region Helpers
-
-    private fun destroyBannerViewAd() {
-        postOnUIThread {
-            mAdView?.destroy()
-            mAdView = null
-        }
-    }
-
-    internal fun setBannerView(bannerAdView: HyBidAdView) {
-        mAdView = bannerAdView
-    }
-
-
-    private fun getBannerSize(bannerSize: ISBannerSize?): AdSize? {
-
-        if(bannerSize == null) {
-            IronLog.INTERNAL.verbose("Banner size is null")
-            return null
+        val networkAdapter = getNetworkAdapter()
+        if (networkAdapter == null) {
+            biddingDataCallback.onFailure(VerveConstants.Logs.NETWORK_ADAPTER_IS_NULL)
+            return
         }
 
+        networkAdapter.collectBiddingData(biddingDataCallback)
+    }
+
+    // endregion
+
+    // region Helper Methods
+
+    private fun getBannerSize(bannerSize: ISBannerSize, context: Context): AdSize? {
         return when (bannerSize.description) {
-            "BANNER" -> AdSize.SIZE_320x50
-            "RECTANGLE" -> AdSize.SIZE_300x250
-            "SMART" ->
-                (if (AdapterUtils.isLargeScreen(ContextProvider.getInstance().applicationContext)) {
+            ISBannerSize.BANNER.description -> AdSize.SIZE_320x50
+            ISBannerSize.RECTANGLE.description -> AdSize.SIZE_300x250
+            ISBannerSize.SMART.description -> {
+                if (AdapterUtils.isLargeScreen(context)) {
                     AdSize.SIZE_728x90
                 } else {
                     AdSize.SIZE_320x50
-                })
+                }
+            }
             else -> null
         }
     }
 
-    //endregion
-
+    // endregion
 }

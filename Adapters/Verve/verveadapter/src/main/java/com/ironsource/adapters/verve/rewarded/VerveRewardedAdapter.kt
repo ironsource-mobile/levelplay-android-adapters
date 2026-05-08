@@ -1,31 +1,31 @@
-package com.ironsource.adapters.verve.interstitial
+package com.ironsource.adapters.verve.rewarded
 
 import android.app.Activity
 import android.content.Context
 import com.ironsource.adapters.verve.VerveAdapter
 import com.ironsource.adapters.verve.VerveConstants
-import com.ironsource.mediationsdk.adunit.adapter.listener.InterstitialAdListener
+import com.ironsource.mediationsdk.adunit.adapter.listener.RewardedVideoAdListener
 import com.ironsource.mediationsdk.adunit.adapter.utility.AdData
 import com.ironsource.mediationsdk.adunit.adapter.utility.AdapterErrorType
 import com.ironsource.mediationsdk.adunit.adapter.utility.AdapterErrors
 import com.ironsource.mediationsdk.bidding.BiddingDataCallback
 import com.ironsource.mediationsdk.logger.IronLog
 import com.ironsource.mediationsdk.model.NetworkSettings
-import com.unity3d.mediation.adapters.levelplay.LevelPlayBaseInterstitial
-import net.pubnative.lite.sdk.interstitial.HyBidInterstitialAd
+import com.unity3d.mediation.adapters.levelplay.LevelPlayBaseRewardedVideo
+import net.pubnative.lite.sdk.rewarded.HyBidRewardedAd
 
-class VerveInterstitialAdapter(networkSettings: NetworkSettings) :
-    LevelPlayBaseInterstitial<VerveAdapter>(networkSettings) {
+class VerveRewardedAdapter(networkSettings: NetworkSettings) :
+    LevelPlayBaseRewardedVideo<VerveAdapter>(networkSettings) {
 
-    private var interstitialAdListener: VerveInterstitialListener? = null
-    private var ad: HyBidInterstitialAd? = null
+    private var rewardedAdListener: VerveRewardedListener? = null
+    private var ad: HyBidRewardedAd? = null
 
     // region Adapter Methods
 
     override fun loadAd(
         adData: AdData,
         context: Context,
-        listener: InterstitialAdListener
+        listener: RewardedVideoAdListener
     ) {
         val zoneId = adData.getString(VerveConstants.ZONE_ID_KEY)
         IronLog.ADAPTER_API.verbose(VerveConstants.Logs.ZONE_ID.format(zoneId ?: ""))
@@ -53,23 +53,23 @@ class VerveInterstitialAdapter(networkSettings: NetworkSettings) :
             return
         }
 
-        val interstitialListener = VerveInterstitialListener(listener)
-        interstitialAdListener = interstitialListener
+        val rewardedListener = VerveRewardedListener(listener)
+        rewardedAdListener = rewardedListener
 
-        val interstitialAd = HyBidInterstitialAd(
+        val rewardedAd = HyBidRewardedAd(
             context.applicationContext,
             zoneId,
-            interstitialAdListener
+            rewardedAdListener
         )
 
-        ad = interstitialAd
-        interstitialAd.prepareAd(serverData)
+        ad = rewardedAd
+        rewardedAd.prepareAd(serverData)
     }
 
     override fun showAd(
         adData: AdData,
         activity: Activity,
-        listener: InterstitialAdListener
+        listener: RewardedVideoAdListener
     ) {
         IronLog.ADAPTER_API.verbose()
 
