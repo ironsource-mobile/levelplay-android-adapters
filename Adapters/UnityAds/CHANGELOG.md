@@ -1,5 +1,8 @@
 # Changelog
 
+## Version 5.7.0
+* Supporting SDK version 4.18.0
+
 ## Version 5.6.0
 * Supporting SDK version 4.17.0
 * Support for upcoming Unity Ads APIs
@@ -30,6 +33,9 @@
 Adapter releases listed **below this section** continue to support earlier LevelPlay SDK versions.
 
 ---
+
+## Version 4.3.65
+* Supporting SDK version 4.17.0
 
 ## Version 4.3.64
 * Supporting SDK version 4.16.6
