@@ -1,5 +1,9 @@
 # Changelog
 
+## Version 5.1.0
+* Supporting SDK version 4.28.0
+* Minimum SDK version updated to 26
+
 ## Version 5.0.0
 * Supporting SDK version 4.26.1
 
