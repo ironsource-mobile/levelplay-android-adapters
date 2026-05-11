@@ -10,6 +10,7 @@ object YandexConstants {
     const val APP_ID_KEY: String = "appId"
     const val AD_UNIT_ID_KEY: String = "adUnitId"
     const val CREATIVE_ID_KEY: String = "creativeId"
+    const val SERVER_DATA: String = "serverData"
 
     // Meta data keys
     const val META_DATA_YANDEX_COPPA_KEY: String = "Yandex_COPPA"
@@ -28,13 +29,24 @@ object YandexConstants {
     const val BANNER_SIZE_SMART: String = "SMART"
     const val BANNER_SIZE_CUSTOM: String = "CUSTOM"
 
+    // Banner dimensions
+    const val BANNER_WIDTH: Int = 320
+    const val BANNER_HEIGHT: Int = 50
+    const val LARGE_BANNER_WIDTH: Int = 320
+    const val LARGE_BANNER_HEIGHT: Int = 90
+    const val RECTANGLE_WIDTH: Int = 300
+    const val RECTANGLE_HEIGHT: Int = 250
+    const val LEADERBOARD_WIDTH: Int = 728
+    const val LEADERBOARD_HEIGHT: Int = 90
+
     // Logging Messages
     object Logs {
         // Init/adapter logs
         const val AD_NOT_AVAILABLE: String = "Ad is not available"
         const val ADAPTER_UNAVAILABLE: String = "adapter is not available"
-        const val APP_ID: String = "appId = %s"
+        const val APP_ID_EMPTY: String = "Missing params - appId"
         const val AD_UNIT_ID: String = "adUnitId = %s"
+        const val APP_ID_AND_AD_UNIT_ID: String = "appId = %s, adUnitId = %s"
 
         // Legal/consent logs
         const val CONSENT: String = "consent = %s"
@@ -44,9 +56,8 @@ object YandexConstants {
         // Ad loading logs
         const val FAILED_TO_LOAD: String = "Failed to load, errorCode = %s, errorMessage = %s"
         const val FAILED_TO_SHOW: String = "Failed to show, errorMessage = %s"
-        const val SERVER_DATA_EMPTY: String = "serverData is empty"
-        const val AD_UNIT_ID_EMPTY: String = "Missing params - adUnitId"
         const val CREATIVE_ID: String = "creativeId = %s"
+        const val MISSING_PARAM: String = "Missing params - %s"
 
         // Banner-specific logs
         const val BANNER_SIZE_IS_NULL: String = "banner size is null, banner has been destroyed"

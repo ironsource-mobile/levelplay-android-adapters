@@ -27,7 +27,7 @@ class YandexInterstitialListener(
         adapter.get()?.setInterstitialAdAvailability(true)
 
         // Extract creative IDs and pass as extra data if available
-        val creativeId = interstitialAd.info?.creatives
+        val creativeId = interstitialAd.adInfo?.creatives
             ?.map { it.creativeId }
             ?.let { YandexAdapter.buildCreativeIdString(it) }
             ?: ""
@@ -49,7 +49,6 @@ class YandexInterstitialListener(
         IronLog.ADAPTER_CALLBACK.error(YandexConstants.Logs.FAILED_TO_LOAD.format(error.code, error.description))
         adapter.get()?.setInterstitialAdAvailability(false)
         listener.onAdLoadFailed(YandexAdapter.getLoadError(error), error.code, error.description)
-        adapter.get()?.destroyInterstitialAd()
     }
 
     /**
@@ -66,7 +65,6 @@ class YandexInterstitialListener(
     override fun onAdImpression(impressionData: ImpressionData?) {
         IronLog.ADAPTER_CALLBACK.verbose()
         listener.onAdOpened()
-        listener.onAdStarted()
     }
 
     /**
@@ -92,6 +90,5 @@ class YandexInterstitialListener(
     override fun onAdDismissed() {
         IronLog.ADAPTER_CALLBACK.verbose()
         listener.onAdClosed()
-        adapter.get()?.destroyInterstitialAd()
     }
 }

@@ -28,7 +28,7 @@ class YandexRewardedListener(
         adapter.get()?.setRewardedAdAvailability(true)
 
         // Extract creative IDs and pass as extra data if available
-        val creativeId = rewarded.info?.creatives
+        val creativeId = rewarded.adInfo?.creatives
             ?.map { it.creativeId }
             ?.let { YandexAdapter.buildCreativeIdString(it) }
             ?: ""
@@ -50,7 +50,6 @@ class YandexRewardedListener(
         IronLog.ADAPTER_CALLBACK.error(YandexConstants.Logs.FAILED_TO_LOAD.format(error.code, error.description))
         adapter.get()?.setRewardedAdAvailability(false)
         listener.onAdLoadFailed(YandexAdapter.getLoadError(error), error.code, error.description)
-        adapter.get()?.destroyRewardedAd()
     }
 
     /**
@@ -67,7 +66,6 @@ class YandexRewardedListener(
     override fun onAdImpression(impressionData: ImpressionData?) {
         IronLog.ADAPTER_CALLBACK.verbose()
         listener.onAdOpened()
-        listener.onAdStarted()
     }
 
     /**
@@ -93,7 +91,6 @@ class YandexRewardedListener(
      */
     override fun onRewarded(reward: Reward) {
         IronLog.ADAPTER_CALLBACK.verbose()
-        listener.onAdEnded()
         listener.onAdRewarded()
     }
 
@@ -103,6 +100,5 @@ class YandexRewardedListener(
     override fun onAdDismissed() {
         IronLog.ADAPTER_CALLBACK.verbose()
         listener.onAdClosed()
-        adapter.get()?.destroyRewardedAd()
     }
 }

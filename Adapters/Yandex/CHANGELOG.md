@@ -1,5 +1,9 @@
 # Changelog
 
+## Version 5.9.0
+* Supporting SDK version 8.0.0
+* Updated adapter implementation to support SDK 8.0.0 breaking changes
+
 ## Version 5.8.0
 * Supporting SDK version 7.18.5
 

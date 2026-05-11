@@ -22,15 +22,14 @@ import com.yandex.mobile.ads.banner.BannerAdSize
 import com.yandex.mobile.ads.banner.BannerAdView
 import com.yandex.mobile.ads.common.AdRequest
 import com.yandex.mobile.ads.common.AdType
-import com.yandex.mobile.ads.common.BidderTokenRequestConfiguration
+import com.yandex.mobile.ads.common.BidderTokenRequest
 import java.lang.ref.WeakReference
 
 class YandexBannerAdapter(networkSettings: NetworkSettings) :
     LevelPlayBaseBanner<YandexAdapter>(networkSettings) {
 
     private val mainHandler = Handler(Looper.getMainLooper())
-    private var bannerAdListener: YandexBannerListener? = null
-    private var adView: BannerAdView? = null
+    private var bannerAdView: BannerAdView? = null
 
     // region Adapter Methods
 
@@ -44,11 +43,12 @@ class YandexBannerAdapter(networkSettings: NetworkSettings) :
         IronLog.ADAPTER_API.verbose(YandexConstants.Logs.AD_UNIT_ID.format(adUnitId ?: ""))
 
         if (adUnitId.isNullOrEmpty()) {
-            IronLog.INTERNAL.error(YandexConstants.Logs.AD_UNIT_ID_EMPTY)
+            val errorMessage = YandexConstants.Logs.MISSING_PARAM.format(YandexConstants.AD_UNIT_ID_KEY)
+            IronLog.INTERNAL.error(errorMessage)
             listener.onAdLoadFailed(
                 AdapterErrorType.ADAPTER_ERROR_TYPE_INTERNAL,
                 AdapterErrors.ADAPTER_ERROR_MISSING_PARAMS,
-                YandexConstants.Logs.AD_UNIT_ID_EMPTY
+                errorMessage
             )
             return
         }
@@ -66,11 +66,12 @@ class YandexBannerAdapter(networkSettings: NetworkSettings) :
 
         val serverData = adData.serverData
         if (serverData.isNullOrEmpty()) {
-            IronLog.INTERNAL.error(YandexConstants.Logs.SERVER_DATA_EMPTY)
+            val errorMessage = YandexConstants.Logs.MISSING_PARAM.format(YandexConstants.SERVER_DATA)
+            IronLog.INTERNAL.error(errorMessage)
             listener.onAdLoadFailed(
                 AdapterErrorType.ADAPTER_ERROR_TYPE_INTERNAL,
                 AdapterErrors.ADAPTER_ERROR_MISSING_PARAMS,
-                YandexConstants.Logs.SERVER_DATA_EMPTY
+                errorMessage
             )
             return
         }
@@ -93,29 +94,28 @@ class YandexBannerAdapter(networkSettings: NetworkSettings) :
             Gravity.CENTER
         )
 
-        val bannerAdView = BannerAdView(appContext)
-        bannerAdView.apply {
-            setAdUnitId(adUnitId)
+        bannerAdView = BannerAdView(appContext).apply {
             setAdSize(yandexBannerSize)
+            setBannerAdEventListener(YandexBannerListener(listener, this, layoutParams))
         }
 
-        val bannerListener = YandexBannerListener(listener, WeakReference(this), bannerAdView, layoutParams)
-        bannerAdListener = bannerListener
-
-        val adRequest: AdRequest = AdRequest.Builder()
+        val adRequest: AdRequest = AdRequest.Builder(adUnitId)
             .setBiddingData(serverData)
             .setParameters(networkAdapter.getConfigParams())
             .build()
-        bannerAdView.setBannerAdEventListener(bannerAdListener)
 
         mainHandler.post {
-            bannerAdView.loadAd(adRequest)
+            bannerAdView?.loadAd(adRequest)
         }
     }
 
     override fun destroyAd(adData: AdData) {
         IronLog.ADAPTER_API.verbose()
-        destroyBannerViewAd()
+        mainHandler.post {
+            bannerAdView?.setBannerAdEventListener(null)
+            bannerAdView?.destroy()
+            bannerAdView = null
+        }
     }
 
     override fun collectBiddingData(
@@ -145,10 +145,7 @@ class YandexBannerAdapter(networkSettings: NetworkSettings) :
             return
         }
 
-        val bidderTokenRequest = BidderTokenRequestConfiguration.Builder(AdType.BANNER)
-            .setBannerAdSize(yandexBannerSize)
-            .setParameters(networkAdapter.getConfigParams())
-            .build()
+        val bidderTokenRequest = BidderTokenRequest.banner(yandexBannerSize, null, networkAdapter.getConfigParams())
 
         networkAdapter.collectBiddingData(context, biddingDataCallback, bidderTokenRequest)
     }
@@ -157,33 +154,21 @@ class YandexBannerAdapter(networkSettings: NetworkSettings) :
 
     // region Helper Methods
 
-    private fun destroyBannerViewAd() {
-        mainHandler.post {
-            adView?.setBannerAdEventListener(null)
-            adView?.destroy()
-            adView = null
-        }
-    }
-
-    internal fun setBannerView(bannerAdView: BannerAdView) {
-        adView = bannerAdView
-    }
-
     private fun getBannerSize(context: Context, bannerSize: ISBannerSize): BannerAdSize? {
         return when (bannerSize.description) {
-            YandexConstants.BANNER_SIZE_BANNER -> BannerAdSize.fixedSize(context, 320, 50)
-            YandexConstants.BANNER_SIZE_LARGE -> BannerAdSize.fixedSize(context, 320, 90)
-            YandexConstants.BANNER_SIZE_RECTANGLE -> BannerAdSize.fixedSize(context, 300, 250)
+            YandexConstants.BANNER_SIZE_BANNER -> BannerAdSize.fixed(context, YandexConstants.BANNER_WIDTH, YandexConstants.BANNER_HEIGHT)
+            YandexConstants.BANNER_SIZE_LARGE -> BannerAdSize.fixed(context, YandexConstants.LARGE_BANNER_WIDTH, YandexConstants.LARGE_BANNER_HEIGHT)
+            YandexConstants.BANNER_SIZE_RECTANGLE -> BannerAdSize.fixed(context, YandexConstants.RECTANGLE_WIDTH, YandexConstants.RECTANGLE_HEIGHT)
             YandexConstants.BANNER_SIZE_SMART ->
                 (if (AdapterUtils.isLargeScreen(context)) {
-                    BannerAdSize.fixedSize(context, 728, 90)
+                    BannerAdSize.fixed(context, YandexConstants.LEADERBOARD_WIDTH, YandexConstants.LEADERBOARD_HEIGHT)
                 } else {
-                    BannerAdSize.fixedSize(context, 320, 50)
+                    BannerAdSize.fixed(context, YandexConstants.BANNER_WIDTH, YandexConstants.BANNER_HEIGHT)
                 })
             YandexConstants.BANNER_SIZE_CUSTOM -> {
                 val width = bannerSize.width
                 val height = bannerSize.height
-                BannerAdSize.fixedSize(context, width, height)
+                BannerAdSize.fixed(context, width, height)
             }
             else -> {
                 IronLog.INTERNAL.verbose(YandexConstants.Logs.BANNER_SIZE_NULL_LOG)

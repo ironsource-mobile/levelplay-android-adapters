@@ -9,11 +9,9 @@ import com.yandex.mobile.ads.banner.BannerAdEventListener
 import com.yandex.mobile.ads.banner.BannerAdView
 import com.yandex.mobile.ads.common.AdRequestError
 import com.yandex.mobile.ads.common.ImpressionData
-import java.lang.ref.WeakReference
 
 class YandexBannerListener(
     private val listener: BannerAdListener,
-    private val adapter: WeakReference<YandexBannerAdapter>,
     private val adView: BannerAdView,
     private val layoutParams: FrameLayout.LayoutParams
 ) : BannerAdEventListener {
@@ -22,7 +20,6 @@ class YandexBannerListener(
      * Called when Ad was loaded and ready to be displayed
      */
     override fun onAdLoaded() {
-        adapter.get()?.setBannerView(adView)
 
         // Extract creative IDs and pass as extra data if available
         val creativeId = adView.adInfo?.creatives
@@ -63,20 +60,5 @@ class YandexBannerListener(
     override fun onAdClicked() {
         IronLog.ADAPTER_CALLBACK.verbose()
         listener.onAdClicked()
-    }
-
-    /**
-     * Called when user leaves application
-     */
-    override fun onLeftApplication() {
-        IronLog.ADAPTER_CALLBACK.verbose()
-        listener.onAdLeftApplication()
-    }
-
-    /**
-     * Called when user returns to application
-     */
-    override fun onReturnedToApplication() {
-        IronLog.ADAPTER_CALLBACK.verbose()
     }
 }

@@ -14,9 +14,9 @@ import com.ironsource.mediationsdk.bidding.BiddingDataCallback
 import com.ironsource.mediationsdk.logger.IronLog
 import com.ironsource.mediationsdk.model.NetworkSettings
 import com.unity3d.mediation.adapters.levelplay.LevelPlayBaseInterstitial
-import com.yandex.mobile.ads.common.AdRequestConfiguration
+import com.yandex.mobile.ads.common.AdRequest
 import com.yandex.mobile.ads.common.AdType
-import com.yandex.mobile.ads.common.BidderTokenRequestConfiguration
+import com.yandex.mobile.ads.common.BidderTokenRequest
 import com.yandex.mobile.ads.interstitial.InterstitialAd
 import com.yandex.mobile.ads.interstitial.InterstitialAdLoader
 import java.lang.ref.WeakReference
@@ -26,8 +26,7 @@ class YandexInterstitialAdapter(networkSettings: NetworkSettings) :
 
     private val mainHandler = Handler(Looper.getMainLooper())
     private var interstitialAdListener: YandexInterstitialListener? = null
-    private var adLoader: InterstitialAdLoader? = null
-    private var ad: InterstitialAd? = null
+    private var interstitialAd: InterstitialAd? = null
     private var isAdAvailableFlag = false
 
     // region Adapter Methods
@@ -37,11 +36,12 @@ class YandexInterstitialAdapter(networkSettings: NetworkSettings) :
         IronLog.ADAPTER_API.verbose(YandexConstants.Logs.AD_UNIT_ID.format(adUnitId ?: ""))
 
         if (adUnitId.isNullOrEmpty()) {
-            IronLog.INTERNAL.error(YandexConstants.Logs.AD_UNIT_ID_EMPTY)
+            val errorMessage = YandexConstants.Logs.MISSING_PARAM.format(YandexConstants.AD_UNIT_ID_KEY)
+            IronLog.INTERNAL.error(errorMessage)
             listener.onAdLoadFailed(
                 AdapterErrorType.ADAPTER_ERROR_TYPE_INTERNAL,
                 AdapterErrors.ADAPTER_ERROR_MISSING_PARAMS,
-                YandexConstants.Logs.AD_UNIT_ID_EMPTY
+                errorMessage
             )
             return
         }
@@ -59,33 +59,29 @@ class YandexInterstitialAdapter(networkSettings: NetworkSettings) :
 
         val serverData = adData.serverData
         if (serverData.isNullOrEmpty()) {
-            IronLog.INTERNAL.error(YandexConstants.Logs.SERVER_DATA_EMPTY)
+            val errorMessage = YandexConstants.Logs.MISSING_PARAM.format(YandexConstants.SERVER_DATA)
+            IronLog.INTERNAL.error(errorMessage)
             listener.onAdLoadFailed(
                 AdapterErrorType.ADAPTER_ERROR_TYPE_INTERNAL,
                 AdapterErrors.ADAPTER_ERROR_MISSING_PARAMS,
-                YandexConstants.Logs.SERVER_DATA_EMPTY
+                errorMessage
             )
             return
         }
 
         setInterstitialAdAvailability(false)
 
-        val interstitialListener = YandexInterstitialListener(listener, WeakReference(this))
-        interstitialAdListener = interstitialListener
+        interstitialAdListener = YandexInterstitialListener(listener, WeakReference(this))
 
-        val interstitialLoader = InterstitialAdLoader(context.applicationContext).apply {
-            setAdLoadListener(interstitialAdListener)
-        }
+        val interstitialLoader = InterstitialAdLoader(context.applicationContext)
 
-        adLoader = interstitialLoader
-
-        val adRequest: AdRequestConfiguration = AdRequestConfiguration.Builder(adUnitId)
+        val adRequest: AdRequest = AdRequest.Builder(adUnitId)
             .setBiddingData(serverData)
             .setParameters(networkAdapter.getConfigParams())
             .build()
 
         mainHandler.post {
-            interstitialLoader.loadAd(adRequest)
+            interstitialLoader.loadAd(adRequest, interstitialAdListener!!)
         }
     }
 
@@ -99,7 +95,7 @@ class YandexInterstitialAdapter(networkSettings: NetworkSettings) :
             )
         } else {
             mainHandler.post {
-                ad?.apply {
+                interstitialAd?.apply {
                     setAdEventListener(interstitialAdListener)
                     show(activity)
                 }
@@ -108,12 +104,14 @@ class YandexInterstitialAdapter(networkSettings: NetworkSettings) :
     }
 
     override fun isAdAvailable(adData: AdData): Boolean {
-        return ad != null && isAdAvailableFlag
+        return interstitialAd != null && isAdAvailableFlag
     }
 
     override fun destroyAd(adData: AdData) {
         IronLog.ADAPTER_API.verbose()
-        destroyInterstitialAd()
+        interstitialAd?.setAdEventListener(null)
+        interstitialAd = null
+        interstitialAdListener = null
     }
 
     override fun collectBiddingData(
@@ -129,9 +127,7 @@ class YandexInterstitialAdapter(networkSettings: NetworkSettings) :
             return
         }
 
-        val bidderTokenRequest = BidderTokenRequestConfiguration.Builder(AdType.INTERSTITIAL)
-            .setParameters(networkAdapter.getConfigParams())
-            .build()
+        val bidderTokenRequest = BidderTokenRequest.interstitial(null, networkAdapter.getConfigParams())
 
         networkAdapter.collectBiddingData(context, biddingDataCallback, bidderTokenRequest)
     }
@@ -144,15 +140,8 @@ class YandexInterstitialAdapter(networkSettings: NetworkSettings) :
         isAdAvailableFlag = isAvailable
     }
 
-    internal fun setInterstitialAd(interstitialAd: InterstitialAd) {
-        ad = interstitialAd
-    }
-
-    internal fun destroyInterstitialAd() {
-        adLoader?.setAdLoadListener(null)
-        adLoader = null
-        ad?.setAdEventListener(null)
-        ad = null
+    internal fun setInterstitialAd(ad: InterstitialAd) {
+        interstitialAd = ad
     }
 
     // endregion

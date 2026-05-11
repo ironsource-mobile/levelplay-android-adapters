@@ -14,9 +14,9 @@ import com.ironsource.mediationsdk.bidding.BiddingDataCallback
 import com.ironsource.mediationsdk.logger.IronLog
 import com.ironsource.mediationsdk.model.NetworkSettings
 import com.unity3d.mediation.adapters.levelplay.LevelPlayBaseRewardedVideo
-import com.yandex.mobile.ads.common.AdRequestConfiguration
+import com.yandex.mobile.ads.common.AdRequest
 import com.yandex.mobile.ads.common.AdType
-import com.yandex.mobile.ads.common.BidderTokenRequestConfiguration
+import com.yandex.mobile.ads.common.BidderTokenRequest
 import com.yandex.mobile.ads.rewarded.RewardedAd
 import com.yandex.mobile.ads.rewarded.RewardedAdLoader
 import java.lang.ref.WeakReference
@@ -26,8 +26,7 @@ class YandexRewardedAdapter(networkSettings: NetworkSettings) :
 
     private val mainHandler = Handler(Looper.getMainLooper())
     private var rewardedAdListener: YandexRewardedListener? = null
-    private var adLoader: RewardedAdLoader? = null
-    private var ad: RewardedAd? = null
+    private var rewardedAd: RewardedAd? = null
     private var isAdAvailableFlag = false
 
     // region Adapter Methods
@@ -37,11 +36,12 @@ class YandexRewardedAdapter(networkSettings: NetworkSettings) :
         IronLog.ADAPTER_API.verbose(YandexConstants.Logs.AD_UNIT_ID.format(adUnitId ?: ""))
 
         if (adUnitId.isNullOrEmpty()) {
-            IronLog.INTERNAL.error(YandexConstants.Logs.AD_UNIT_ID_EMPTY)
+            val errorMessage = YandexConstants.Logs.MISSING_PARAM.format(YandexConstants.AD_UNIT_ID_KEY)
+            IronLog.INTERNAL.error(errorMessage)
             listener.onAdLoadFailed(
                 AdapterErrorType.ADAPTER_ERROR_TYPE_INTERNAL,
                 AdapterErrors.ADAPTER_ERROR_MISSING_PARAMS,
-                YandexConstants.Logs.AD_UNIT_ID_EMPTY
+                errorMessage
             )
             return
         }
@@ -59,33 +59,29 @@ class YandexRewardedAdapter(networkSettings: NetworkSettings) :
 
         val serverData = adData.serverData
         if (serverData.isNullOrEmpty()) {
-            IronLog.INTERNAL.error(YandexConstants.Logs.SERVER_DATA_EMPTY)
+            val errorMessage = YandexConstants.Logs.MISSING_PARAM.format(YandexConstants.SERVER_DATA)
+            IronLog.INTERNAL.error(errorMessage)
             listener.onAdLoadFailed(
                 AdapterErrorType.ADAPTER_ERROR_TYPE_INTERNAL,
                 AdapterErrors.ADAPTER_ERROR_MISSING_PARAMS,
-                YandexConstants.Logs.SERVER_DATA_EMPTY
+                errorMessage
             )
             return
         }
 
         setRewardedAdAvailability(false)
 
-        val rewardedListener = YandexRewardedListener(listener, WeakReference(this))
-        rewardedAdListener = rewardedListener
+        rewardedAdListener = YandexRewardedListener(listener, WeakReference(this))
 
-        val rewardedLoader = RewardedAdLoader(context.applicationContext).apply {
-            setAdLoadListener(rewardedAdListener)
-        }
+        val rewardedLoader = RewardedAdLoader(context.applicationContext)
 
-        adLoader = rewardedLoader
-
-        val adRequest: AdRequestConfiguration = AdRequestConfiguration.Builder(adUnitId)
+        val adRequest: AdRequest = AdRequest.Builder(adUnitId)
             .setBiddingData(serverData)
             .setParameters(networkAdapter.getConfigParams())
             .build()
 
         mainHandler.post {
-            rewardedLoader.loadAd(adRequest)
+            rewardedLoader.loadAd(adRequest, rewardedAdListener!!)
         }
     }
 
@@ -99,7 +95,7 @@ class YandexRewardedAdapter(networkSettings: NetworkSettings) :
             )
         } else {
             mainHandler.post {
-                ad?.apply {
+                rewardedAd?.apply {
                     setAdEventListener(rewardedAdListener)
                     show(activity)
                 }
@@ -108,12 +104,14 @@ class YandexRewardedAdapter(networkSettings: NetworkSettings) :
     }
 
     override fun isAdAvailable(adData: AdData): Boolean {
-        return ad != null && isAdAvailableFlag
+        return rewardedAd != null && isAdAvailableFlag
     }
 
     override fun destroyAd(adData: AdData) {
         IronLog.ADAPTER_API.verbose()
-        destroyRewardedAd()
+        rewardedAd?.setAdEventListener(null)
+        rewardedAd = null
+        rewardedAdListener = null
     }
 
     override fun collectBiddingData(
@@ -129,9 +127,7 @@ class YandexRewardedAdapter(networkSettings: NetworkSettings) :
             return
         }
 
-        val bidderTokenRequest = BidderTokenRequestConfiguration.Builder(AdType.REWARDED)
-            .setParameters(networkAdapter.getConfigParams())
-            .build()
+        val bidderTokenRequest = BidderTokenRequest.rewarded(null, networkAdapter.getConfigParams())
 
         networkAdapter.collectBiddingData(context, biddingDataCallback, bidderTokenRequest)
     }
@@ -144,15 +140,8 @@ class YandexRewardedAdapter(networkSettings: NetworkSettings) :
         isAdAvailableFlag = isAvailable
     }
 
-    internal fun setRewardedAd(rewardedAd: RewardedAd) {
-        ad = rewardedAd
-    }
-
-    internal fun destroyRewardedAd() {
-        adLoader?.setAdLoadListener(null)
-        adLoader = null
-        ad?.setAdEventListener(null)
-        ad = null
+    internal fun setRewardedAd(ad: RewardedAd) {
+        rewardedAd = ad
     }
 
     // endregion
