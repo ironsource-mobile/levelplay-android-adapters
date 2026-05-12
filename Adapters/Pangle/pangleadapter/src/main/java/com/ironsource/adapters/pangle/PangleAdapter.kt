@@ -1,898 +1,298 @@
 package com.ironsource.adapters.pangle
 
 import android.content.Context
-import android.view.Gravity
-import android.widget.FrameLayout
+import android.os.Handler
+import android.os.Looper
 import com.bytedance.sdk.openadsdk.api.PAGConstant.PAGPAConsentType.*
-import com.bytedance.sdk.openadsdk.api.banner.PAGBannerAd
-import com.bytedance.sdk.openadsdk.api.banner.PAGBannerRequest
-import com.bytedance.sdk.openadsdk.api.banner.PAGBannerSize
 import com.bytedance.sdk.openadsdk.api.bidding.PAGBiddingRequest
 import com.bytedance.sdk.openadsdk.api.init.PAGBidCallback
 import com.bytedance.sdk.openadsdk.api.init.PAGBidError
 import com.bytedance.sdk.openadsdk.api.init.PAGConfig
 import com.bytedance.sdk.openadsdk.api.init.PAGSdk
 import com.bytedance.sdk.openadsdk.api.init.PAGSdk.PAGInitCallback
-import com.bytedance.sdk.openadsdk.api.interstitial.PAGInterstitialAd
-import com.bytedance.sdk.openadsdk.api.interstitial.PAGInterstitialRequest
-import com.bytedance.sdk.openadsdk.api.reward.PAGRewardedAd
-import com.bytedance.sdk.openadsdk.api.reward.PAGRewardedRequest
-import com.ironsource.environment.ContextProvider
-import com.ironsource.mediationsdk.*
+import com.ironsource.mediationsdk.adunit.adapter.listener.NetworkInitializationListener
+import com.ironsource.mediationsdk.adunit.adapter.utility.AdData
+import com.ironsource.mediationsdk.adunit.adapter.utility.AdapterErrors
 import com.ironsource.mediationsdk.bidding.BiddingDataCallback
 import com.ironsource.mediationsdk.logger.IronLog
-import com.ironsource.mediationsdk.logger.IronSourceError
 import com.ironsource.mediationsdk.metadata.MetaDataUtils
-import com.ironsource.mediationsdk.sdk.BannerSmashListener
-import com.ironsource.mediationsdk.sdk.InterstitialSmashListener
-import com.ironsource.mediationsdk.sdk.RewardedVideoSmashListener
-import com.ironsource.mediationsdk.utils.ErrorBuilder
-import com.ironsource.mediationsdk.utils.IronSourceConstants
 import com.unity3d.mediation.LevelPlay
+import com.unity3d.mediation.adapters.levelplay.LevelPlayBaseAdapter
 import org.json.JSONArray
 import org.json.JSONException
 import org.json.JSONObject
-import java.lang.ref.WeakReference
-import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.CopyOnWriteArraySet
+import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.atomic.AtomicBoolean
 
-
-class PangleAdapter(providerName: String) : AbstractAdapter(providerName),
-        INetworkInitCallbackListener {
-
-    // Rewarded video collections
-    private var mSlotIdToRewardedVideoListener: ConcurrentHashMap<String, RewardedVideoSmashListener> = ConcurrentHashMap()
-    private var mSlotIdToRewardedVideoAdListener: ConcurrentHashMap<String, PangleRewardedVideoAdListener> = ConcurrentHashMap()
-    private var mSlotIdToRewardedVideoAd: ConcurrentHashMap<String, PAGRewardedAd> = ConcurrentHashMap()
-    private val mSlotIdToRewardedVideoAdAvailability: ConcurrentHashMap<String, Boolean> = ConcurrentHashMap()
-    private val mRewardedVideoSlotIdsForInitCallbacks: CopyOnWriteArraySet<String> = CopyOnWriteArraySet()
-
-    // Interstitial maps
-    private var mSlotIdToInterstitialListener: ConcurrentHashMap<String, InterstitialSmashListener> = ConcurrentHashMap()
-    private var mSlotIdToInterstitialAdListener: ConcurrentHashMap<String, PangleInterstitialAdListener> = ConcurrentHashMap()
-    private var mSlotIdToInterstitialAd: ConcurrentHashMap<String, PAGInterstitialAd> = ConcurrentHashMap()
-    private val mSlotIdToInterstitialAdAvailability: ConcurrentHashMap<String, Boolean> = ConcurrentHashMap()
-
-    // Banner maps
-    private var mSlotIdToBannerListener: ConcurrentHashMap<String, BannerSmashListener> = ConcurrentHashMap()
-    private var mSlotIdToBannerAdListener: ConcurrentHashMap<String, PangleBannerAdListener> = ConcurrentHashMap()
-    private var mSlotIdToBannerView: ConcurrentHashMap<String, PAGBannerAd> = ConcurrentHashMap()
-
-    init {
-        // The network's capability to load a Rewarded Video ad while another Rewarded Video ad of that network is showing
-        mLWSSupportState = LoadWhileShowSupportState.LOAD_WHILE_SHOW_BY_INSTANCE
-    }
+class PangleAdapter() : LevelPlayBaseAdapter() {
 
     companion object {
 
-        // Mediation Info
-        private const val NAME_KEY = "name"
-        private const val VALUE_KEY = "value"
-
-        private const val MEDIATION_NAME_KEY = "mediation"
-        private const val MEDIATION_NAME = "Ironsource"
-        private const val ADAPTER_VERSION_KEY = "adapter_version"
-        private const val LEVELPLAY_ADXID = "33"
-
-        // Adapter version
-        private const val VERSION = BuildConfig.VERSION_NAME
-        private const val GitHash: String = BuildConfig.GitHash
-
-        // Pangle keys
-        private const val SLOT_ID_KEY = "slotID"
-        private const val APP_ID_KEY = "appID"
-
-        // Pangle error codes
-        const val PANGLE_NO_FILL_ERROR_CODE = 20001
-        const val PANGLE_NOT_ALLOW_CHILD_ERROR_CODE = 20002
-
-        // Pangle not allow child error message
-        const val PANGLE_NOT_ALLOW_CHILD_ERROR_MSG = "Pangle_COPPA indicates the user is a child. Pangle SDK V71 or higher does not support child users."
-
-        // Pangle GDPR consent message
-        const val PANGLE_GDPR_CONSENT_MSG = "Manual configuration of GDPR information is no longer supported. Pangle will automatically read the settings from the CMP in the consent function."
-
-        // Pangle COPPA/Child-related constants
-        private const val PANGLE_CHILD_DIRECTED_TYPE_CHILD = 1
-        private const val PANGLE_CHILD_DIRECTED_TYPE_NON_CHILD = 0
-        private const val PANGLE_CHILD_DIRECTED_TYPE_DEFAULT = -1
-        private const val META_DATA_PANGLE_COPPA_KEY = "Pangle_COPPA"
-
-        // Pangle defaultChildDirected
-        private var mChildDirected = PANGLE_CHILD_DIRECTED_TYPE_DEFAULT
-
-        // Pangle Builder
-        private val mPAGConfigBuilder = PAGConfig.Builder()
-
-        // Error messages
-        private const val BANNER_SIZE_IS_NULL_ERROR_MSG = "banner size is null, banner has been destroyed"
-
-        // Handle init callback for all adapter instances
-        private val mWasInitCalled: AtomicBoolean = AtomicBoolean(false)
-        private var mInitState: InitState = InitState.INIT_STATE_NONE
-        private val initCallbackListeners = HashSet<INetworkInitCallbackListener>()
-
         // Init state possible values
-        private enum class InitState {
+        enum class InitState {
             INIT_STATE_NONE,
             INIT_STATE_IN_PROGRESS,
             INIT_STATE_SUCCESS,
             INIT_STATE_FAILED
         }
 
-        @JvmStatic
-        fun startAdapter(providerName: String): PangleAdapter {
-            return PangleAdapter(providerName)
-        }
+        private const val GitHash: String = BuildConfig.GitHash
 
-        @JvmStatic
-        fun getIntegrationData(context: Context?): IntegrationData {
-            return IntegrationData("Pangle", VERSION)
-        }
+        // Handle init callback for all adapter instances
+        private val wasInitCalled: AtomicBoolean = AtomicBoolean(false)
+        private var initState: InitState = InitState.INIT_STATE_NONE
+        private val initListeners = CopyOnWriteArrayList<NetworkInitializationListener>()
 
-        @JvmStatic
-        fun getAdapterSDKVersion(): String {
-            return PAGSdk.getSDKVersion()
-        }
+        // Pangle Builder
+        private val pagConfigBuilder = PAGConfig.Builder()
+
+        // Pangle defaultChildDirected
+        private var childDirected = PangleConstants.PANGLE_CHILD_DIRECTED_TYPE_DEFAULT
+
+        private val mainHandler = Handler(Looper.getMainLooper())
     }
 
-    //region Adapter Methods
+    // region Adapter Methods
 
-    // Get adapter version
-    override fun getVersion(): String {
-        return VERSION
-    }
+    override fun getAdapterVersion(): String = PangleConstants.ADAPTER_VERSION
 
-    // Get network sdk version
-    override fun getCoreSDKVersion(): String {
-        return getAdapterSDKVersion()
-    }
+    override fun getNetworkSDKVersion(): String = PAGSdk.getSDKVersion()
 
-    override fun isUsingActivityBeforeImpression(adFormat: LevelPlay.AdFormat): Boolean {
-        return false
-    }
+    override fun isUsingActivityBeforeImpression(adFormat: LevelPlay.AdFormat): Boolean = false
 
-    //endregion
+    override fun init(
+        adData: AdData,
+        context: Context,
+        networkInitializationListener: NetworkInitializationListener?
+    ) {
+        val appId = adData.getString(PangleConstants.APP_ID_KEY)
+        val slotId = adData.getString(PangleConstants.SLOT_ID_KEY)
 
-    //region Initializations methods and callbacks
-
-    private fun initSdk(appId: String) {
-        // Add self to the init listeners only in case the initialization has not finished yet
-        if (mInitState == InitState.INIT_STATE_NONE || mInitState == InitState.INIT_STATE_IN_PROGRESS) {
-            initCallbackListeners.add(this)
+        if (appId.isNullOrEmpty()) {
+            val errorMessage = PangleConstants.Logs.MISSING_PARAM.format(PangleConstants.APP_ID_KEY)
+            IronLog.INTERNAL.error(errorMessage)
+            networkInitializationListener?.onInitFailed(AdapterErrors.ADAPTER_ERROR_MISSING_PARAMS, errorMessage)
+            return
         }
 
-        if (mWasInitCalled.compareAndSet(false, true)) {
-            mInitState = InitState.INIT_STATE_IN_PROGRESS
-            IronLog.ADAPTER_API.verbose("appId = $appId")
+        if (slotId.isNullOrEmpty()) {
+            val errorMessage = PangleConstants.Logs.MISSING_PARAM.format(PangleConstants.SLOT_ID_KEY)
+            IronLog.INTERNAL.error(errorMessage)
+            networkInitializationListener?.onInitFailed(AdapterErrors.ADAPTER_ERROR_MISSING_PARAMS, errorMessage)
+            return
+        }
 
+        // Check if SDK is already initialized
+        if (initState == InitState.INIT_STATE_SUCCESS) {
+            networkInitializationListener?.onInitSuccess()
+            return
+        }
+
+        // Check if init failed previously
+        if (initState == InitState.INIT_STATE_FAILED) {
+            IronLog.INTERNAL.error(PangleConstants.Logs.SDK_INIT_FAILED)
+            networkInitializationListener?.onInitFailed(AdapterErrors.ADAPTER_ERROR_INTERNAL, PangleConstants.Logs.SDK_INIT_FAILED)
+            return
+        }
+
+        // Add listener to list if initialization is not finished yet
+        if (initState == InitState.INIT_STATE_NONE || initState == InitState.INIT_STATE_IN_PROGRESS) {
+            networkInitializationListener?.let { initListeners.add(it) }
+        }
+
+        // Start initialization if not called yet
+        if (wasInitCalled.compareAndSet(false, true)) {
+            initState = InitState.INIT_STATE_IN_PROGRESS
+
+            IronLog.ADAPTER_API.verbose(PangleConstants.Logs.APP_ID_AND_SLOT_ID.format(appId, slotId))
+
+            // Check if user is a child
             if (isCoppaChildUser()) {
-                initializationFailure(PANGLE_NOT_ALLOW_CHILD_ERROR_CODE, PANGLE_NOT_ALLOW_CHILD_ERROR_MSG)
+                onInitializationFailure(PangleConstants.PANGLE_NOT_ALLOW_CHILD_ERROR_CODE, PangleConstants.PANGLE_NOT_ALLOW_CHILD_ERROR_MSG)
                 return
             }
 
-            val context = ContextProvider.getInstance().applicationContext
-            val initConfig = mPAGConfigBuilder
-                    .appId(appId)
-                    .setAdxId(LEVELPLAY_ADXID)
-                    .setUserData(getMediationInfo())
-                    .debugLog(isAdaptersDebugEnabled)
-                    //supportMultiProcess is an old API that will be deprecated in future versions, in the meantime set it to false
-                    .supportMultiProcess(false)
-                    .build()
+            val initConfig = pagConfigBuilder
+                .appId(appId)
+                .setAdxId(PangleConstants.LEVELPLAY_ADXID)
+                .setUserData(getMediationInfo())
+                .debugLog(isAdaptersDebugEnabled())
+                // supportMultiProcess is an old API that will be deprecated in future versions, in the meantime set it to false
+                .supportMultiProcess(false)
+                .build()
 
-            postOnUIThread {
+            mainHandler.post {
                 // Init Pangle SDK
-                PAGSdk.init(context, initConfig, object : PAGInitCallback {
+                PAGSdk.init(context.applicationContext, initConfig, object : PAGInitCallback {
                     override fun success() {
-                        initializationSuccess()
+                        onInitializationSuccess()
                     }
 
                     override fun fail(code: Int, message: String) {
-                        initializationFailure(code, message)
+                        onInitializationFailure(code, message)
                     }
                 })
             }
         }
     }
 
-    private fun initializationSuccess() {
-        IronLog.ADAPTER_CALLBACK.verbose()
+    // endregion
 
-        mInitState = InitState.INIT_STATE_SUCCESS
+    // region Legal Methods
 
-        //iterate over all the adapter instances and report init success
-        for (adapter: INetworkInitCallbackListener in initCallbackListeners) {
-            adapter.onNetworkInitCallbackSuccess()
-        }
-
-        initCallbackListeners.clear()
-    }
-
-    private fun initializationFailure(code: Int, message: String) {
-        IronLog.ADAPTER_CALLBACK.verbose("error code = $code, message = $message")
-
-        mInitState = InitState.INIT_STATE_FAILED
-
-        //iterate over all the adapter instances and report init failed
-        for (adapter in initCallbackListeners) {
-            adapter.onNetworkInitCallbackFailed(message)
-        }
-
-        initCallbackListeners.clear()
-    }
-
-    override fun onNetworkInitCallbackSuccess() {
-        // Rewarded Video
-        mSlotIdToRewardedVideoListener.forEach { (slotId, rewardVideoListener) ->
-
-            if (mRewardedVideoSlotIdsForInitCallbacks.contains(slotId)) {
-                rewardVideoListener.onRewardedVideoInitSuccess()
-            } else {
-                loadRewardedVideoInternal(slotId, null, rewardVideoListener)
-            }
-        }
-
-        // Interstitial
-        mSlotIdToInterstitialListener.forEach { (_, interstitialListener) -> interstitialListener.onInterstitialInitSuccess() }
-
-        // Banner
-        mSlotIdToBannerListener.forEach { (_, bannerListener) ->  bannerListener.onBannerInitSuccess()}
-    }
-
-    override fun onNetworkInitCallbackFailed(error: String) {
-        // Rewarded Video
-        mSlotIdToRewardedVideoListener.forEach { (slotId, rewardVideoListener) ->
-
-            if (mRewardedVideoSlotIdsForInitCallbacks.contains(slotId)) {
-                rewardVideoListener.onRewardedVideoInitFailed(
-                        ErrorBuilder.buildInitFailedError(error, IronSourceConstants.REWARDED_VIDEO_AD_UNIT
-                        )
-                )
-            } else {
-                rewardVideoListener.onRewardedVideoAvailabilityChanged(false)
-            }
-        }
-
-        // Interstitial
-        mSlotIdToInterstitialListener.forEach { (_, interstitialListener) ->
-            interstitialListener.onInterstitialInitFailed(
-                    ErrorBuilder.buildInitFailedError(error, IronSourceConstants.INTERSTITIAL_AD_UNIT
-                    )
-            )
-        }
-
-        // Banner
-        mSlotIdToBannerListener.forEach { (_, bannerListener) ->
-            bannerListener.onBannerInitFailed(
-                    ErrorBuilder.buildInitFailedError(error, IronSourceConstants.BANNER_AD_UNIT
-                    )
-            )
-        }
-    }
-
-    //endregion
-
-    //region Rewarded Video API
-
-    // Used for flows when the mediation needs to get a callback for init
-    override fun initRewardedVideoWithCallback(appKey: String?, userId: String?, config: JSONObject?, listener: RewardedVideoSmashListener) {
-        val slotId = config?.optString(SLOT_ID_KEY)
-        val appId = config?.optString(APP_ID_KEY)
-
-        if (slotId.isNullOrEmpty()) {
-            IronLog.INTERNAL.error("Missing param - $SLOT_ID_KEY")
-            listener.onRewardedVideoInitFailed(ErrorBuilder.buildInitFailedError("Missing params - $SLOT_ID_KEY", IronSourceConstants.REWARDED_VIDEO_AD_UNIT))
-            return
-        }
-
-        if (appId.isNullOrEmpty()) {
-            IronLog.INTERNAL.error("Missing param - $APP_ID_KEY")
-            listener.onRewardedVideoInitFailed(ErrorBuilder.buildInitFailedError("Missing params - $APP_ID_KEY", IronSourceConstants.REWARDED_VIDEO_AD_UNIT))
-            return
-        }
-
-        IronLog.ADAPTER_API.verbose("slotId = $slotId")
-
-        //add to rewarded video listener map
-        mSlotIdToRewardedVideoListener[slotId] = listener
-
-        // add slotId to init callback map
-        mRewardedVideoSlotIdsForInitCallbacks.add(slotId)
-
-        when (mInitState) {
-            InitState.INIT_STATE_SUCCESS -> {
-                listener.onRewardedVideoInitSuccess()
-            }
-            InitState.INIT_STATE_FAILED -> {
-                IronLog.INTERNAL.verbose("init failed - slotId = $slotId")
-                listener.onRewardedVideoInitFailed(ErrorBuilder.buildInitFailedError("Pangle SDK init failed", IronSourceConstants.REWARDED_VIDEO_AD_UNIT))
-            }
-            else -> {
-                initSdk(appId)
-            }
-        }
-    }
-
-    // used for flows when the mediation doesn't need to get a callback for init
-    override fun initAndLoadRewardedVideo(appKey: String?, userId: String?, config: JSONObject?, adData: JSONObject?, listener: RewardedVideoSmashListener) {
-        val slotId = config?.optString(SLOT_ID_KEY)
-        val appId = config?.optString(APP_ID_KEY)
-
-        if (slotId.isNullOrEmpty()) {
-            IronLog.INTERNAL.error("Missing param - $SLOT_ID_KEY")
-            listener.onRewardedVideoAvailabilityChanged(false)
-            return
-        }
-
-        if (appId.isNullOrEmpty()) {
-            IronLog.INTERNAL.error("Missing param - $APP_ID_KEY")
-            listener.onRewardedVideoAvailabilityChanged(false)
-            return
-        }
-
-        IronLog.ADAPTER_API.verbose("slotId = $slotId")
-
-        //add to rewarded video listener map
-        mSlotIdToRewardedVideoListener[slotId] = listener
-
-        when (mInitState) {
-            InitState.INIT_STATE_SUCCESS -> {
-                loadRewardedVideoInternal(slotId, null, listener)
-            }
-            InitState.INIT_STATE_FAILED -> {
-                IronLog.INTERNAL.verbose("init failed - slotId = $slotId")
-                listener.onRewardedVideoAvailabilityChanged(false)
-            }
-            else -> {
-                initSdk(appId)
-            }
-        }
-    }
-
-    override fun loadRewardedVideoForBidding(
-        config: JSONObject,
-        adData: JSONObject?,
-        serverData: String?,
-        listener: RewardedVideoSmashListener
-    ) {
-        val slotId = config.optString(SLOT_ID_KEY)
-        loadRewardedVideoInternal(slotId, serverData, listener)
-    }
-
-    override fun loadRewardedVideo(config: JSONObject, adData: JSONObject?, listener: RewardedVideoSmashListener) {
-        val slotId = config.optString(SLOT_ID_KEY)
-        loadRewardedVideoInternal(slotId, null, listener)
-    }
-
-    private fun loadRewardedVideoInternal(slotId: String, serverData: String?, listener: RewardedVideoSmashListener) {
-        IronLog.ADAPTER_API.verbose("slotId = $slotId")
-        setRewardedVideoAdAvailability(slotId, false)
-
-        if (isCoppaChildUser()) {
-            IronLog.INTERNAL.error("Child user - $PANGLE_NOT_ALLOW_CHILD_ERROR_MSG")
-            listener.onRewardedVideoAvailabilityChanged(false)
-            listener.onRewardedVideoLoadFailed(IronSourceError(PANGLE_NOT_ALLOW_CHILD_ERROR_CODE, "Child user - $PANGLE_NOT_ALLOW_CHILD_ERROR_MSG"))
-            return
-        }
-
-        val rewardedVideoAdListener = PangleRewardedVideoAdListener(listener, WeakReference(this), slotId)
-        mSlotIdToRewardedVideoAdListener[slotId] = rewardedVideoAdListener
-
-        val request = PAGRewardedRequest()
-
-        if (serverData != null) {
-            request.adString = serverData
-        }
-
-        postOnUIThread {
-            PAGRewardedAd.loadAd(slotId, request, rewardedVideoAdListener)
-        }
-    }
-
-    override fun showRewardedVideo(config: JSONObject, listener: RewardedVideoSmashListener) {
-        val slotId = config.optString(SLOT_ID_KEY)
-        IronLog.ADAPTER_API.verbose("slotId = $slotId")
-
-        if (isCoppaChildUser()) {
-            IronLog.INTERNAL.error("Child user - $PANGLE_NOT_ALLOW_CHILD_ERROR_MSG")
-            listener.onRewardedVideoAdShowFailed(IronSourceError(PANGLE_NOT_ALLOW_CHILD_ERROR_CODE, "Child user - $PANGLE_NOT_ALLOW_CHILD_ERROR_MSG"))
-            return
-        }
-
-        if (isRewardedVideoAvailable(config)) {
-            val activity = ContextProvider.getInstance().currentActiveActivity
-
-            mSlotIdToRewardedVideoAd[slotId]?.let { rewardedVideoAd ->
-
-                val rewardedVideoAdListener = mSlotIdToRewardedVideoAdListener[slotId]
-                rewardedVideoAd.setAdInteractionListener(rewardedVideoAdListener)
-
-                postOnUIThread {
-                    rewardedVideoAd.show(activity)
-                }
-            }
-        } else {
-            listener.onRewardedVideoAdShowFailed(
-                    ErrorBuilder.buildNoAdsToShowError(
-                            IronSourceConstants.REWARDED_VIDEO_AD_UNIT
-                    )
-            )
-        }
-
-        setRewardedVideoAdAvailability(slotId, false)
-    }
-
-    override fun isRewardedVideoAvailable(config: JSONObject): Boolean {
-        val slotId = config.optString(SLOT_ID_KEY)
-
-        return (!slotId.isNullOrEmpty() &&
-                mSlotIdToRewardedVideoAd.containsKey(slotId) &&
-                mSlotIdToRewardedVideoAdAvailability.containsKey(slotId) &&
-                (mSlotIdToRewardedVideoAdAvailability[slotId] == true))
-    }
-
-    override fun collectRewardedVideoBiddingData(
-            config: JSONObject,
-            adData: JSONObject?,
-            biddingDataCallback: BiddingDataCallback
-    ) {
-        collectBiddingData(biddingDataCallback, config)
-    }
-
-    //endregion
-
-    //region Interstitial API
-
-    override fun initInterstitialForBidding(appKey: String?, userId: String?, config: JSONObject?, listener: InterstitialSmashListener) {
-        IronLog.INTERNAL.verbose()
-        initInterstitial(appKey, userId, config, listener)
-    }
-
-    override fun initInterstitial(appKey: String?, userId: String?, config: JSONObject?, listener: InterstitialSmashListener) {
-        val slotId = config?.optString(SLOT_ID_KEY)
-        val appId = config?.optString(APP_ID_KEY)
-
-        if (slotId.isNullOrEmpty()) {
-            IronLog.INTERNAL.error("Missing param - $SLOT_ID_KEY")
-            listener.onInterstitialInitFailed(ErrorBuilder.buildInitFailedError("Missing params - $SLOT_ID_KEY", IronSourceConstants.INTERSTITIAL_AD_UNIT))
-            return
-        }
-
-        if (appId.isNullOrEmpty()) {
-            IronLog.INTERNAL.error("Missing param - $APP_ID_KEY")
-            listener.onInterstitialInitFailed(ErrorBuilder.buildInitFailedError("Missing params - $APP_ID_KEY", IronSourceConstants.INTERSTITIAL_AD_UNIT))
-            return
-        }
-
-        IronLog.ADAPTER_API.verbose("slotId = $slotId")
-
-        //add to interstitial listener map
-        mSlotIdToInterstitialListener[slotId] = listener
-
-        when (mInitState) {
-            InitState.INIT_STATE_SUCCESS -> {
-                listener.onInterstitialInitSuccess()
-            }
-            InitState.INIT_STATE_FAILED -> {
-                IronLog.INTERNAL.verbose("init failed - slotId = $slotId")
-                listener.onInterstitialInitFailed(ErrorBuilder.buildInitFailedError("Pangle SDK init failed", IronSourceConstants.INTERSTITIAL_AD_UNIT))
-            }
-            else -> {
-                initSdk(appId)
-            }
-        }
-    }
-
-    override fun loadInterstitialForBidding(
-        config: JSONObject,
-        adData: JSONObject?,
-        serverData: String?,
-        listener: InterstitialSmashListener
-    ) {
-        val slotId = config.optString(SLOT_ID_KEY)
-        IronLog.ADAPTER_API.verbose("slotId = $slotId")
-        loadInterstitialInternal(slotId, serverData, listener)
-    }
-
-    override fun loadInterstitial(config: JSONObject, adData: JSONObject?, listener: InterstitialSmashListener) {
-        val slotId = config.optString(SLOT_ID_KEY)
-        IronLog.ADAPTER_API.verbose("slotId = $slotId")
-        loadInterstitialInternal(slotId, null, listener)
-    }
-
-    private fun loadInterstitialInternal(slotId: String, serverData: String?, listener: InterstitialSmashListener) {
-        setInterstitialAdAvailability(slotId, false)
-
-        if (isCoppaChildUser()) {
-            IronLog.INTERNAL.error("Child user - $PANGLE_NOT_ALLOW_CHILD_ERROR_MSG")
-            listener.onInterstitialAdLoadFailed(IronSourceError(PANGLE_NOT_ALLOW_CHILD_ERROR_CODE, "Child user - $PANGLE_NOT_ALLOW_CHILD_ERROR_MSG"))
-            return
-        }
-
-        val interstitialAdListener = PangleInterstitialAdListener(listener, WeakReference(this), slotId)
-        mSlotIdToInterstitialAdListener[slotId] = interstitialAdListener
-
-        val request = PAGInterstitialRequest()
-
-        if (serverData != null) {
-            request.adString = serverData
-        }
-
-        postOnUIThread {
-            PAGInterstitialAd.loadAd(slotId, request, interstitialAdListener)
-        }
-    }
-
-    override fun showInterstitial(config: JSONObject, listener: InterstitialSmashListener) {
-        val slotId = config.optString(SLOT_ID_KEY)
-        IronLog.ADAPTER_API.verbose("slotId = $slotId")
-
-        if (isCoppaChildUser()) {
-            IronLog.INTERNAL.error("Child user - $PANGLE_NOT_ALLOW_CHILD_ERROR_MSG")
-            listener.onInterstitialAdShowFailed(IronSourceError(PANGLE_NOT_ALLOW_CHILD_ERROR_CODE, "Child user - $PANGLE_NOT_ALLOW_CHILD_ERROR_MSG"))
-            return
-        }
-
-        if (isInterstitialReady(config)) {
-            val activity = ContextProvider.getInstance().currentActiveActivity
-            mSlotIdToInterstitialAd[slotId]?.let { interstitialAd ->
-
-                val interstitialAdListener = mSlotIdToInterstitialAdListener[slotId]
-                interstitialAd.setAdInteractionListener(interstitialAdListener)
-
-                postOnUIThread {
-                    interstitialAd.show(activity)
-                }
-            }
-        } else {
-            listener.onInterstitialAdShowFailed(
-                    ErrorBuilder.buildNoAdsToShowError(
-                            IronSourceConstants.INTERSTITIAL_AD_UNIT
-                    )
-            )
-        }
-
-        setInterstitialAdAvailability(slotId, false)
-    }
-
-    override fun isInterstitialReady(config: JSONObject): Boolean {
-        val slotId = config.optString(SLOT_ID_KEY)
-
-        return (!slotId.isNullOrEmpty() &&
-                mSlotIdToInterstitialAd.containsKey(slotId) &&
-                mSlotIdToInterstitialAdAvailability.containsKey(slotId) &&
-                (mSlotIdToInterstitialAdAvailability[slotId] == true))
-    }
-
-    override fun collectInterstitialBiddingData(
-            config: JSONObject,
-            adData: JSONObject?,
-            biddingDataCallback: BiddingDataCallback
-    ) {
-        collectBiddingData(biddingDataCallback, config)
-    }
-
-    //endregion
-
-    //region Banners API
-
-    override fun initBannerForBidding(appKey: String?, userId: String?, config: JSONObject?, listener: BannerSmashListener) {
-        val slotId = config?.optString(SLOT_ID_KEY)
-        val appId = config?.optString(APP_ID_KEY)
-
-        if (slotId.isNullOrEmpty()) {
-            IronLog.INTERNAL.error("Missing param - $SLOT_ID_KEY")
-            listener.onBannerInitFailed(ErrorBuilder.buildInitFailedError("Missing params - $SLOT_ID_KEY", IronSourceConstants.BANNER_AD_UNIT))
-            return
-        }
-
-        if (appId.isNullOrEmpty()) {
-            IronLog.INTERNAL.error("Missing param - $APP_ID_KEY")
-            listener.onBannerInitFailed(ErrorBuilder.buildInitFailedError("Missing params - $APP_ID_KEY", IronSourceConstants.BANNER_AD_UNIT))
-            return
-        }
-
-        IronLog.ADAPTER_API.verbose("slotId = $slotId")
-
-        // add to banner listener map
-        mSlotIdToBannerListener[slotId] = listener
-
-        when (mInitState) {
-            InitState.INIT_STATE_SUCCESS -> {
-                listener.onBannerInitSuccess()
-            }
-            InitState.INIT_STATE_FAILED -> {
-                IronLog.INTERNAL.verbose("init failed - slotId = $slotId")
-                listener.onBannerInitFailed(ErrorBuilder.buildInitFailedError("Pangle SDK init failed", IronSourceConstants.BANNER_AD_UNIT))
-            }
-            else -> {
-                initSdk(appId)
-            }
-        }
-    }
-
-    override fun loadBannerForBidding(
-        config: JSONObject,
-        adData: JSONObject?,
-        serverData: String?,
-        bannerSize: ISBannerSize?,
-        listener: BannerSmashListener
-    ) {
-        val slotId = config.optString(SLOT_ID_KEY)
-        IronLog.ADAPTER_API.verbose("slotId = $slotId")
-
-        if (bannerSize == null) {
-            IronLog.INTERNAL.error(BANNER_SIZE_IS_NULL_ERROR_MSG)
-            listener.onBannerAdLoadFailed(ErrorBuilder.buildLoadFailedError(BANNER_SIZE_IS_NULL_ERROR_MSG))
-            return
-        }
-
-        if (isCoppaChildUser()) {
-            IronLog.INTERNAL.error("Child user - $PANGLE_NOT_ALLOW_CHILD_ERROR_MSG")
-            listener.onBannerAdLoadFailed(IronSourceError(PANGLE_NOT_ALLOW_CHILD_ERROR_CODE, "Child user - $PANGLE_NOT_ALLOW_CHILD_ERROR_MSG"))
-            return
-        }
-
-        val layoutParams: FrameLayout.LayoutParams = getBannerLayoutParams(bannerSize)
-        val bannerAdListener = PangleBannerAdListener(listener, WeakReference(this), slotId, layoutParams)
-        mSlotIdToBannerAdListener[slotId] = bannerAdListener
-
-        val pangleBannerSize = getBannerSize(bannerSize)
-        val bannerRequest = PAGBannerRequest(pangleBannerSize)
-        bannerRequest.adString = serverData
-
-        postOnUIThread {
-            if(bannerSize == null){
-                IronLog.INTERNAL.error(BANNER_SIZE_IS_NULL_ERROR_MSG)
-                listener.onBannerAdLoadFailed(ErrorBuilder.buildLoadFailedError(BANNER_SIZE_IS_NULL_ERROR_MSG))
-                return@postOnUIThread
-            }
-            PAGBannerAd.loadAd(slotId, bannerRequest, bannerAdListener)
-        }
-    }
-
-    override fun destroyBanner(config: JSONObject?) {
-        val slotId = config?.optString(SLOT_ID_KEY)
-        IronLog.ADAPTER_API.verbose("slotId = $slotId")
-
-        if (!mSlotIdToBannerView.containsKey(slotId)) {
-            IronLog.ADAPTER_API.verbose("Banner is already destroyed")
-            return
-        }
-
-        if (!slotId.isNullOrEmpty()) {
-            postOnUIThread {
-                // The listener needs to be set to null prior to the destroying of the banner to prevent a memory leak
-                mSlotIdToBannerView[slotId]?.setAdInteractionListener(null)
-                // Destroy banner
-                mSlotIdToBannerView[slotId]?.destroy()
-                // Remove banner view from map
-                mSlotIdToBannerView.remove(slotId)
-            }
-        }
-    }
-
-    override fun collectBannerBiddingData(
-            config: JSONObject,
-            adData: JSONObject?,
-            biddingDataCallback: BiddingDataCallback
-    ) {
-        collectBiddingData(biddingDataCallback, config)
-    }
-
-    //endregion
-
-    //region legal
-
-    override fun setMetaData(key: String, values: List<String>) {
-        if (values.isEmpty()) {
+    override fun setMetaData(key: String?, values: MutableList<String?>?) {
+        if (key.isNullOrEmpty() || values.isNullOrEmpty()) {
             return
         }
 
         // This is a list of 1 value
-        val value = values[0]
-        IronLog.ADAPTER_API.verbose("key = $key, value = $value")
+        val value = values[0] ?: return
+        IronLog.ADAPTER_API.verbose(PangleConstants.Logs.META_DATA_VALUE.format(key, value))
 
         when {
             MetaDataUtils.isValidCCPAMetaData(key, value) -> {
                 setCCPAValue(MetaDataUtils.getMetaDataBooleanValue(value))
             }
-            MetaDataUtils.isValidMetaData(key, META_DATA_PANGLE_COPPA_KEY, value) -> {
+            MetaDataUtils.isValidMetaData(key, PangleConstants.META_DATA_PANGLE_COPPA_KEY, value) -> {
                 setCOPPAValue(value)
             }
         }
     }
 
+    override fun setConsent(consent: Boolean) {
+        IronLog.ADAPTER_API.verbose(PangleConstants.PANGLE_GDPR_CONSENT_MSG)
+    }
+
     private fun setCCPAValue(doNotSell: Boolean) {
         val ccpaValue: Int
-        val ccpaValueString : String
+        val ccpaValueString: String
 
         if (doNotSell) {
             ccpaValue = PAG_PA_CONSENT_TYPE_NO_CONSENT
-            ccpaValueString = "PAG_PA_CONSENT_TYPE_NO_CONSENT"
-        }
-        else {
+            ccpaValueString = PangleConstants.CONSENT_TYPE_NO_CONSENT_STRING
+        } else {
             ccpaValue = PAG_PA_CONSENT_TYPE_CONSENT
-            ccpaValueString = "PAG_PA_CONSENT_TYPE_CONSENT"
+            ccpaValueString = PangleConstants.CONSENT_TYPE_CONSENT_STRING
         }
 
-        IronLog.ADAPTER_API.verbose("ccpaValue = $ccpaValueString")
-        mPAGConfigBuilder.setPAConsent(ccpaValue)
+        IronLog.ADAPTER_API.verbose(PangleConstants.Logs.CCPA_VALUE.format(ccpaValueString))
+        pagConfigBuilder.setPAConsent(ccpaValue)
     }
 
     private fun setCOPPAValue(value: String) {
-        val coppaValueString : String
+        val coppaValueString: String
         when (value.toIntOrNull()) {
-            PANGLE_CHILD_DIRECTED_TYPE_CHILD -> {
-                mChildDirected = PANGLE_CHILD_DIRECTED_TYPE_CHILD
-                coppaValueString = "PANGLE_CHILD_DIRECTED_TYPE_CHILD"
+            PangleConstants.PANGLE_CHILD_DIRECTED_TYPE_CHILD -> {
+                childDirected = PangleConstants.PANGLE_CHILD_DIRECTED_TYPE_CHILD
+                coppaValueString = PangleConstants.CHILD_DIRECTED_TYPE_CHILD_STRING
             }
 
-            PANGLE_CHILD_DIRECTED_TYPE_NON_CHILD -> {
-                mChildDirected = PANGLE_CHILD_DIRECTED_TYPE_NON_CHILD
-                coppaValueString = "PANGLE_CHILD_DIRECTED_TYPE_NON_CHILD"
+            PangleConstants.PANGLE_CHILD_DIRECTED_TYPE_NON_CHILD -> {
+                childDirected = PangleConstants.PANGLE_CHILD_DIRECTED_TYPE_NON_CHILD
+                coppaValueString = PangleConstants.CHILD_DIRECTED_TYPE_NON_CHILD_STRING
             }
 
             else -> {
-                mChildDirected = PANGLE_CHILD_DIRECTED_TYPE_DEFAULT
-                coppaValueString = "PANGLE_CHILD_DIRECTED_TYPE_DEFAULT"
+                childDirected = PangleConstants.PANGLE_CHILD_DIRECTED_TYPE_DEFAULT
+                coppaValueString = PangleConstants.CHILD_DIRECTED_TYPE_DEFAULT_STRING
             }
         }
-        IronLog.ADAPTER_API.verbose("coppaValue = $coppaValueString")
+        IronLog.ADAPTER_API.verbose(PangleConstants.Logs.COPPA_VALUE.format(coppaValueString))
     }
 
-    override fun setConsent(consent: Boolean) {
-        IronLog.ADAPTER_API.verbose(PANGLE_GDPR_CONSENT_MSG)
-    }
+    // endregion
 
-    /**
-     * Whether to allow the use of pangle. If it is a child , it is not allowed
-     */
-    private fun isCoppaChildUser(): Boolean {
-        return mChildDirected == PANGLE_CHILD_DIRECTED_TYPE_CHILD
-    }
+    // region Helper Methods
 
-    //endregion
+    private fun onInitializationSuccess() {
+        IronLog.ADAPTER_CALLBACK.verbose()
 
-    //region Helpers
+        initState = InitState.INIT_STATE_SUCCESS
 
-    private fun getBannerSize(bannerSize: ISBannerSize): PAGBannerSize {
-        return when (bannerSize.description) {
-            "BANNER" -> PAGBannerSize.BANNER_W_320_H_50
-            "RECTANGLE" -> PAGBannerSize.BANNER_W_300_H_250
-            "SMART" ->
-                (if (AdapterUtils.isLargeScreen(ContextProvider.getInstance().applicationContext)) {
-                    PAGBannerSize.BANNER_W_728_H_90
-                } else {
-                    PAGBannerSize.BANNER_W_320_H_50
-                })
-            else -> PAGBannerSize(0, 0)
-        }
-    }
-
-    private fun getBannerLayoutParams(size: ISBannerSize): FrameLayout.LayoutParams {
-        val context = ContextProvider.getInstance().applicationContext
-
-        val layoutParams = when (size.description) {
-            "BANNER" -> FrameLayout.LayoutParams(
-                    AdapterUtils.dpToPixels(context, 320),
-                    AdapterUtils.dpToPixels(context, 50)
-            )
-            "RECTANGLE" -> FrameLayout.LayoutParams(
-                    AdapterUtils.dpToPixels(context, 300),
-                    AdapterUtils.dpToPixels(context, 250)
-            )
-            "SMART" ->
-                if (AdapterUtils.isLargeScreen(context)) {
-                    FrameLayout.LayoutParams(
-                            AdapterUtils.dpToPixels(context, 728),
-                            AdapterUtils.dpToPixels(context, 90)
-                    )
-                } else {
-                    FrameLayout.LayoutParams(
-                            AdapterUtils.dpToPixels(context, 320),
-                            AdapterUtils.dpToPixels(context, 50)
-                    )
-                }
-            else -> FrameLayout.LayoutParams(0, 0)
+        // Iterate over all the adapter instances and report init success
+        for (listener in initListeners) {
+            listener.onInitSuccess()
         }
 
-        // Set gravity
-        layoutParams.gravity = Gravity.CENTER
-        return layoutParams
+        initListeners.clear()
     }
 
-    // Get the mediation info
+    private fun onInitializationFailure(errorCode: Int, errorMessage: String) {
+        IronLog.ADAPTER_CALLBACK.error(PangleConstants.Logs.INIT_FAILED.format(errorCode, errorMessage))
+
+        initState = InitState.INIT_STATE_FAILED
+
+        // Iterate over all the adapter instances and report init failed
+        for (listener in initListeners) {
+            listener.onInitFailed(errorCode, errorMessage)
+        }
+
+        initListeners.clear()
+    }
+
+    internal fun isCoppaChildUser(): Boolean {
+        return childDirected == PangleConstants.PANGLE_CHILD_DIRECTED_TYPE_CHILD
+    }
+
     private fun getMediationInfo(): String {
         val mediationInfo = JSONArray()
         try {
             val mediationObject = JSONObject()
-            mediationObject.put(NAME_KEY, MEDIATION_NAME_KEY)
-            mediationObject.put(VALUE_KEY, MEDIATION_NAME)
+            mediationObject.put(PangleConstants.NAME_KEY, PangleConstants.MEDIATION_NAME_KEY)
+            mediationObject.put(PangleConstants.VALUE_KEY, PangleConstants.MEDIATION_NAME)
             mediationInfo.put(mediationObject)
 
             val adapterObject = JSONObject()
-            adapterObject.put(NAME_KEY, ADAPTER_VERSION_KEY)
-            adapterObject.put(VALUE_KEY, VERSION)
+            adapterObject.put(PangleConstants.NAME_KEY, PangleConstants.ADAPTER_VERSION_KEY)
+            adapterObject.put(PangleConstants.VALUE_KEY, PangleConstants.ADAPTER_VERSION)
             mediationInfo.put(adapterObject)
 
-            IronLog.INTERNAL.verbose("mediationInfo = $mediationInfo")
+            IronLog.INTERNAL.verbose(PangleConstants.Logs.MEDIATION_INFO.format(mediationInfo))
         } catch (exception: JSONException) {
-            IronLog.INTERNAL.error("Error while creating mediation info object - $exception")
+            IronLog.INTERNAL.error(PangleConstants.Logs.MEDIATION_INFO_ERROR.format(exception))
         }
 
         return mediationInfo.toString()
     }
 
-    internal fun setRewardedVideoAd(slotId: String, rewardedVideoAd: PAGRewardedAd?) {
-        if (rewardedVideoAd != null) {
-            mSlotIdToRewardedVideoAd[slotId] = rewardedVideoAd
-        }
-    }
-
-    internal fun setRewardedVideoAdAvailability(slotId: String, isAvailable: Boolean) {
-        mSlotIdToRewardedVideoAdAvailability[slotId] = isAvailable
-    }
-
-    internal fun setInterstitialAd(slotId: String, interstitialAd: PAGInterstitialAd?) {
-        if (interstitialAd != null) {
-            mSlotIdToInterstitialAd[slotId] = interstitialAd
-        }
-    }
-
-    internal fun setInterstitialAdAvailability(slotId: String, isAvailable: Boolean) {
-        mSlotIdToInterstitialAdAvailability[slotId] = isAvailable
-    }
-
-    internal fun setBannerAd(slotId: String, bannerAd: PAGBannerAd?) {
-        if (bannerAd != null) {
-            mSlotIdToBannerView[slotId] = bannerAd
-            val bannerAdListener = mSlotIdToBannerAdListener[slotId]
-            bannerAd.setAdInteractionListener(bannerAdListener)
-        }
-    }
-
-    private fun collectBiddingData(biddingDataCallback: BiddingDataCallback, config: JSONObject) {
-        val slotid = config.optString(SLOT_ID_KEY)
-        if (mInitState == InitState.INIT_STATE_FAILED) {
-            val error = "returning null as token since init is not successful"
-            IronLog.INTERNAL.verbose(error)
-            biddingDataCallback.onFailure("$error - Pangle")
+    internal fun collectBiddingData(context: Context, slotId: String?, biddingDataCallback: BiddingDataCallback) {
+        if (initState != InitState.INIT_STATE_SUCCESS) {
+            IronLog.INTERNAL.verbose(PangleConstants.Logs.TOKEN_ERROR)
+            biddingDataCallback.onFailure(PangleConstants.Logs.TOKEN_ERROR)
             return
         }
 
         if (isCoppaChildUser()) {
-            IronLog.INTERNAL.verbose(PANGLE_NOT_ALLOW_CHILD_ERROR_MSG)
-            biddingDataCallback.onFailure("$PANGLE_NOT_ALLOW_CHILD_ERROR_MSG - Pangle")
+            IronLog.INTERNAL.verbose(PangleConstants.PANGLE_NOT_ALLOW_CHILD_ERROR_MSG)
+            biddingDataCallback.onFailure(PangleConstants.PANGLE_NOT_ALLOW_CHILD_ERROR_MSG)
             return
         }
 
         val pagBiddingRequest = PAGBiddingRequest().apply {
-            slotId = slotid
-            adxId = LEVELPLAY_ADXID
+            this.slotId = slotId
+            adxId = PangleConstants.LEVELPLAY_ADXID
         }
 
-        PAGSdk.getBiddingToken(ContextProvider.getInstance().applicationContext, pagBiddingRequest,object :
+        PAGSdk.getBiddingToken(context.applicationContext, pagBiddingRequest, object :
             PAGBidCallback {
             override fun onBiddingTokenCollected(bidToken: String?) {
                 if (!bidToken.isNullOrEmpty()) {
-                    IronLog.ADAPTER_API.verbose("token = $bidToken")
-                    mutableMapOf<String, Any>()
-                        .apply { put("token", bidToken) }
-                        .let { biddingDataCallback.onSuccess(it) }
+                    IronLog.ADAPTER_API.verbose(PangleConstants.Logs.TOKEN_COLLECTED.format(bidToken))
+                    val data = mutableMapOf<String, Any>()
+                    data[PangleConstants.TOKEN_KEY] = bidToken
+                    biddingDataCallback.onSuccess(data)
                 } else {
-                    biddingDataCallback.onFailure("Failed to receive token - Pangle")
+                    IronLog.ADAPTER_CALLBACK.error(PangleConstants.Logs.TOKEN_FAILED)
+                    biddingDataCallback.onFailure(PangleConstants.Logs.TOKEN_FAILED)
                 }
             }
 
             override fun onBiddingTokenFailed(pagBidError: PAGBidError?) {
-                biddingDataCallback.onFailure("Failed to receive token ${pagBidError?.code} - ${pagBidError?.message} - Pangle")
+                IronLog.ADAPTER_CALLBACK.error(PangleConstants.Logs.TOKEN_FAILED.format(pagBidError?.message))
+                biddingDataCallback.onFailure(PangleConstants.Logs.TOKEN_FAILED.format(pagBidError?.message))
             }
         })
-        }
+    }
 
-    //endregion
-
+    // endregion
 }
