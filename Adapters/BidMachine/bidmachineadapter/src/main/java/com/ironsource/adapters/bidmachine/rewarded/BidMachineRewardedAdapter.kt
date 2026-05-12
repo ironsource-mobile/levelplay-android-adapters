@@ -1,51 +1,51 @@
-package com.ironsource.adapters.bidmachine.interstitial
+package com.ironsource.adapters.bidmachine.rewarded
 
 import android.app.Activity
 import android.content.Context
 import com.ironsource.adapters.bidmachine.BidMachineAdapter
 import com.ironsource.adapters.bidmachine.BidMachineConstants
-import com.ironsource.mediationsdk.adunit.adapter.listener.InterstitialAdListener
+import com.ironsource.mediationsdk.adunit.adapter.listener.RewardedVideoAdListener
 import com.ironsource.mediationsdk.adunit.adapter.utility.AdData
 import com.ironsource.mediationsdk.adunit.adapter.utility.AdapterErrors
 import com.ironsource.mediationsdk.bidding.BiddingDataCallback
 import com.ironsource.mediationsdk.logger.IronLog
 import com.ironsource.mediationsdk.model.NetworkSettings
-import com.unity3d.mediation.adapters.levelplay.LevelPlayBaseInterstitial
+import com.unity3d.mediation.adapters.levelplay.LevelPlayBaseRewardedVideo
 import io.bidmachine.AdPlacementConfig
-import io.bidmachine.interstitial.InterstitialAd
-import io.bidmachine.interstitial.InterstitialRequest
+import io.bidmachine.rewarded.RewardedAd
+import io.bidmachine.rewarded.RewardedRequest
 
-class BidMachineInterstitialAdapter(networkSettings: NetworkSettings) :
-    LevelPlayBaseInterstitial<BidMachineAdapter>(networkSettings) {
+class BidMachineRewardedAdapter(networkSettings: NetworkSettings) :
+    LevelPlayBaseRewardedVideo<BidMachineAdapter>(networkSettings) {
 
-    private var interstitialAd: InterstitialAd? = null
+    private var rewardedAd: RewardedAd? = null
 
-    // region LevelPlay Interstitial API
+    // region LevelPlay Rewarded Video API
 
     override fun loadAd(
         adData: AdData,
         context: Context,
-        listener: InterstitialAdListener
+        listener: RewardedVideoAdListener
     ) {
         val placementId = adData.getString(BidMachineConstants.PLACEMENT_ID_KEY)
         IronLog.ADAPTER_API.verbose(BidMachineConstants.Logs.PLACEMENT_ID.format(placementId ?: ""))
 
-        interstitialAd = InterstitialAd(context.applicationContext).apply {
-            setListener(BidMachineInterstitialListener(listener))
+        rewardedAd = RewardedAd(context.applicationContext).apply {
+            setListener(BidMachineRewardedListener(listener))
         }
 
-        val adPlacementConfig = createInterstitialPlacementConfig(placementId)
-        val interstitialRequest = InterstitialRequest.Builder(adPlacementConfig)
+        val adPlacementConfig = createRewardedPlacementConfig(placementId)
+        val rewardedRequest = RewardedRequest.Builder(adPlacementConfig)
             .setBidPayload(adData.serverData)
             .build()
 
-        interstitialAd?.load(interstitialRequest)
+        rewardedAd?.load(rewardedRequest)
     }
 
     override fun showAd(
         adData: AdData,
         activity: Activity,
-        listener: InterstitialAdListener
+        listener: RewardedVideoAdListener
     ) {
         IronLog.ADAPTER_API.verbose()
 
@@ -58,20 +58,20 @@ class BidMachineInterstitialAdapter(networkSettings: NetworkSettings) :
             return
         }
 
-        interstitialAd?.show()
+        rewardedAd?.show()
     }
 
     override fun isAdAvailable(adData: AdData): Boolean {
-        return interstitialAd?.let { ad ->
+        return rewardedAd?.let { ad ->
             ad.canShow() && !ad.isExpired
         } ?: false
     }
 
     override fun destroyAd(adData: AdData) {
         IronLog.ADAPTER_API.verbose()
-        interstitialAd?.setListener(null)
-        interstitialAd?.destroy()
-        interstitialAd = null
+        rewardedAd?.setListener(null)
+        rewardedAd?.destroy()
+        rewardedAd = null
     }
 
     override fun collectBiddingData(
@@ -89,7 +89,7 @@ class BidMachineInterstitialAdapter(networkSettings: NetworkSettings) :
             return
         }
 
-        val adPlacementConfig = createInterstitialPlacementConfig(placementId)
+        val adPlacementConfig = createRewardedPlacementConfig(placementId)
         networkAdapter.collectBiddingData(context, biddingDataCallback, adPlacementConfig)
     }
 
@@ -97,8 +97,8 @@ class BidMachineInterstitialAdapter(networkSettings: NetworkSettings) :
 
     // region Helper Methods
 
-    private fun createInterstitialPlacementConfig(placementId: String?): AdPlacementConfig {
-        val adPlacementConfigBuilder = AdPlacementConfig.interstitialBuilder()
+    private fun createRewardedPlacementConfig(placementId: String?): AdPlacementConfig {
+        val adPlacementConfigBuilder = AdPlacementConfig.rewardedBuilder()
         if (!placementId.isNullOrEmpty()) {
             adPlacementConfigBuilder.withPlacementId(placementId)
         }

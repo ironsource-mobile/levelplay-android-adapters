@@ -1,56 +1,24 @@
 package com.ironsource.adapters.bidmachine
 
 import android.content.Context
-import com.ironsource.adapters.bidmachine.interstitial.BidMachineInterstitialAdapter
-import com.ironsource.adapters.bidmachine.rewardedvideo.BidMachineRewardedVideoAdapter
-import com.ironsource.adapters.bidmachine.banner.BidMachineBannerAdapter
-import com.ironsource.environment.ContextProvider
-import com.ironsource.mediationsdk.*
+import com.ironsource.mediationsdk.adunit.adapter.listener.NetworkInitializationListener
+import com.ironsource.mediationsdk.adunit.adapter.utility.AdData
+import com.ironsource.mediationsdk.adunit.adapter.utility.AdapterErrorType
 import com.ironsource.mediationsdk.bidding.BiddingDataCallback
 import com.ironsource.mediationsdk.logger.IronLog
-import com.ironsource.mediationsdk.logger.IronSourceError
 import com.ironsource.mediationsdk.metadata.MetaData
 import com.ironsource.mediationsdk.metadata.MetaDataUtils
 import com.unity3d.mediation.LevelPlay
+import com.unity3d.mediation.adapters.levelplay.LevelPlayBaseAdapter
 import io.bidmachine.AdPlacementConfig
 import io.bidmachine.BidMachine
 import io.bidmachine.utils.BMError
+import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.atomic.AtomicBoolean
 
-class BidMachineAdapter(providerName: String) : AbstractAdapter(providerName),
-    INetworkInitCallbackListener {
-
-    init {
-        setRewardedVideoAdapter(BidMachineRewardedVideoAdapter(this))
-        setInterstitialAdapter(BidMachineInterstitialAdapter(this))
-        setBannerAdapter(BidMachineBannerAdapter(this))
-
-        // The network's capability to load a Rewarded Video ad while another Rewarded Video ad of that network is showing
-        mLWSSupportState = LoadWhileShowSupportState.LOAD_WHILE_SHOW_BY_INSTANCE
-    }
+class BidMachineAdapter : LevelPlayBaseAdapter() {
 
     companion object {
-
-        // Adapter version
-        private const val VERSION: String = BuildConfig.VERSION_NAME
-        private const val GitHash: String = BuildConfig.GitHash
-
-        // BidMachine keys
-        private const val SOURCE_ID_KEY: String = "sourceId"
-        private const val PLACEMENT_ID_KEY: String = "placementId"
-
-        // Meta data flags
-        private const val META_DATA_BIDMACHINE_COPPA_KEY = "BidMachine_COPPA"
-        private const val META_DATA_BIDMACHINE_CCPA_NO_CONSENT_VALUE: String = "1YY-"
-        private const val META_DATA_BIDMACHINE_CCPA_CONSENT_VALUE: String = "1YN-"
-
-        // Handle init callback for all adapter instances
-        private val mWasInitCalled: AtomicBoolean = AtomicBoolean(false)
-        private var mInitState: InitState = InitState.INIT_STATE_NONE
-        private val initCallbackListeners = HashSet<INetworkInitCallbackListener>()
-
-        const val CREATIVE_ID_KEY = "creativeId"
-
         // Init state possible values
         enum class InitState {
             INIT_STATE_NONE,
@@ -58,79 +26,66 @@ class BidMachineAdapter(providerName: String) : AbstractAdapter(providerName),
             INIT_STATE_SUCCESS
         }
 
-        @JvmStatic
-        fun startAdapter(providerName: String): BidMachineAdapter {
-            return BidMachineAdapter(providerName)
-        }
+        private const val GitHash: String = BuildConfig.GitHash
+
+        // Handle init callback for all adapter instances
+        private val wasInitCalled: AtomicBoolean = AtomicBoolean(false)
+        private var initState: InitState = InitState.INIT_STATE_NONE
+        private val initListeners = CopyOnWriteArrayList<NetworkInitializationListener>()
 
         @JvmStatic
-        fun getIntegrationData(context: Context?): IntegrationData {
-            return IntegrationData("BidMachine", VERSION)
-        }
-
-        @JvmStatic
-        fun getAdapterSDKVersion(): String {
-            return BidMachine.VERSION
-        }
-
-        fun getSourceIdKey(): String {
-            return SOURCE_ID_KEY
-        }
-
-        fun getPlacementIdKey(): String {
-            return PLACEMENT_ID_KEY
-        }
-
-        fun getLoadErrorAndCheckNoFill(error: BMError, noFillError: Int): IronSourceError {
+        fun getLoadErrorType(error: BMError): AdapterErrorType {
             return when (error.code) {
-                BMError.NO_CONTENT -> IronSourceError(
-                    noFillError,
-                    error.message
-                )
-
-                else -> IronSourceError(error.code, error.message)
+                BMError.NO_CONTENT -> AdapterErrorType.ADAPTER_ERROR_TYPE_NO_FILL
+                else -> AdapterErrorType.ADAPTER_ERROR_TYPE_INTERNAL
             }
         }
     }
-    //region Adapter Methods
 
-    // Get adapter version
-    override fun getVersion(): String {
-        return VERSION
-    }
+    // region Adapter Methods
 
-    // Get network sdk version
-    override fun getCoreSDKVersion(): String {
-        return getAdapterSDKVersion()
-    }
+    override fun getAdapterVersion(): String = BidMachineConstants.ADAPTER_VERSION
 
-    override fun isUsingActivityBeforeImpression(adFormat: LevelPlay.AdFormat): Boolean {
-        return false
-    }
+    override fun getNetworkSDKVersion(): String = BidMachine.VERSION
 
-    //endregion
+    override fun isUsingActivityBeforeImpression(adFormat: LevelPlay.AdFormat): Boolean = false
 
-    //region Initializations methods and callbacks
-
-    fun initSdk(sourceId: String) {
-
-        // Add self to the init listeners only in case the initialization has not finished yet
-        if (mInitState == InitState.INIT_STATE_NONE || mInitState == InitState.INIT_STATE_IN_PROGRESS) {
-            initCallbackListeners.add(this)
+    override fun init(
+        adData: AdData,
+        context: Context,
+        networkInitializationListener: NetworkInitializationListener?
+    ) {
+        // Validate sourceId first before any other checks
+        val sourceId = adData.getString(BidMachineConstants.SOURCE_ID_KEY)
+        if (sourceId.isNullOrEmpty()) {
+            val errorMessage = BidMachineConstants.Logs.MISSING_PARAM.format(BidMachineConstants.SOURCE_ID_KEY)
+            IronLog.INTERNAL.error(errorMessage)
+            networkInitializationListener?.onInitFailed(BMError.NO_CONTENT, errorMessage)
+            return
         }
 
-        if (mWasInitCalled.compareAndSet(false, true)) {
-            mInitState = InitState.INIT_STATE_IN_PROGRESS
-            IronLog.ADAPTER_API.verbose("sourceId = $sourceId")
+        // Check if already initialized
+        if (initState == InitState.INIT_STATE_SUCCESS) {
+            networkInitializationListener?.onInitSuccess()
+            return
+        }
+
+        // Add listener to list if initialization is not finished yet
+        if (initState == InitState.INIT_STATE_NONE || initState == InitState.INIT_STATE_IN_PROGRESS) {
+            networkInitializationListener?.let { initListeners.add(it) }
+        }
+
+        // Start initialization only once using atomic boolean
+        if (wasInitCalled.compareAndSet(false, true)) {
+            initState = InitState.INIT_STATE_IN_PROGRESS
+
+            IronLog.ADAPTER_API.verbose(BidMachineConstants.Logs.SOURCE_ID.format(sourceId))
 
             // Set log level
-            BidMachine.setLoggingEnabled(isAdaptersDebugEnabled)
+            BidMachine.setLoggingEnabled(isAdaptersDebugEnabled())
 
-            // Init BidMachine SDK
-            BidMachine.initialize(
-                ContextProvider.getInstance().applicationContext,
-                sourceId
-            ) {
+            // Initialize BidMachine SDK
+            BidMachine.initialize(context.applicationContext, sourceId) {
                 // BidMachine's initialization callback currently doesn't give any indication to initialization failure.
                 // Once this callback is called we will treat the initialization as successful
                 initializationSuccess()
@@ -138,99 +93,97 @@ class BidMachineAdapter(providerName: String) : AbstractAdapter(providerName),
         }
     }
 
+    // endregion
+
+    // region BidMachine SDK Init Callbacks
+
     private fun initializationSuccess() {
         IronLog.ADAPTER_CALLBACK.verbose()
 
-        mInitState = InitState.INIT_STATE_SUCCESS
+        initState = InitState.INIT_STATE_SUCCESS
 
-        //iterate over all the adapter instances and report init success
-        for (adapter: INetworkInitCallbackListener in initCallbackListeners) {
-            adapter.onNetworkInitCallbackSuccess()
+        // Iterate over all the adapter instances and report init success
+        for (listener in initListeners) {
+            listener.onInitSuccess()
         }
 
-        initCallbackListeners.clear()
+        initListeners.clear()
     }
 
-    fun getInitState(): InitState {
-        return mInitState
-    }
+    // endregion
 
-    //endregion
+    // region Legal Methods
 
-    //region legal
-
-    override fun setMetaData(key: String, values: List<String>) {
-        if (values.isEmpty()) {
+    override fun setMetaData(key: String?, values: MutableList<String?>?) {
+        if (values.isNullOrEmpty()) {
             return
         }
 
         // This is a list of 1 value
-        val value = values[0]
-        IronLog.ADAPTER_API.verbose("key = $key, value = $value")
-        val formattedValue: String = MetaDataUtils.formatValueForType(
-            value,
-            MetaData.MetaDataValueTypes.META_DATA_VALUE_BOOLEAN
-        )
+        val value = values[0] ?: return
+        IronLog.ADAPTER_API.verbose(BidMachineConstants.Logs.META_DATA.format(key ?: "", value))
+
+        val formattedValue: String = MetaDataUtils.formatValueForType(value, MetaData.MetaDataValueTypes.META_DATA_VALUE_BOOLEAN)
 
         when {
             MetaDataUtils.isValidCCPAMetaData(key, value) -> {
                 setCCPAValue(MetaDataUtils.getMetaDataBooleanValue(value))
             }
-
-            MetaDataUtils.isValidMetaData(key, META_DATA_BIDMACHINE_COPPA_KEY, formattedValue) -> {
+            MetaDataUtils.isValidMetaData(key, BidMachineConstants.META_DATA_COPPA_KEY, formattedValue) -> {
                 setCOPPAValue(MetaDataUtils.getMetaDataBooleanValue(formattedValue))
             }
         }
     }
 
     override fun setConsent(consent: Boolean) {
-        IronLog.ADAPTER_API.verbose("consent = $consent")
+        IronLog.ADAPTER_API.verbose(BidMachineConstants.Logs.CONSENT.format(consent))
         BidMachine.setSubjectToGDPR(true)
         BidMachine.setConsentConfig(consent, null)
     }
 
     private fun setCCPAValue(value: Boolean) {
         val ccpaConsentString = if (value) {
-            META_DATA_BIDMACHINE_CCPA_NO_CONSENT_VALUE
+            BidMachineConstants.CCPA_NO_CONSENT_VALUE
         } else {
-            META_DATA_BIDMACHINE_CCPA_CONSENT_VALUE
+            BidMachineConstants.CCPA_CONSENT_VALUE
         }
-        IronLog.ADAPTER_API.verbose("value = $ccpaConsentString")
+        IronLog.ADAPTER_API.verbose(BidMachineConstants.Logs.CCPA.format(ccpaConsentString))
         BidMachine.setUSPrivacyString(ccpaConsentString)
     }
 
     private fun setCOPPAValue(value: Boolean) {
-        IronLog.ADAPTER_API.verbose("isCoppa = $value")
+        IronLog.ADAPTER_API.verbose(BidMachineConstants.Logs.COPPA.format(value))
         BidMachine.setCoppa(value)
     }
 
-    //endregion
+    // endregion
 
-    // region Helpers
-    fun collectBiddingData(biddingDataCallback: BiddingDataCallback, adPlacementConfig: AdPlacementConfig) {
-        if (mInitState != InitState.INIT_STATE_SUCCESS) {
-            val error = "returning null as token since init isn't completed"
-            IronLog.INTERNAL.verbose(error)
-            biddingDataCallback.onFailure("$error - BidMachine")
+    // region Helper Methods
+
+    internal fun collectBiddingData(
+        context: Context,
+        biddingDataCallback: BiddingDataCallback,
+        adPlacementConfig: AdPlacementConfig
+    ) {
+        if (initState != InitState.INIT_STATE_SUCCESS) {
+            IronLog.INTERNAL.error(BidMachineConstants.Logs.TOKEN_ERROR)
+            biddingDataCallback.onFailure(BidMachineConstants.Logs.TOKEN_FAILED.format(BidMachineConstants.Logs.TOKEN_ERROR))
             return
         }
 
-        val context = ContextProvider.getInstance().applicationContext
-        BidMachine.getBidToken(context, adPlacementConfig) { token ->
+        BidMachine.getBidToken(context.applicationContext, adPlacementConfig) { token ->
             if (token.isNullOrEmpty()) {
-                val error = "failed to receive token - returned null/empty token"
-                IronLog.INTERNAL.verbose(error)
-                biddingDataCallback.onFailure("$error - BidMachine")
+                IronLog.INTERNAL.error(BidMachineConstants.TOKEN_EMPTY)
+                biddingDataCallback.onFailure(BidMachineConstants.Logs.TOKEN_FAILED.format(BidMachineConstants.TOKEN_EMPTY))
                 return@getBidToken
             }
 
-            IronLog.ADAPTER_API.verbose("token = $token")
-            val ret: MutableMap<String?, Any?> = HashMap()
-            ret["token"] = token
-            biddingDataCallback.onSuccess(ret)
+            IronLog.ADAPTER_API.verbose(BidMachineConstants.Logs.TOKEN.format(token))
+            val result: MutableMap<String, Any> = HashMap()
+            result[BidMachineConstants.TOKEN_KEY] = token
+            biddingDataCallback.onSuccess(result)
         }
     }
 
-    //endregion
-
-    }
+    // endregion
+}

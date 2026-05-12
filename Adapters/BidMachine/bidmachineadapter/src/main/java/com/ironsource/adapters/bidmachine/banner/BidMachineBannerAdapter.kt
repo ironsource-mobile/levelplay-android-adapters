@@ -1,193 +1,140 @@
 package com.ironsource.adapters.bidmachine.banner
 
+import android.app.Activity
+import android.content.Context
+import android.os.Handler
+import android.os.Looper
 import android.view.Gravity
 import android.widget.FrameLayout
 import com.ironsource.adapters.bidmachine.BidMachineAdapter
-import com.ironsource.environment.ContextProvider
-import com.ironsource.mediationsdk.*
-import com.ironsource.mediationsdk.adapter.AbstractBannerAdapter
+import com.ironsource.adapters.bidmachine.BidMachineConstants
+import com.ironsource.mediationsdk.AdapterUtils
+import com.ironsource.mediationsdk.ISBannerSize
+import com.ironsource.mediationsdk.adunit.adapter.listener.BannerAdListener
+import com.ironsource.mediationsdk.adunit.adapter.utility.AdData
+import com.ironsource.mediationsdk.adunit.adapter.utility.AdapterErrorType
+import com.ironsource.mediationsdk.adunit.adapter.utility.AdapterErrors
 import com.ironsource.mediationsdk.bidding.BiddingDataCallback
 import com.ironsource.mediationsdk.logger.IronLog
-import com.ironsource.mediationsdk.sdk.BannerSmashListener
-import com.ironsource.mediationsdk.utils.ErrorBuilder
-import com.ironsource.mediationsdk.utils.IronSourceConstants
+import com.ironsource.mediationsdk.model.NetworkSettings
+import com.unity3d.mediation.adapters.levelplay.LevelPlayBaseBanner
 import io.bidmachine.AdPlacementConfig
 import io.bidmachine.BannerAdSize
 import io.bidmachine.banner.BannerRequest
 import io.bidmachine.banner.BannerView
-import org.json.JSONObject
-import java.lang.ref.WeakReference
 
-class BidMachineBannerAdapter(adapter: BidMachineAdapter) :
-    AbstractBannerAdapter<BidMachineAdapter>(adapter) {
+class BidMachineBannerAdapter(networkSettings: NetworkSettings) :
+    LevelPlayBaseBanner<BidMachineAdapter>(networkSettings) {
 
-    private var mBannerListener : BannerSmashListener? = null
-    private var mBannerAdListener : BidMachineBannerAdListener? = null
-    private var mBannerViewAd: BannerView? = null
-    private var mBannerRequest: BannerRequest? = null
+    private val mainHandler = Handler(Looper.getMainLooper())
+    private var bannerAdView: BannerView? = null
 
-    companion object {
-        private const val BANNER_SIZE_IS_NULL_ERROR_MSG = "banner size is null, banner has been destroyed"
-    }
+    // region LevelPlay Banner API
 
-    override fun initBannerForBidding(
-        appKey: String?,
-        userId: String?,
-        config: JSONObject,
-        listener: BannerSmashListener
+    override fun loadAd(
+        adData: AdData,
+        activity: Activity,
+        bannerSize: ISBannerSize,
+        listener: BannerAdListener
     ) {
-        IronLog.ADAPTER_API.verbose()
+        val placementId = adData.getString(BidMachineConstants.PLACEMENT_ID_KEY)
+        IronLog.ADAPTER_API.verbose(BidMachineConstants.Logs.PLACEMENT_ID.format(placementId ?: ""))
 
-        val sourceIdKey = BidMachineAdapter.getSourceIdKey()
-        val sourceId = config.optString(sourceIdKey)
-
-        if (sourceId.isNullOrEmpty()) {
-            IronLog.INTERNAL.error(getAdUnitIdMissingErrorString(sourceIdKey))
-            listener.onBannerInitFailed(
-                ErrorBuilder.buildInitFailedError(
-                    getAdUnitIdMissingErrorString(sourceIdKey),
-                    IronSourceConstants.BANNER_AD_UNIT
-                )
+        val appContext = activity.applicationContext
+        val bidMachineBannerSize = getBannerSize(bannerSize, appContext)
+        if (bidMachineBannerSize == null) {
+            IronLog.INTERNAL.error(BidMachineConstants.UNSUPPORTED_BANNER_SIZE)
+            listener.onAdLoadFailed(
+                AdapterErrorType.ADAPTER_ERROR_TYPE_INTERNAL,
+                AdapterErrors.ADAPTER_ERROR_INTERNAL,
+                BidMachineConstants.UNSUPPORTED_BANNER_SIZE
             )
             return
         }
 
-        //save banner listener
-        mBannerListener = listener
-
-        when (adapter.getInitState()) {
-            BidMachineAdapter.Companion.InitState.INIT_STATE_SUCCESS -> {
-                listener.onBannerInitSuccess()
-            }
-            BidMachineAdapter.Companion.InitState.INIT_STATE_NONE,
-            BidMachineAdapter.Companion.InitState.INIT_STATE_IN_PROGRESS -> {
-                adapter.initSdk(sourceId)
-            }
-        }
-    }
-
-    override fun loadBannerForBidding(
-        config: JSONObject,
-        adData: JSONObject?,
-        serverData: String?,
-        bannerSize: ISBannerSize?,
-        listener: BannerSmashListener
-    ) {
-        IronLog.ADAPTER_API.verbose()
-
-        if (bannerSize == null) {
-            IronLog.INTERNAL.error(BANNER_SIZE_IS_NULL_ERROR_MSG)
-            listener.onBannerAdLoadFailed(ErrorBuilder.buildLoadFailedError(BANNER_SIZE_IS_NULL_ERROR_MSG))
-            return
-        }
-
-        val bidMachineBannerSize = getBannerSize(bannerSize)
-        if (bidMachineBannerSize == null) {
-            listener.onBannerAdLoadFailed(ErrorBuilder.unsupportedBannerSize(adapter.providerName))
-            return
-        }
-
-        val context = ContextProvider.getInstance().applicationContext
         val layoutParams = FrameLayout.LayoutParams(
-            AdapterUtils.dpToPixels(context, bidMachineBannerSize.width),
-            AdapterUtils.dpToPixels(context, bidMachineBannerSize.height),
+            AdapterUtils.dpToPixels(appContext, bidMachineBannerSize.width),
+            AdapterUtils.dpToPixels(appContext, bidMachineBannerSize.height),
             Gravity.CENTER
         )
 
-        val bannerAdListener = BidMachineBannerAdListener(listener, WeakReference(this), layoutParams)
-        mBannerAdListener = bannerAdListener
+        bannerAdView = BannerView(appContext).apply {
+            setListener(BidMachineBannerListener(listener, layoutParams))
+        }
 
-        val bannerView = BannerView(ContextProvider.getInstance().applicationContext)
-        bannerView.setListener(bannerAdListener)
-        val adPlacementConfig = createBannerPlacementConfig(config, bidMachineBannerSize)
-        val bannerRequestBuilder = BannerRequest.Builder(adPlacementConfig)
-            .setBidPayload(serverData)
+        val adPlacementConfig = createBannerPlacementConfig(placementId, bidMachineBannerSize)
+        val bannerRequest = BannerRequest.Builder(adPlacementConfig)
+            .setBidPayload(adData.serverData)
+            .build()
 
-        mBannerRequest = bannerRequestBuilder.build()
-
-        postOnUIThread {
-            if (bannerSize == null) {
-                IronLog.INTERNAL.error(BANNER_SIZE_IS_NULL_ERROR_MSG)
-                listener.onBannerAdLoadFailed(ErrorBuilder.buildLoadFailedError(BANNER_SIZE_IS_NULL_ERROR_MSG))
-                return@postOnUIThread
-            }
-            bannerView.load(mBannerRequest)
+        mainHandler.post {
+            bannerAdView?.load(bannerRequest)
         }
     }
 
-    override fun destroyBanner(config: JSONObject) {
+    override fun destroyAd(adData: AdData) {
         IronLog.ADAPTER_API.verbose()
-        destroyBannerViewAd()
+        mainHandler.post {
+            bannerAdView?.setListener(null)
+            bannerAdView?.destroy()
+            bannerAdView = null
+        }
     }
 
-    override fun collectBannerBiddingData(
-        config: JSONObject,
-        adData: JSONObject?,
+    override fun collectBiddingData(
+        adData: AdData?,
+        context: Context,
         biddingDataCallback: BiddingDataCallback
     ) {
-        val bannerSize = adData?.opt(IronSourceConstants.BANNER_SIZE)
+        val placementId = adData?.getString(BidMachineConstants.PLACEMENT_ID_KEY)
+        IronLog.ADAPTER_API.verbose(BidMachineConstants.Logs.PLACEMENT_ID.format(placementId ?: ""))
+
+        val networkAdapter = getNetworkAdapter()
+        if (networkAdapter == null) {
+            IronLog.INTERNAL.error(BidMachineConstants.Logs.NETWORK_ADAPTER_IS_NULL)
+            biddingDataCallback.onFailure(BidMachineConstants.Logs.NETWORK_ADAPTER_IS_NULL)
+            return
+        }
+
+        val bannerSize = adData?.adUnitData?.get(BidMachineConstants.BANNER_SIZE_KEY)
         if (bannerSize !is ISBannerSize) {
-            val error = "Banner size is invalid or not of type ISBannerSize"
-            IronLog.INTERNAL.verbose(error)
-            biddingDataCallback.onFailure("$error - BidMachine")
+            IronLog.INTERNAL.error(BidMachineConstants.BANNER_SIZE_INVALID)
+            biddingDataCallback.onFailure(BidMachineConstants.Logs.TOKEN_FAILED.format(BidMachineConstants.BANNER_SIZE_INVALID))
             return
         }
-        val bidMachineBannerSize = getBannerSize(bannerSize)
+
+        val bidMachineBannerSize = getBannerSize(bannerSize, context.applicationContext)
         if (bidMachineBannerSize == null) {
-            val error = "Unsupported or null banner size"
-            IronLog.INTERNAL.verbose(error)
-            biddingDataCallback.onFailure("$error - BidMachine")
+            IronLog.INTERNAL.error(BidMachineConstants.UNSUPPORTED_BANNER_SIZE)
+            biddingDataCallback.onFailure(BidMachineConstants.Logs.TOKEN_FAILED.format(BidMachineConstants.UNSUPPORTED_BANNER_SIZE))
             return
         }
-        val adPlacementConfig = createBannerPlacementConfig(config, bidMachineBannerSize)
-        adapter.collectBiddingData(biddingDataCallback, adPlacementConfig)
+
+        val adPlacementConfig = createBannerPlacementConfig(placementId, bidMachineBannerSize)
+        networkAdapter.collectBiddingData(context, biddingDataCallback, adPlacementConfig)
     }
 
-    //endregion
+    // endregion
 
-    // region Helpers
+    // region Helper Methods
 
-    private fun destroyBannerViewAd() {
-        postOnUIThread {
-            mBannerViewAd?.setListener(null)
-            mBannerViewAd?.destroy()
-        }
-        mBannerViewAd = null
-    }
-
-    internal fun setBannerView(ad: BannerView) {
-        mBannerViewAd = ad
-    }
-
-    private fun getBannerSize(bannerSize: ISBannerSize): BannerAdSize? {
-
-        if(bannerSize == null) {
-            IronLog.INTERNAL.verbose("Banner size is null")
-            return null
-        }
-
+    private fun getBannerSize(bannerSize: ISBannerSize, context: Context): BannerAdSize? {
         return when (bannerSize.description) {
-            "BANNER" -> BannerAdSize.Banner
-            "RECTANGLE" -> BannerAdSize.MediumRectangle
-            "LEADERBOARD" -> BannerAdSize.Leaderboard
-            "SMART" ->
-                (if (AdapterUtils.isLargeScreen(ContextProvider.getInstance().applicationContext)) {
-                    BannerAdSize.Leaderboard
-                } else {
-                    BannerAdSize.Banner
-                })
+            BidMachineConstants.BANNER -> BannerAdSize.Banner
+            BidMachineConstants.LEADERBOARD -> BannerAdSize.Leaderboard
+            BidMachineConstants.RECTANGLE -> BannerAdSize.MediumRectangle
+            BidMachineConstants.SMART -> if (AdapterUtils.isLargeScreen(context)) BannerAdSize.Leaderboard else BannerAdSize.Banner
             else -> null
         }
     }
 
-    private fun createBannerPlacementConfig(config: JSONObject, bannerSize: BannerAdSize): AdPlacementConfig {
-        val placementId = config.optString(BidMachineAdapter.getPlacementIdKey())
+    private fun createBannerPlacementConfig(placementId: String?, bannerSize: BannerAdSize): AdPlacementConfig {
         val adPlacementConfigBuilder = AdPlacementConfig.bannerBuilder(bannerSize)
-        if(!placementId.isNullOrEmpty()) {
+        if (!placementId.isNullOrEmpty()) {
             adPlacementConfigBuilder.withPlacementId(placementId)
         }
         return adPlacementConfigBuilder.build()
     }
 
-    //endregion
+    // endregion
 }

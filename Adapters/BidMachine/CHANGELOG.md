@@ -1,5 +1,8 @@
 # Changelog
 
+## Version 5.5.0
+* General improvements and performance enhancements
+
 ## Version 5.4.0
 * Supporting SDK version 3.6.1
 
