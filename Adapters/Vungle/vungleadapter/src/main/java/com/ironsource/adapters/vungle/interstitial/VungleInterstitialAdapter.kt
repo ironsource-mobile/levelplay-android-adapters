@@ -151,6 +151,7 @@ class VungleInterstitialAdapter(adapter: VungleAdapter) :
         ).apply {
 
             adListener = vungleInterstitialAdListener
+            adapterAdFormat = VungleAdapter.ADAPTER_FORMAT_INTERSTITIAL
         }
         mPlacementToInterstitialAd[placementId] = vungleInterstitial
         vungleInterstitial.load(serverData)

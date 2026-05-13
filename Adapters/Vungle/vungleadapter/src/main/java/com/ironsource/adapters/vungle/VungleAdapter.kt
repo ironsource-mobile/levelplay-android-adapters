@@ -61,6 +61,11 @@ class VungleAdapter(providerName: String) : AbstractAdapter(providerName),
 
         const val CREATIVE_ID_KEY = "creativeId"
 
+        // Adapter ad format identifiers
+        const val ADAPTER_FORMAT_REWARDED = "ISVungleRewardedVideo"
+        const val ADAPTER_FORMAT_INTERSTITIAL = "ISVungleInterstitial"
+        const val ADAPTER_FORMAT_BANNER = "ISVungleBanner"
+
         // Handle init callback for all adapter instances for each init that was called
         internal val initCallbackListeners = HashSet<INetworkInitCallbackListener>()
 
