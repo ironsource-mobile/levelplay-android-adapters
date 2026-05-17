@@ -34,7 +34,7 @@ android {
         buildConfig true
     }
     defaultConfig {
-        minSdkVersion 21
+        minSdkVersion 23
         targetSdkVersion 36
         versionCode 1
         versionName adapterVersion
