@@ -1,164 +1,137 @@
 package com.ironsource.adapters.bigo.banner
 
+import android.app.Activity
+import android.content.Context
+import android.os.Handler
+import android.os.Looper
 import android.view.Gravity
 import android.widget.FrameLayout
 import com.ironsource.adapters.bigo.BigoAdapter
-import com.ironsource.environment.ContextProvider
-import com.ironsource.mediationsdk.*
-import com.ironsource.mediationsdk.adapter.AbstractBannerAdapter
+import com.ironsource.adapters.bigo.BigoConstants
+import com.ironsource.mediationsdk.AdapterUtils
+import com.ironsource.mediationsdk.ISBannerSize
+import com.ironsource.mediationsdk.adunit.adapter.listener.BannerAdListener
+import com.ironsource.mediationsdk.adunit.adapter.utility.AdData
+import com.ironsource.mediationsdk.adunit.adapter.utility.AdapterErrorType
+import com.ironsource.mediationsdk.adunit.adapter.utility.AdapterErrors
+import com.ironsource.mediationsdk.bidding.BiddingDataCallback
 import com.ironsource.mediationsdk.logger.IronLog
-import com.ironsource.mediationsdk.sdk.BannerSmashListener
-import com.ironsource.mediationsdk.utils.ErrorBuilder
-import com.ironsource.mediationsdk.utils.IronSourceConstants
-import org.json.JSONObject
+import com.ironsource.mediationsdk.model.NetworkSettings
+import com.unity3d.mediation.adapters.levelplay.LevelPlayBaseBanner
 import sg.bigo.ads.api.AdSize
 import sg.bigo.ads.api.BannerAd
 import sg.bigo.ads.api.BannerAdLoader
 import sg.bigo.ads.api.BannerAdRequest
 import java.lang.ref.WeakReference
 
-class BigoBannerAdapter(adapter: BigoAdapter) :
-    AbstractBannerAdapter<BigoAdapter>(adapter) {
+class BigoBannerAdapter(networkSettings: NetworkSettings) :
+    LevelPlayBaseBanner<BigoAdapter>(networkSettings) {
 
-    private var mSmashListener : BannerSmashListener? = null
-    private var mAdListener : BigoBannerAdListener? = null
-    private var mAdLoader : BannerAdLoader? = null
-    private var mBannerViewAd: BannerAd? = null
+    private val mainHandler = Handler(Looper.getMainLooper())
+    private var bannerListener: BigoBannerListener? = null
+    private var bannerAd: BannerAd? = null
 
-    override fun initBannerForBidding(
-        appKey: String?,
-        userId: String?,
-        config: JSONObject,
-        listener: BannerSmashListener
+    // region Adapter Methods
+
+    override fun loadAd(
+        adData: AdData,
+        activity: Activity,
+        bannerSize: ISBannerSize,
+        listener: BannerAdListener
     ) {
-        IronLog.ADAPTER_API.verbose()
+        val slotId = adData.getString(BigoConstants.SLOT_ID_KEY)
+        IronLog.ADAPTER_API.verbose(BigoConstants.Logs.SLOT_ID.format(slotId ?: ""))
 
-        val appIdKey = BigoAdapter.getAppIdKey()
-        val appId= getConfigStringValueFromKey(config, appIdKey)
-        if (appId.isEmpty()) {
-            IronLog.INTERNAL.error(getAdUnitIdMissingErrorString(appId))
-            listener.onBannerInitFailed(
-                ErrorBuilder.buildInitFailedError(
-                    getAdUnitIdMissingErrorString(appId),
-                    IronSourceConstants.BANNER_AD_UNIT
-                )
+        val serverData = adData.serverData
+        if (serverData.isNullOrEmpty()) {
+            val errorMessage = BigoConstants.Logs.SERVER_DATA_EMPTY
+            IronLog.INTERNAL.error(errorMessage)
+            listener.onAdLoadFailed(
+                AdapterErrorType.ADAPTER_ERROR_TYPE_INTERNAL,
+                AdapterErrors.ADAPTER_ERROR_MISSING_PARAMS,
+                errorMessage
             )
             return
         }
 
-        //save banner listener
-        mSmashListener = listener
-
-        when (adapter.getInitState()) {
-            BigoAdapter.Companion.InitState.INIT_STATE_SUCCESS -> {
-                listener.onBannerInitSuccess()
-            }
-            BigoAdapter.Companion.InitState.INIT_STATE_NONE,
-            BigoAdapter.Companion.InitState.INIT_STATE_IN_PROGRESS -> {
-                adapter.initSdk(appId)
-            }
-        }
-
-    }
-
-    override fun loadBannerForBidding(
-        config: JSONObject,
-        adData: JSONObject?,
-        serverData: String?,
-        bannerSize: ISBannerSize?,
-        listener: BannerSmashListener
-    ) {
-
-        IronLog.ADAPTER_API.verbose()
-
-        if (bannerSize == null) {
-            IronLog.INTERNAL.error("banner size is null")
-            listener.onBannerAdLoadFailed(ErrorBuilder.unsupportedBannerSize(adapter.providerName))
-            return
-        }
-
-        if (serverData.isNullOrEmpty()) {
-            val error = "serverData is empty"
-            IronLog.INTERNAL.error(error)
-            listener.onBannerAdLoadFailed(ErrorBuilder.buildLoadFailedError(error))
-            return
-        }
-
-        val bigoBannerSize = getBannerSize(bannerSize)
+        val appContext = activity.applicationContext
+        val bigoBannerSize = getBannerSize(bannerSize, appContext)
         if (bigoBannerSize == null) {
-            listener.onBannerAdLoadFailed(ErrorBuilder.unsupportedBannerSize(adapter.providerName))
+            val errorMessage = BigoConstants.Logs.UNSUPPORTED_BANNER_SIZE
+            IronLog.INTERNAL.error(errorMessage)
+            listener.onAdLoadFailed(
+                AdapterErrorType.ADAPTER_ERROR_TYPE_INTERNAL,
+                AdapterErrors.ADAPTER_ERROR_INTERNAL,
+                errorMessage
+            )
             return
         }
 
-        val context = ContextProvider.getInstance().applicationContext
         val layoutParams = FrameLayout.LayoutParams(
-            AdapterUtils.dpToPixels(context, bigoBannerSize.width),
-            AdapterUtils.dpToPixels(context, bigoBannerSize.height),
+            AdapterUtils.dpToPixels(appContext, bigoBannerSize.width),
+            AdapterUtils.dpToPixels(appContext, bigoBannerSize.height),
             Gravity.CENTER
         )
 
-        val bannerAdListener = BigoBannerAdListener(
-            WeakReference(this),
-            listener,
-            layoutParams
-        )
-        mAdListener = bannerAdListener
+        bannerListener = BigoBannerListener(listener, WeakReference(this), layoutParams)
 
-        val bannerAdLoader =
-            BannerAdLoader.Builder().withAdLoadListener(mAdListener)
-                .withExt(BigoAdapter.MEDIATION_INFO)
-                .build()
+        val bannerAdLoader = BannerAdLoader.Builder()
+            .withAdLoadListener(bannerListener)
+            .withExt(BigoAdapter.getMediationInfo())
+            .build()
 
-        mAdLoader = bannerAdLoader
-
-        val slotIdKey= BigoAdapter.getSlotIdKey()
-        val slotId = getConfigStringValueFromKey(config, slotIdKey)
-
-        val bannerAdRequest =
-            BannerAdRequest.Builder()
-                .withBid(serverData)
-                .withSlotId(slotId)
-                .withAdSizes(bigoBannerSize).build()
+        val bannerAdRequest = BannerAdRequest.Builder()
+            .withBid(serverData)
+            .withSlotId(slotId)
+            .withAdSizes(bigoBannerSize)
+            .build()
 
         bannerAdLoader.loadAd(bannerAdRequest)
     }
 
-    override fun destroyBanner(config: JSONObject) {
+    override fun destroyAd(adData: AdData) {
         IronLog.ADAPTER_API.verbose()
-        destroyBannerViewAd()
-    }
-
-    override fun getBannerBiddingData(
-        config: JSONObject,
-        adData: JSONObject?
-    ): MutableMap<String?, Any?>? {
-        return adapter.getBiddingData()
-    }
-
-    //endregion
-
-    // region Helpers
-
-    internal fun setBannerView(ad: BannerAd) {
-        ad.setAdInteractionListener(mAdListener)
-        mBannerViewAd = ad
-    }
-
-    private fun destroyBannerViewAd() {
-        postOnUIThread {
-            mBannerViewAd?.setAdInteractionListener(null)
-            mBannerViewAd?.destroy()
-            mBannerViewAd = null
-            mAdLoader = null
+        mainHandler.post {
+            bannerAd?.setAdInteractionListener(null)
+            bannerAd?.destroy()
+            bannerAd = null
+            bannerListener = null
         }
     }
 
-    private fun getBannerSize(bannerSize: ISBannerSize?): AdSize? {
-        return when (bannerSize?.description) {
+    override fun collectBiddingData(
+        adData: AdData?,
+        context: Context,
+        biddingDataCallback: BiddingDataCallback
+    ) {
+        IronLog.ADAPTER_API.verbose()
+
+        val networkAdapter = getNetworkAdapter()
+        if (networkAdapter == null) {
+            val errorMessage = BigoConstants.Logs.ADAPTER_UNAVAILABLE
+            IronLog.INTERNAL.error(errorMessage)
+            biddingDataCallback.onFailure(errorMessage)
+            return
+        }
+
+        networkAdapter.collectBiddingData(biddingDataCallback)
+    }
+
+    // endregion
+
+    // region Helper Methods
+
+    internal fun setBannerAd(ad: BannerAd) {
+        ad.setAdInteractionListener(bannerListener)
+        bannerAd = ad
+    }
+
+    private fun getBannerSize(bannerSize: ISBannerSize, context: Context): AdSize? {
+        return when (bannerSize.description) {
             ISBannerSize.BANNER.description -> AdSize.BANNER
             ISBannerSize.RECTANGLE.description -> AdSize.MEDIUM_RECTANGLE
-            ISBannerSize.SMART.description -> if (AdapterUtils.isLargeScreen(ContextProvider.getInstance().applicationContext)) {
-               AdSize.LARGE_BANNER
+            ISBannerSize.SMART.description -> if (AdapterUtils.isLargeScreen(context)) {
+                AdSize.LARGE_BANNER
             } else {
                 AdSize.BANNER
             }
@@ -166,5 +139,5 @@ class BigoBannerAdapter(adapter: BigoAdapter) :
         }
     }
 
-    //endregion
+    // endregion
 }

@@ -1,31 +1,31 @@
-package com.ironsource.adapters.bigo.interstitial
+package com.ironsource.adapters.bigo.rewarded
 
 import android.app.Activity
 import android.content.Context
 import com.ironsource.adapters.bigo.BigoAdapter
 import com.ironsource.adapters.bigo.BigoConstants
-import com.ironsource.mediationsdk.adunit.adapter.listener.InterstitialAdListener
+import com.ironsource.mediationsdk.adunit.adapter.listener.RewardedVideoAdListener
 import com.ironsource.mediationsdk.adunit.adapter.utility.AdData
 import com.ironsource.mediationsdk.adunit.adapter.utility.AdapterErrorType
 import com.ironsource.mediationsdk.adunit.adapter.utility.AdapterErrors
 import com.ironsource.mediationsdk.bidding.BiddingDataCallback
 import com.ironsource.mediationsdk.logger.IronLog
 import com.ironsource.mediationsdk.model.NetworkSettings
-import com.unity3d.mediation.adapters.levelplay.LevelPlayBaseInterstitial
-import sg.bigo.ads.api.InterstitialAd
-import sg.bigo.ads.api.InterstitialAdLoader
-import sg.bigo.ads.api.InterstitialAdRequest
+import com.unity3d.mediation.adapters.levelplay.LevelPlayBaseRewardedVideo
+import sg.bigo.ads.api.RewardVideoAd
+import sg.bigo.ads.api.RewardVideoAdLoader
+import sg.bigo.ads.api.RewardVideoAdRequest
 import java.lang.ref.WeakReference
 
-class BigoInterstitialAdapter(networkSettings: NetworkSettings) :
-    LevelPlayBaseInterstitial<BigoAdapter>(networkSettings) {
+class BigoRewardedAdapter(networkSettings: NetworkSettings) :
+    LevelPlayBaseRewardedVideo<BigoAdapter>(networkSettings) {
 
-    private var interstitialListener: BigoInterstitialListener? = null
-    private var interstitialAd: InterstitialAd? = null
+    private var rewardedListener: BigoRewardedListener? = null
+    private var rewardedAd: RewardVideoAd? = null
 
     // region Adapter Methods
 
-    override fun loadAd(adData: AdData, context: Context, listener: InterstitialAdListener) {
+    override fun loadAd(adData: AdData, context: Context, listener: RewardedVideoAdListener) {
         val slotId = adData.getString(BigoConstants.SLOT_ID_KEY)
         IronLog.ADAPTER_API.verbose(BigoConstants.Logs.SLOT_ID.format(slotId ?: ""))
 
@@ -41,22 +41,22 @@ class BigoInterstitialAdapter(networkSettings: NetworkSettings) :
             return
         }
 
-        interstitialListener = BigoInterstitialListener(listener, WeakReference(this))
+        rewardedListener = BigoRewardedListener(listener, WeakReference(this))
 
-        val interstitialAdLoader = InterstitialAdLoader.Builder()
-            .withAdLoadListener(interstitialListener)
+        val rewardedAdLoader = RewardVideoAdLoader.Builder()
+            .withAdLoadListener(rewardedListener)
             .withExt(BigoAdapter.getMediationInfo())
             .build()
 
-        val interstitialAdRequest = InterstitialAdRequest.Builder()
+        val rewardedAdRequest = RewardVideoAdRequest.Builder()
             .withBid(serverData)
             .withSlotId(slotId)
             .build()
 
-        interstitialAdLoader.loadAd(interstitialAdRequest)
+        rewardedAdLoader.loadAd(rewardedAdRequest)
     }
 
-    override fun showAd(adData: AdData, activity: Activity, listener: InterstitialAdListener) {
+    override fun showAd(adData: AdData, activity: Activity, listener: RewardedVideoAdListener) {
         IronLog.ADAPTER_API.verbose()
 
         if (!isAdAvailable(adData)) {
@@ -67,20 +67,20 @@ class BigoInterstitialAdapter(networkSettings: NetworkSettings) :
             return
         }
 
-        interstitialAd?.setAdInteractionListener(interstitialListener)
-        interstitialAd?.show()
+        rewardedAd?.setAdInteractionListener(rewardedListener)
+        rewardedAd?.show()
     }
 
     override fun isAdAvailable(adData: AdData): Boolean {
-        return interstitialAd != null && interstitialAd?.isExpired == false
+        return rewardedAd != null && rewardedAd?.isExpired == false
     }
 
     override fun destroyAd(adData: AdData) {
         IronLog.ADAPTER_API.verbose()
-        interstitialAd?.setAdInteractionListener(null)
-        interstitialAd?.destroy()
-        interstitialAd = null
-        interstitialListener = null
+        rewardedAd?.setAdInteractionListener(null)
+        rewardedAd?.destroy()
+        rewardedAd = null
+        rewardedListener = null
     }
 
     override fun collectBiddingData(
@@ -105,8 +105,8 @@ class BigoInterstitialAdapter(networkSettings: NetworkSettings) :
 
     // region Helper Methods
 
-    internal fun setInterstitialAd(ad: InterstitialAd) {
-        interstitialAd = ad
+    internal fun setRewardedAd(ad: RewardVideoAd) {
+        rewardedAd = ad
     }
 
     // endregion
