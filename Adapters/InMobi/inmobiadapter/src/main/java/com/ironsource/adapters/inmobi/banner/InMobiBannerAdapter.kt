@@ -114,6 +114,13 @@ class InMobiBannerAdapter (adapter: InMobiAdapter) :
     ) {
         IronLog.ADAPTER_API.verbose()
 
+        if (serverData.isNullOrEmpty()) {
+            val error = "serverData is empty"
+            IronLog.INTERNAL.error(error)
+            listener.onBannerAdLoadFailed(ErrorBuilder.buildLoadFailedError(error))
+            return
+        }
+
         val placementId = config.optString(InMobiAdapter.PLACEMENT_ID)
         val dpSize = getDPSize(
             bannerSize,
@@ -176,9 +183,6 @@ class InMobiBannerAdapter (adapter: InMobiAdapter) :
                             )
                             listener.onBannerAdLoadFailed(error)
                         }
-                    } ?: run {
-                        inMobiBanner.setExtras(adapter.getExtrasMap())
-                        inMobiBanner.load()
                     }
                 } catch (e: java.lang.Exception) {
                     val error =

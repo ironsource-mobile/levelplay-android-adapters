@@ -118,6 +118,13 @@ class InMobiInterstitialAdapter (adapter: InMobiAdapter) :
 
         val placementId = config.optString(InMobiAdapter.PLACEMENT_ID)
 
+        if (serverData.isNullOrEmpty()) {
+            val error = "serverData is empty"
+            IronLog.INTERNAL.error(error)
+            listener.onInterstitialAdLoadFailed(ErrorBuilder.buildLoadFailedError(error))
+            return
+        }
+
         parseToLong(placementId)?.let { placement ->
             IronLog.ADAPTER_API.verbose(
                 "create InMobi ad with ${InMobiAdapter.PLACEMENT_ID}: <$placementId>"
@@ -152,11 +159,6 @@ class InMobiInterstitialAdapter (adapter: InMobiAdapter) :
                         )
                         listener.onInterstitialAdLoadFailed(error)
                     }
-                } ?: run {
-                    // Load InMobi interstitial
-                    val map = adapter.getExtrasMap()
-                    inMobiInterstitial.setExtras(map)
-                    inMobiInterstitial.load()
                 }
             }
         }

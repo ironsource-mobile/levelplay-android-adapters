@@ -122,6 +122,13 @@ class InMobiRewardedVideoAdapter (adapter: InMobiAdapter) :
 
         IronLog.ADAPTER_API.verbose("placementId = <$placementId>")
 
+        if (serverData.isNullOrEmpty()) {
+            val error = "serverData is empty"
+            IronLog.INTERNAL.error(error)
+            listener.onRewardedVideoLoadFailed(ErrorBuilder.buildLoadFailedError(error))
+            return
+        }
+
         parseToLong(placementId)?.let { placement ->
             val rewardedVideoListener =
                 InMobiRewardedVideoAdListener(listener, placementId)
@@ -149,11 +156,6 @@ class InMobiRewardedVideoAdapter (adapter: InMobiAdapter) :
                     } catch (e: UnsupportedEncodingException) {
                         listener.onRewardedVideoAvailabilityChanged(false)
                     }
-                } ?: run {
-                    // Load InMobi rewarded video
-                    val map = adapter.getExtrasMap()
-                    inMobiRewardedVideo.setExtras(map)
-                    inMobiRewardedVideo.load()
                 }
             }
         }
