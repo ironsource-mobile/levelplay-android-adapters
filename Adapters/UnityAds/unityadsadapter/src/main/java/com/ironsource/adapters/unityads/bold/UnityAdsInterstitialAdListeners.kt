@@ -14,13 +14,12 @@ import com.unity3d.ads.ShowFinishState
 import com.unity3d.ads.UnityAdsError
 import com.unity3d.ads.UnityAdsExperimental
 import com.unity3d.mediation.LevelPlay
-import java.lang.ref.WeakReference
 
 @OptIn(UnityAdsExperimental::class)
 internal class UnityAdsInterstitialAdLoadListener(
   private val providerName: String,
   private val placementId: String,
-  private val listener: WeakReference<InterstitialSmashListener?>,
+  private val listener: InterstitialSmashListener?,
   private val errorReporter: UnityAdsErrorReporter?,
   private val onAdAvailable: (InterstitialAd) -> Unit,
 ) : LoadListener<InterstitialAd> {
@@ -29,7 +28,7 @@ internal class UnityAdsInterstitialAdLoadListener(
       IronLog.ADAPTER_CALLBACK.verbose("placementId = $placementId")
 
       onAdAvailable(unityAd)
-      listener.get()?.onInterstitialAdReady()
+      listener?.onInterstitialAdReady()
         ?: reportMissingListener("interstitial_onAdLoaded_success")
     } else {
       val ironSourceError: IronSourceError = if (error == null) {
@@ -43,7 +42,7 @@ internal class UnityAdsInterstitialAdLoadListener(
       }
 
       IronLog.ADAPTER_CALLBACK.error("placementId = $placementId ironSourceError = $ironSourceError")
-      listener.get()?.onInterstitialAdLoadFailed(ironSourceError)
+      listener?.onInterstitialAdLoadFailed(ironSourceError)
         ?: reportMissingListener("interstitial_onAdLoaded_fail")
     }
   }
@@ -58,13 +57,13 @@ internal class UnityAdsInterstitialAdLoadListener(
 @OptIn(UnityAdsExperimental::class)
 internal class UnityAdsInterstitialShowAdListener(
   private val placementId: String,
-  private val listener: WeakReference<InterstitialSmashListener?>,
+  private val listener: InterstitialSmashListener?,
   private val errorReporter: UnityAdsErrorReporter?
 ) : InterstitialShowListener {
 
   override fun onClicked(unityAd: InterstitialAd) {
     IronLog.ADAPTER_CALLBACK.verbose("placementId = $placementId")
-    listener.get()?.onInterstitialAdClicked() ?: reportMissingListener("interstitial_onClicked")
+    listener?.onInterstitialAdClicked() ?: reportMissingListener("interstitial_onClicked")
   }
 
   override fun onCompleted(unityAd: InterstitialAd, state: ShowFinishState) {
@@ -72,7 +71,7 @@ internal class UnityAdsInterstitialShowAdListener(
 
     when (state) {
       ShowFinishState.COMPLETED, ShowFinishState.SKIPPED -> {
-        listener.get()?.onInterstitialAdClosed()
+        listener?.onInterstitialAdClosed()
           ?: reportMissingListener("interstitial_onCompleted")
       }
     }
@@ -82,15 +81,15 @@ internal class UnityAdsInterstitialShowAdListener(
     val ironSourceError = IronSourceError(error.code, error.message)
 
     IronLog.ADAPTER_CALLBACK.error("placementId = $placementId ironSourceError = $ironSourceError")
-    listener.get()?.onInterstitialAdShowFailed(ironSourceError)
+    listener?.onInterstitialAdShowFailed(ironSourceError)
       ?: reportMissingListener("interstitial_onFailed")
   }
 
   override fun onStarted(unityAd: InterstitialAd) {
     IronLog.ADAPTER_CALLBACK.verbose("placementId = $placementId")
 
-    listener.get()?.onInterstitialAdOpened() ?: reportMissingListener("interstitial_onStarted")
-    listener.get()?.onInterstitialAdShowSucceeded()
+    listener?.onInterstitialAdOpened() ?: reportMissingListener("interstitial_onStarted")
+    listener?.onInterstitialAdShowSucceeded()
   }
 
   private fun reportMissingListener(tag: String) {

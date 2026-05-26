@@ -14,13 +14,12 @@ import com.unity3d.ads.ShowFinishState
 import com.unity3d.ads.UnityAdsError
 import com.unity3d.ads.UnityAdsExperimental
 import com.unity3d.mediation.LevelPlay
-import java.lang.ref.WeakReference
 
 @OptIn(UnityAdsExperimental::class)
 internal class UnityAdsRewardedAdLoadListener(
   private val providerName: String,
   private val placementId: String,
-  private val listener: WeakReference<RewardedVideoSmashListener?>,
+  private val listener: RewardedVideoSmashListener?,
   private val errorReporter: UnityAdsErrorReporter?,
   private val onAdAvailable: (RewardedAd) -> Unit,
 ) : LoadListener<RewardedAd> {
@@ -30,7 +29,7 @@ internal class UnityAdsRewardedAdLoadListener(
       IronLog.ADAPTER_CALLBACK.verbose("placementId = $placementId")
 
       onAdAvailable(unityAd)
-      listener.get()?.onRewardedVideoAvailabilityChanged(true)
+      listener?.onRewardedVideoAvailabilityChanged(true)
         ?: reportMissingListener("rewarded_onAdLoad_success")
     } else {
       val ironSourceError: IronSourceError = if (error == null) {
@@ -45,8 +44,8 @@ internal class UnityAdsRewardedAdLoadListener(
 
 
       IronLog.ADAPTER_CALLBACK.error("placementId = $placementId ironSourceError = $ironSourceError")
-      listener.get()?.onRewardedVideoAvailabilityChanged(false)
-      listener.get()?.onRewardedVideoLoadFailed(ironSourceError)
+      listener?.onRewardedVideoAvailabilityChanged(false)
+      listener?.onRewardedVideoLoadFailed(ironSourceError)
         ?: reportMissingListener("rewarded_onAdLoad_fail")
     }
   }
@@ -61,46 +60,46 @@ internal class UnityAdsRewardedAdLoadListener(
 @OptIn(UnityAdsExperimental::class)
 internal class UnityAdsRewardedAdShowListener(
   private val placementId: String,
-  private val listener: WeakReference<RewardedVideoSmashListener?>,
+  private val listener: RewardedVideoSmashListener?,
   private val errorReporter: UnityAdsErrorReporter?
 ) : RewardedShowListener {
 
   override fun onStarted(unityAd: RewardedAd) {
     IronLog.ADAPTER_CALLBACK.verbose("placementId = $placementId")
 
-    listener.get()?.onRewardedVideoAdOpened() ?: reportMissingListener("rewarded_onStarted")
-    listener.get()?.onRewardedVideoAdStarted()
+    listener?.onRewardedVideoAdOpened() ?: reportMissingListener("rewarded_onStarted")
+    listener?.onRewardedVideoAdStarted()
   }
 
   override fun onFailed(unityAd: RewardedAd, error: UnityAdsError) {
     val ironSourceError = IronSourceError(error.code, error.message)
 
     IronLog.ADAPTER_CALLBACK.error("placementId = $placementId ironSourceError = $ironSourceError")
-    listener.get()?.onRewardedVideoAdShowFailed(ironSourceError)
+    listener?.onRewardedVideoAdShowFailed(ironSourceError)
       ?: reportMissingListener("rewarded_onFailed")
   }
 
   override fun onClicked(unityAd: RewardedAd) {
     IronLog.ADAPTER_CALLBACK.verbose("placementId = $placementId")
-    listener.get()?.onRewardedVideoAdClicked() ?: reportMissingListener("rewarded_onClicked")
+    listener?.onRewardedVideoAdClicked() ?: reportMissingListener("rewarded_onClicked")
   }
 
   override fun onRewarded(rewardedAd: RewardedAd) {
     IronLog.ADAPTER_CALLBACK.verbose("placementId = $placementId")
-    listener.get()?.onRewardedVideoAdRewarded() ?: reportMissingListener("rewarded_onRewarded")
+    listener?.onRewardedVideoAdRewarded() ?: reportMissingListener("rewarded_onRewarded")
   }
 
   override fun onCompleted(unityAd: RewardedAd, state: ShowFinishState) {
     IronLog.ADAPTER_CALLBACK.verbose("placementId = $placementId completionState = $state")
 
     when (state) {
-      ShowFinishState.SKIPPED -> listener.get()?.onRewardedVideoAdClosed() ?: reportMissingListener(
+      ShowFinishState.SKIPPED -> listener?.onRewardedVideoAdClosed() ?: reportMissingListener(
         "rewarded_onCompleted"
       )
 
       ShowFinishState.COMPLETED -> {
-        listener.get()?.onRewardedVideoAdEnded() ?: reportMissingListener("rewarded_onCompleted")
-        listener.get()?.onRewardedVideoAdClosed()
+        listener?.onRewardedVideoAdEnded() ?: reportMissingListener("rewarded_onCompleted")
+        listener?.onRewardedVideoAdClosed()
       }
     }
   }

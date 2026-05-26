@@ -138,7 +138,7 @@ class BoldNetworkBridge(private val providerName: String) : NetworkBridge {
     RewardedAd.load(loadConfiguration, UnityAdsRewardedAdLoadListener(
       providerName,
       placementId,
-      WeakReference(listener),
+      listener,
       errorReporter,
     ) { ad ->
       rewardedAdPlacementIdToLoadedAdObject[placementId] = ad
@@ -167,7 +167,7 @@ class BoldNetworkBridge(private val providerName: String) : NetworkBridge {
     rewardedAd.show(
       ContextProvider.getInstance().currentActiveActivity,
       showConfiguration,
-      UnityAdsRewardedAdShowListener(placementId, WeakReference(listener), errorReporter)
+      UnityAdsRewardedAdShowListener(placementId, listener, errorReporter)
     )
   }
 
@@ -195,7 +195,7 @@ class BoldNetworkBridge(private val providerName: String) : NetworkBridge {
     InterstitialAd.load(loadConfiguration, UnityAdsInterstitialAdLoadListener(
       providerName,
       placementId,
-      WeakReference(listener),
+      listener,
       errorReporter,
     ) { ad ->
       interstitialAdPlacementIdToLoadedAdObject[placementId] = ad
@@ -219,7 +219,7 @@ class BoldNetworkBridge(private val providerName: String) : NetworkBridge {
     interstitialAd.show(
       ContextProvider.getInstance().currentActiveActivity,
       showConfiguration,
-      UnityAdsInterstitialShowAdListener(placementId, WeakReference(listener), errorReporter)
+      UnityAdsInterstitialShowAdListener(placementId, listener, errorReporter)
     )
   }
 
