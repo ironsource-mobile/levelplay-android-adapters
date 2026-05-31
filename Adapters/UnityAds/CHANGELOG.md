@@ -1,5 +1,8 @@
 # Changelog
 
+## Version 5.9.0
+* Supporting SDK version 4.18.1
+
 ## Version 5.8.0
 * Fixed missing interstitial and rewarded video close callbacks
 
