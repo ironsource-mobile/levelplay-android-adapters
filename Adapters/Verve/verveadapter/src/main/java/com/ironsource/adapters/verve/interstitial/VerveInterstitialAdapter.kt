@@ -17,8 +17,7 @@ import net.pubnative.lite.sdk.interstitial.HyBidInterstitialAd
 class VerveInterstitialAdapter(networkSettings: NetworkSettings) :
     LevelPlayBaseInterstitial<VerveAdapter>(networkSettings) {
 
-    private var interstitialAdListener: VerveInterstitialListener? = null
-    private var ad: HyBidInterstitialAd? = null
+    private var interstitialAd: HyBidInterstitialAd? = null
 
     // region Adapter Methods
 
@@ -53,17 +52,12 @@ class VerveInterstitialAdapter(networkSettings: NetworkSettings) :
             return
         }
 
-        val interstitialListener = VerveInterstitialListener(listener)
-        interstitialAdListener = interstitialListener
-
-        val interstitialAd = HyBidInterstitialAd(
+        interstitialAd = HyBidInterstitialAd(
             context.applicationContext,
             zoneId,
-            interstitialAdListener
+            VerveInterstitialListener(listener)
         )
-
-        ad = interstitialAd
-        interstitialAd.prepareAd(serverData)
+        interstitialAd?.prepareAd(serverData)
     }
 
     override fun showAd(
@@ -81,7 +75,7 @@ class VerveInterstitialAdapter(networkSettings: NetworkSettings) :
             return
         }
 
-        ad?.show() ?: run {
+        interstitialAd?.show() ?: run {
             listener.onAdShowFailed(
                 AdapterErrors.ADAPTER_ERROR_AD_EXPIRED,
                 VerveConstants.Logs.AD_NOT_AVAILABLE
@@ -89,12 +83,12 @@ class VerveInterstitialAdapter(networkSettings: NetworkSettings) :
         }
     }
 
-    override fun isAdAvailable(adData: AdData): Boolean = ad?.isReady == true
+    override fun isAdAvailable(adData: AdData): Boolean = interstitialAd?.isReady == true
 
     override fun destroyAd(adData: AdData) {
         IronLog.ADAPTER_API.verbose()
-        ad?.destroy()
-        ad = null
+        interstitialAd?.destroy()
+        interstitialAd = null
     }
 
     override fun collectBiddingData(

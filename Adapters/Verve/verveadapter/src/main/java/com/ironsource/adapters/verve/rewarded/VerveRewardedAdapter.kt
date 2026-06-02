@@ -17,8 +17,7 @@ import net.pubnative.lite.sdk.rewarded.HyBidRewardedAd
 class VerveRewardedAdapter(networkSettings: NetworkSettings) :
     LevelPlayBaseRewardedVideo<VerveAdapter>(networkSettings) {
 
-    private var rewardedAdListener: VerveRewardedListener? = null
-    private var ad: HyBidRewardedAd? = null
+    private var rewardedAd: HyBidRewardedAd? = null
 
     // region Adapter Methods
 
@@ -53,17 +52,12 @@ class VerveRewardedAdapter(networkSettings: NetworkSettings) :
             return
         }
 
-        val rewardedListener = VerveRewardedListener(listener)
-        rewardedAdListener = rewardedListener
-
-        val rewardedAd = HyBidRewardedAd(
+        rewardedAd = HyBidRewardedAd(
             context.applicationContext,
             zoneId,
-            rewardedAdListener
+            VerveRewardedListener(listener)
         )
-
-        ad = rewardedAd
-        rewardedAd.prepareAd(serverData)
+        rewardedAd?.prepareAd(serverData)
     }
 
     override fun showAd(
@@ -81,7 +75,7 @@ class VerveRewardedAdapter(networkSettings: NetworkSettings) :
             return
         }
 
-        ad?.show() ?: run {
+        rewardedAd?.show() ?: run {
             listener.onAdShowFailed(
                 AdapterErrors.ADAPTER_ERROR_AD_EXPIRED,
                 VerveConstants.Logs.AD_NOT_AVAILABLE
@@ -89,12 +83,12 @@ class VerveRewardedAdapter(networkSettings: NetworkSettings) :
         }
     }
 
-    override fun isAdAvailable(adData: AdData): Boolean = ad?.isReady == true
+    override fun isAdAvailable(adData: AdData): Boolean = rewardedAd?.isReady == true
 
     override fun destroyAd(adData: AdData) {
         IronLog.ADAPTER_API.verbose()
-        ad?.destroy()
-        ad = null
+        rewardedAd?.destroy()
+        rewardedAd = null
     }
 
     override fun collectBiddingData(

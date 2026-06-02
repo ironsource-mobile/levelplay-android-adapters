@@ -25,8 +25,7 @@ class VerveBannerAdapter(networkSettings: NetworkSettings) :
     LevelPlayBaseBanner<VerveAdapter>(networkSettings) {
 
     private val mainHandler = Handler(Looper.getMainLooper())
-    private var bannerAdListener: VerveBannerListener? = null
-    private var adView: HyBidAdView? = null
+    private var bannerAdView: HyBidAdView? = null
 
     // region Adapter Methods
 
@@ -68,26 +67,21 @@ class VerveBannerAdapter(networkSettings: NetworkSettings) :
             Gravity.CENTER
         )
 
-        val bannerAdView = HyBidAdView(appContext, verveBannerSize)
-        bannerAdView.apply {
+        bannerAdView = HyBidAdView(appContext, verveBannerSize).apply {
             setAdSize(verveBannerSize)
             setMediation(true)
         }
 
-        adView = bannerAdView
-        val bannerListener = VerveBannerListener(listener, bannerAdView, layoutParams)
-        bannerAdListener = bannerListener
-
         mainHandler.post {
-            bannerAdView.renderAd(serverData, bannerAdListener)
+            bannerAdView?.renderAd(serverData, VerveBannerListener(listener, bannerAdView!!, layoutParams))
         }
     }
 
     override fun destroyAd(adData: AdData) {
         IronLog.ADAPTER_API.verbose()
         mainHandler.post {
-            adView?.destroy()
-            adView = null
+            bannerAdView?.destroy()
+            bannerAdView = null
         }
     }
 
