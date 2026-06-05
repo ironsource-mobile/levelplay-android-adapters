@@ -115,9 +115,7 @@ class VungleAdapter(providerName: String) : AbstractAdapter(providerName),
             // set init in progress
             mInitState = InitState.INIT_STATE_IN_PROGRESS
 
-            VungleAds.setIntegrationName(
-                MEDIATION_NAME, BuildConfig.VERSION_NAME
-            )
+            VungleAds.setIntegrationName("ironsource", BuildConfig.VERSION_NAME)
 
             // init SDK
             val initListener = VungleInitListener()

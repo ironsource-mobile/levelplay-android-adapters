@@ -57,6 +57,7 @@ class VungleBannerAdapter(adapter: VungleAdapter) :
 
         if (placementId.isNullOrEmpty()) {
             IronLog.INTERNAL.error(getAdUnitIdMissingErrorString(placementId))
+            VungleMediationLogger.logError(null, "NoPlacementId:Banner")
             listener.onBannerInitFailed(
                 ErrorBuilder.buildInitFailedError(
                     getAdUnitIdMissingErrorString(placementId),
@@ -67,6 +68,7 @@ class VungleBannerAdapter(adapter: VungleAdapter) :
         }
         if (appId.isNullOrEmpty()) {
             IronLog.INTERNAL.error(getAdUnitIdMissingErrorString(appId))
+            VungleMediationLogger.logError(null, "NoAppId:Banner")
             listener.onBannerInitFailed(
                 ErrorBuilder.buildInitFailedError(
                     getAdUnitIdMissingErrorString(appId),
@@ -150,6 +152,7 @@ class VungleBannerAdapter(adapter: VungleAdapter) :
 
         if (bannerSize == null) {
             IronLog.INTERNAL.error("banner size is null")
+            VungleMediationLogger.logError(null, "NoBannerSize:$placementId")
             listener.onBannerAdLoadFailed(ErrorBuilder.unsupportedBannerSize(adapter.providerName))
             return
         }
@@ -157,6 +160,7 @@ class VungleBannerAdapter(adapter: VungleAdapter) :
 
         // check if banner size is null or not
         if (vungleBannerSize == null) {
+            VungleMediationLogger.logError(null, "NoVungleBannerSize:$placementId")
             listener.onBannerAdLoadFailed(ErrorBuilder.unsupportedBannerSize(adapter.providerName))
             return
         }

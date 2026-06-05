@@ -11,6 +11,7 @@ import com.ironsource.mediationsdk.utils.ErrorBuilder
 import com.ironsource.mediationsdk.utils.IronSourceConstants
 import com.vungle.ads.AdConfig
 import com.vungle.ads.InterstitialAd
+import com.vungle.ads.VungleMediationLogger
 import org.json.JSONObject
 import java.lang.ref.WeakReference
 import java.util.concurrent.ConcurrentHashMap
@@ -52,6 +53,7 @@ class VungleInterstitialAdapter(adapter: VungleAdapter) :
 
         if (placementId.isEmpty()) {
             IronLog.INTERNAL.error(getAdUnitIdMissingErrorString(VungleAdapter.PLACEMENT_ID))
+            VungleMediationLogger.logError(null, "NoPlacementId:Interstitial")
             listener.onInterstitialInitFailed(
                 ErrorBuilder.buildInitFailedError(
                     getAdUnitIdMissingErrorString(placementId),
@@ -62,6 +64,7 @@ class VungleInterstitialAdapter(adapter: VungleAdapter) :
         }
         if (appId.isEmpty()) {
             IronLog.INTERNAL.error(getAdUnitIdMissingErrorString(VungleAdapter.APP_ID))
+            VungleMediationLogger.logError(null, "NoAppId:Interstitial")
             listener.onInterstitialInitFailed(
                 ErrorBuilder.buildInitFailedError(
                     getAdUnitIdMissingErrorString(appId),
@@ -160,9 +163,11 @@ class VungleInterstitialAdapter(adapter: VungleAdapter) :
     override fun showInterstitial(config: JSONObject, listener: InterstitialSmashListener) {
         val placementId = config.optString(VungleAdapter.PLACEMENT_ID)
         IronLog.ADAPTER_API.verbose("placementId = $placementId")
+        val vungleInterstitial = mPlacementToInterstitialAd[placementId]
         // Check if Vungle Interstitial Ad is ready
         if (!isInterstitialReady(config)) {
             IronLog.INTERNAL.error("There is no ad available for placementId = $placementId")
+            VungleMediationLogger.logError(vungleInterstitial, "NoAdsToShow:Interstitial")
             listener.onInterstitialAdShowFailed(
                 ErrorBuilder.buildNoAdsToShowError(
                     IronSourceConstants.INTERSTITIAL_AD_UNIT
@@ -170,7 +175,6 @@ class VungleInterstitialAdapter(adapter: VungleAdapter) :
             )
             return
         }
-        val vungleInterstitial = mPlacementToInterstitialAd[placementId]
         IronLog.ADAPTER_API.verbose("showInterstitial vungle ad <$placementId")
         postOnUIThread{
             vungleInterstitial?.play()
