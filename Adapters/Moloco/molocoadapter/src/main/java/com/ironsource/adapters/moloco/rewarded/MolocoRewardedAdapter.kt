@@ -1,4 +1,4 @@
-package com.ironsource.adapters.moloco.interstitial
+package com.ironsource.adapters.moloco.rewarded
 
 import android.app.Activity
 import android.content.Context
@@ -6,29 +6,29 @@ import android.os.Handler
 import android.os.Looper
 import com.ironsource.adapters.moloco.MolocoAdapter
 import com.ironsource.adapters.moloco.MolocoConstants
-import com.ironsource.mediationsdk.adunit.adapter.listener.InterstitialAdListener
+import com.ironsource.mediationsdk.adunit.adapter.listener.RewardedVideoAdListener
 import com.ironsource.mediationsdk.adunit.adapter.utility.AdData
 import com.ironsource.mediationsdk.adunit.adapter.utility.AdapterErrorType
 import com.ironsource.mediationsdk.adunit.adapter.utility.AdapterErrors
 import com.ironsource.mediationsdk.bidding.BiddingDataCallback
 import com.ironsource.mediationsdk.logger.IronLog
 import com.ironsource.mediationsdk.model.NetworkSettings
-import com.moloco.sdk.publisher.InterstitialAd
 import com.moloco.sdk.publisher.Moloco
-import com.unity3d.mediation.adapters.levelplay.LevelPlayBaseInterstitial
+import com.moloco.sdk.publisher.RewardedInterstitialAd
+import com.unity3d.mediation.adapters.levelplay.LevelPlayBaseRewardedVideo
 
-class MolocoInterstitialAdapter(networkSettings: NetworkSettings) :
-    LevelPlayBaseInterstitial<MolocoAdapter>(networkSettings) {
+class MolocoRewardedAdapter(networkSettings: NetworkSettings) :
+    LevelPlayBaseRewardedVideo<MolocoAdapter>(networkSettings) {
 
     private val mainHandler = Handler(Looper.getMainLooper())
-    private var interstitialAd: InterstitialAd? = null
+    private var rewardedAd: RewardedInterstitialAd? = null
 
     // region Adapter Methods
 
     override fun loadAd(
         adData: AdData,
         context: Context,
-        listener: InterstitialAdListener
+        listener: RewardedVideoAdListener
     ) {
         val adUnitId = adData.getString(MolocoConstants.AD_UNIT_ID_KEY)
         IronLog.ADAPTER_API.verbose(MolocoConstants.Logs.AD_UNIT_ID_LOG.format(adUnitId ?: ""))
@@ -54,7 +54,7 @@ class MolocoInterstitialAdapter(networkSettings: NetworkSettings) :
             return
         }
 
-        Moloco.createInterstitial(MolocoAdapter.mediationInfo, adUnitId) { ad, error ->
+        Moloco.createRewardedInterstitial(MolocoAdapter.mediationInfo, adUnitId) { ad, error ->
             if (error != null) {
                 IronLog.ADAPTER_CALLBACK.error(MolocoConstants.Logs.CREATE_AD_ERROR.format(error.errorCode, error.description))
                 listener.onAdLoadFailed(
@@ -64,8 +64,8 @@ class MolocoInterstitialAdapter(networkSettings: NetworkSettings) :
                 )
             } else {
                 ad?.let {
-                    interstitialAd = it
-                    interstitialAd?.load(serverData, MolocoInterstitialLoadListener(listener))
+                    rewardedAd = it
+                    rewardedAd?.load(serverData, MolocoRewardedLoadListener(listener))
                 } ?: run {
                     listener.onAdLoadFailed(
                         AdapterErrorType.ADAPTER_ERROR_TYPE_INTERNAL,
@@ -80,7 +80,7 @@ class MolocoInterstitialAdapter(networkSettings: NetworkSettings) :
     override fun showAd(
         adData: AdData,
         activity: Activity,
-        listener: InterstitialAdListener
+        listener: RewardedVideoAdListener
     ) {
         IronLog.ADAPTER_API.verbose()
 
@@ -92,17 +92,17 @@ class MolocoInterstitialAdapter(networkSettings: NetworkSettings) :
             return
         }
 
-        interstitialAd?.show(MolocoInterstitialShowListener(listener))
+        rewardedAd?.show(MolocoRewardedShowListener(listener))
     }
 
     override fun isAdAvailable(adData: AdData): Boolean =
-        interstitialAd != null && interstitialAd?.isLoaded == true
+        rewardedAd != null && rewardedAd?.isLoaded == true
 
     override fun destroyAd(adData: AdData) {
         IronLog.ADAPTER_API.verbose()
         mainHandler.post {
-            interstitialAd?.destroy()
-            interstitialAd = null
+            rewardedAd?.destroy()
+            rewardedAd = null
         }
     }
 
