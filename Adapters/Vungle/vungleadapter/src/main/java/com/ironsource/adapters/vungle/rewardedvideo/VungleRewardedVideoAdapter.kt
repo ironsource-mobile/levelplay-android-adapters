@@ -11,6 +11,7 @@ import com.ironsource.mediationsdk.utils.ErrorBuilder
 import com.ironsource.mediationsdk.utils.IronSourceConstants
 import com.vungle.ads.AdConfig
 import com.vungle.ads.RewardedAd
+import com.vungle.ads.VungleMediationLogger
 import org.json.JSONObject
 import java.lang.ref.WeakReference
 import java.util.concurrent.ConcurrentHashMap
@@ -44,6 +45,7 @@ class VungleRewardedVideoAdapter(adapter: VungleAdapter) :
         // Configuration Validation
         if (placementId.isNullOrEmpty()) {
             IronLog.INTERNAL.error(getAdUnitIdMissingErrorString(placementId))
+            VungleMediationLogger.logError(null, "NoPlacementId:RewardedWithInit")
             listener.onRewardedVideoInitFailed(
                 ErrorBuilder.buildInitFailedError(
                     getAdUnitIdMissingErrorString(placementId),
@@ -54,6 +56,7 @@ class VungleRewardedVideoAdapter(adapter: VungleAdapter) :
         }
         if (appId.isNullOrEmpty()) {
             IronLog.INTERNAL.error(getAdUnitIdMissingErrorString(appId))
+            VungleMediationLogger.logError(null, "NoAppId:RewardedWithInit")
             listener.onRewardedVideoInitFailed(
                 ErrorBuilder.buildInitFailedError(
                     getAdUnitIdMissingErrorString(appId),
@@ -130,11 +133,13 @@ class VungleRewardedVideoAdapter(adapter: VungleAdapter) :
 
         if (placementId.isNullOrEmpty()) {
             IronLog.INTERNAL.error(getAdUnitIdMissingErrorString(VungleAdapter.PLACEMENT_ID))
+            VungleMediationLogger.logError(null, "NoPlacementId:Rewarded")
             listener.onRewardedVideoAvailabilityChanged(false)
             return
         }
         if (appId.isNullOrEmpty()) {
             IronLog.INTERNAL.error(getAdUnitIdMissingErrorString(VungleAdapter.APP_ID))
+            VungleMediationLogger.logError(null, "NoAppId:Rewarded")
             listener.onRewardedVideoAvailabilityChanged(false)
             return
         }
@@ -210,10 +215,12 @@ class VungleRewardedVideoAdapter(adapter: VungleAdapter) :
     override fun showRewardedVideo(config: JSONObject, listener: RewardedVideoSmashListener) {
         val placementId = config.optString(VungleAdapter.PLACEMENT_ID)
         IronLog.ADAPTER_API.verbose("placementId = $placementId")
+        val vungleRewardedVideo = mPlacementToRewardedVideoAd[placementId]
 
         // if we can play
         if (!isRewardedVideoAvailable(config)) {
             IronLog.INTERNAL.error(getAdUnitIdMissingErrorString(VungleAdapter.PLACEMENT_ID))
+            VungleMediationLogger.logError(vungleRewardedVideo, "NoAdsToShow:Rewarded")
             listener.onRewardedVideoAdShowFailed(
                 ErrorBuilder.buildNoAdsToShowError(
                     IronSourceConstants.REWARDED_VIDEO_AD_UNIT
@@ -221,7 +228,6 @@ class VungleRewardedVideoAdapter(adapter: VungleAdapter) :
             )
             return
         }
-        val vungleRewardedVideo = mPlacementToRewardedVideoAd[placementId]
         adapter.dynamicUserId?.let {
             vungleRewardedVideo?.setUserId(it)
         }
