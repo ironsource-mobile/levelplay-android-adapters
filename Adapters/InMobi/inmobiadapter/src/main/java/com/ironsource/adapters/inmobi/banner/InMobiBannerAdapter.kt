@@ -1,261 +1,137 @@
 package com.ironsource.adapters.inmobi.banner
 
+import android.app.Activity
+import android.os.Handler
+import android.os.Looper
 import android.view.Gravity
 import android.widget.FrameLayout
 import com.inmobi.ads.InMobiBanner
 import com.ironsource.adapters.inmobi.InMobiAdapter
-import com.ironsource.environment.ContextProvider
-import com.ironsource.mediationsdk.*
-import com.ironsource.mediationsdk.adapter.AbstractBannerAdapter
+import com.ironsource.adapters.inmobi.InMobiConstants
+import com.ironsource.mediationsdk.AdapterUtils
+import com.ironsource.mediationsdk.ISBannerSize
+import com.ironsource.mediationsdk.adunit.adapter.listener.BannerAdListener
+import com.ironsource.mediationsdk.adunit.adapter.utility.AdData
+import com.ironsource.mediationsdk.adunit.adapter.utility.AdapterErrorType
+import com.ironsource.mediationsdk.adunit.adapter.utility.AdapterErrors
+import com.ironsource.mediationsdk.bidding.BiddingDataCallback
 import com.ironsource.mediationsdk.logger.IronLog
-import com.ironsource.mediationsdk.logger.IronSourceError
-import com.ironsource.mediationsdk.sdk.BannerSmashListener
-import com.ironsource.mediationsdk.utils.ErrorBuilder
-import com.ironsource.mediationsdk.utils.IronSourceConstants
-import org.json.JSONObject
-import java.io.UnsupportedEncodingException
-import java.util.concurrent.ConcurrentHashMap
+import com.ironsource.mediationsdk.model.NetworkSettings
+import com.unity3d.mediation.adapters.levelplay.LevelPlayBaseBanner
 
-class InMobiBannerAdapter (adapter: InMobiAdapter) :
-    AbstractBannerAdapter<InMobiAdapter>(adapter) {
-    private val placementToBannerAd: ConcurrentHashMap<String, InMobiBanner> = ConcurrentHashMap()
-    private val bannerPlacementToListenerMap: ConcurrentHashMap<String, BannerSmashListener> = ConcurrentHashMap()
+class InMobiBannerAdapter(networkSettings: NetworkSettings) :
+    LevelPlayBaseBanner<InMobiAdapter>(networkSettings) {
 
-    override fun initBannerForBidding(
-        appKey: String?,
-        userId: String?,
-        config: JSONObject,
-        listener: BannerSmashListener
+    private val mainHandler = Handler(Looper.getMainLooper())
+    private var bannerAdView: InMobiBanner? = null
+
+    override fun loadAd(
+        adData: AdData,
+        activity: Activity,
+        bannerSize: ISBannerSize,
+        listener: BannerAdListener
     ) {
-        IronLog.ADAPTER_API.verbose("<" + config.optString(InMobiAdapter.PLACEMENT_ID) + ">")
+        // Fetch and validate placementId
+        val placementId = adData.getString(InMobiConstants.PLACEMENT_ID_KEY)
 
-        val placementId = config.optString(InMobiAdapter.PLACEMENT_ID)
-        val accountId = config.optString(InMobiAdapter.ACCOUNT_ID)
+        IronLog.ADAPTER_API.verbose(InMobiConstants.Logs.PLACEMENT_ID.format(placementId ?: ""))
 
-        // verified placementId
-        if (!isValidPlacementId(placementId)) {
-            IronLog.INTERNAL.error(getAdUnitIdMissingErrorString(InMobiAdapter.PLACEMENT_ID))
-
-            listener.onBannerInitFailed(
-                ErrorBuilder.buildInitFailedError(
-                    "Missing ${InMobiAdapter.PLACEMENT_ID}",
-                    IronSourceConstants.BANNER_AD_UNIT
-                )
+        if (adData.serverData.isNullOrEmpty()) {
+            val errorMessage = InMobiConstants.Logs.MISSING_PARAM.format(InMobiConstants.SERVER_DATA_KEY)
+            IronLog.INTERNAL.error(errorMessage)
+            listener.onAdLoadFailed(
+                AdapterErrorType.ADAPTER_ERROR_TYPE_INTERNAL,
+                AdapterErrors.ADAPTER_ERROR_MISSING_PARAMS,
+                errorMessage
             )
             return
         }
 
-        // verified accountId
-        if (accountId.isEmpty()) {
-            IronLog.INTERNAL.error(getAdUnitIdMissingErrorString(InMobiAdapter.ACCOUNT_ID))
-
-            listener.onBannerInitFailed(
-                ErrorBuilder.buildInitFailedError(
-                    "Empty ${InMobiAdapter.ACCOUNT_ID}",
-                    IronSourceConstants.BANNER_AD_UNIT
-                )
-            )
-            return
-        }
-
-        // add listener to map
-        bannerPlacementToListenerMap[placementId] = listener
-
-        // notify listener about init state
-        when (InMobiAdapter.initState) {
-            InMobiAdapter.InitState.INIT_STATE_SUCCESS -> {
-                IronLog.ADAPTER_API.verbose(
-                    "initBanners: succeeded with ${InMobiAdapter.PLACEMENT_ID} - $placementId"
-                )
-                // call listener init success
-                listener.onBannerInitSuccess()
-            }
-            InMobiAdapter.InitState.INIT_STATE_ERROR -> {
-                IronLog.ADAPTER_API.verbose("initBanners: failed with ${InMobiAdapter.PLACEMENT_ID} - $placementId")
-
-                // call listener init failed
-                listener.onBannerInitFailed(
-                    ErrorBuilder.buildInitFailedError(
-                        "Init Failed",
-                        IronSourceConstants.BANNER_AD_UNIT
-                    )
-                )
-            }
-            else -> {
-                adapter.initSDK(ContextProvider.getInstance().applicationContext, accountId)
-            }
-        }
-    }
-
-    override fun onNetworkInitCallbackSuccess() {
-        if(adapter.shouldSetAgeRestrictedOnInitSuccess()){
-            InMobiAdapter.ageRestrictionCollectingUserData?.let {
-                adapter.setAgeRestricted(it)
-            }
-        }
-        bannerPlacementToListenerMap.values.forEach { bannerListener -> bannerListener.onBannerInitSuccess() }
-    }
-
-    override fun onNetworkInitCallbackFailed(error: String?) {
-        val message = "init failed: $error"
-        bannerPlacementToListenerMap.values.forEach { bannerListener ->
-            bannerListener.onBannerInitFailed(
-                IronSourceError(IronSourceError.ERROR_CODE_INIT_FAILED, message)
-            )
-        }
-    }
-
-    override fun loadBannerForBidding(
-        config: JSONObject,
-        adData: JSONObject?,
-        serverData: String?,
-        bannerSize: ISBannerSize?,
-        listener: BannerSmashListener
-    ) {
-        IronLog.ADAPTER_API.verbose()
-
-        if (serverData.isNullOrEmpty()) {
-            val error = "serverData is empty"
-            IronLog.INTERNAL.error(error)
-            listener.onBannerAdLoadFailed(ErrorBuilder.buildLoadFailedError(error))
-            return
-        }
-
-        val placementId = config.optString(InMobiAdapter.PLACEMENT_ID)
-        val dpSize = getDPSize(
-            bannerSize,
-            AdapterUtils.isLargeScreen(ContextProvider.getInstance().applicationContext)
-        )
-
-        // check if banner size is null or not
+        // Get banner size
+        val dpSize = getBannerSize(bannerSize, AdapterUtils.isLargeScreen(activity.applicationContext))
         if (dpSize == null) {
-            IronLog.INTERNAL.error("dpSize == null")
-
-            listener.onBannerAdLoadFailed(ErrorBuilder.unsupportedBannerSize("InMobi"))
+            val errorMessage = InMobiConstants.Logs.UNSUPPORTED_BANNER_SIZE
+            IronLog.INTERNAL.error(errorMessage)
+            listener.onAdLoadFailed(
+                AdapterErrorType.ADAPTER_ERROR_TYPE_INTERNAL,
+                AdapterErrors.ADAPTER_ERROR_INTERNAL,
+                errorMessage
+            )
             return
         }
 
-        // build layoutParams
-        val widthPixel = AdapterUtils.dpToPixels(
-            ContextProvider.getInstance().applicationContext,
-            dpSize.width
+        // Build layoutParams
+        val layoutParams = FrameLayout.LayoutParams(
+            AdapterUtils.dpToPixels(activity.applicationContext, dpSize.width),
+            AdapterUtils.dpToPixels(activity.applicationContext, dpSize.height)
         )
-        val heightPixel = AdapterUtils.dpToPixels(
-            ContextProvider.getInstance().applicationContext,
-            dpSize.height
-        )
-        val layoutParams = FrameLayout.LayoutParams(widthPixel, heightPixel)
         layoutParams.gravity = Gravity.CENTER
 
-        parseToLong(placementId)?.let { placement ->
-            postOnUIThread {
-                if (bannerSize == null) {
-                    val errorMsg = "banner has been destroyed"
-                    IronLog.INTERNAL.error(errorMsg)
-                    listener.onBannerAdLoadFailed(ErrorBuilder.buildLoadFailedError(errorMsg))
-                    return@postOnUIThread
-                }
-                val inMobiBanner = InMobiBanner(
-                    ContextProvider.getInstance().applicationContext,
-                    placement
-                )
+        val placement = placementId?.toLongOrNull()
+        if (placement == null) {
+            val errorMessage = InMobiConstants.Logs.MISSING_PARAM.format(InMobiConstants.PLACEMENT_ID_KEY)
+            IronLog.INTERNAL.error(errorMessage)
+            listener.onAdLoadFailed(
+                AdapterErrorType.ADAPTER_ERROR_TYPE_INTERNAL,
+                AdapterErrors.ADAPTER_ERROR_MISSING_PARAMS,
+                errorMessage
+            )
+            return
+        }
 
-                val bannerListener = InMobiBannerAdListener(listener, placementId, layoutParams)
-                inMobiBanner.setListener(bannerListener)
-                inMobiBanner.setBannerSize(dpSize.width, dpSize.height)
+        mainHandler.post {
+            bannerAdView = InMobiBanner(activity.applicationContext, placement)
+            bannerAdView?.setListener(InMobiBannerListener(listener, layoutParams))
+            bannerAdView?.setBannerSize(dpSize.width, dpSize.height)
 
-                // add InMobi Banner to map
-                placementToBannerAd[placementId] = inMobiBanner
-                IronLog.ADAPTER_API.verbose("loadBanner InMobi ad")
+            val bytes = adData.serverData.toByteArray(Charsets.UTF_8)
+            bannerAdView?.load(bytes)
+        }
+    }
 
-                try {
-                    serverData?.let {
-                        try {
-                            val bytes = it.toByteArray(Charsets.UTF_8)
+    override fun destroyAd(adData: AdData) {
+        IronLog.ADAPTER_API.verbose()
 
-                            // load InMobi banner bidding
-                            inMobiBanner.load(bytes)
-                        } catch (e: UnsupportedEncodingException) {
-                            val error = ErrorBuilder.buildLoadFailedError(
-                                IronSourceConstants.BANNER_AD_UNIT,
-                                "InMobi",
-                                "Couldn't parse server data for ${InMobiAdapter.PLACEMENT_ID} = $placementId"
-                            )
-                            listener.onBannerAdLoadFailed(error)
-                        }
-                    }
-                } catch (e: java.lang.Exception) {
-                    val error =
-                        ErrorBuilder.buildLoadFailedError(
-                            "InMobiAdapter loadBanner exception "
-                                + e.message
-                        )
-                    // banner failed with exception
-                    listener.onBannerAdLoadFailed(error)
-                }
+        bannerAdView?.let {
+            mainHandler.post {
+                it.destroy()
             }
+            bannerAdView = null
         }
     }
 
-    override fun destroyBanner(config: JSONObject) {
-        val placementId = config.optString(InMobiAdapter.PLACEMENT_ID)
-        IronLog.ADAPTER_API.verbose("placementId = <$placementId>")
+    override fun collectBiddingData(
+        adData: AdData?,
+        context: android.content.Context,
+        biddingDataCallback: BiddingDataCallback
+    ) {
+        val networkAdapter = getNetworkAdapter()
+        if (networkAdapter == null) {
+            val errorMessage = InMobiConstants.Logs.NETWORK_ADAPTER_IS_NULL
+            IronLog.INTERNAL.error(errorMessage)
+            biddingDataCallback.onFailure(errorMessage)
+            return
+        }
 
-            // get InMobi banner from map
-            placementToBannerAd[placementId]?.let { inMobiBanner ->
-                IronLog.ADAPTER_API.verbose(
-                    "< destroyBanner InMobi ad, with ${InMobiAdapter.PLACEMENT_ID} - $placementId>"
-                )
-                // destroy banner
-                postOnUIThread {
-                    inMobiBanner.destroy()
-                }
+        networkAdapter.collectBiddingData(biddingDataCallback)
+    }
 
-                // remove banner obj from the map
-                placementToBannerAd.remove(placementId)
+    // region Helper Methods
+
+    private fun getBannerSize(banner: ISBannerSize, largeScreen: Boolean): Size? {
+        return when (banner.description) {
+            InMobiConstants.BANNER_SIZE_DESCRIPTION, InMobiConstants.LARGE_SIZE_DESCRIPTION -> Size(InMobiConstants.BANNER_WIDTH, InMobiConstants.BANNER_HEIGHT)
+            InMobiConstants.RECTANGLE_SIZE_DESCRIPTION -> Size(InMobiConstants.RECTANGLE_WIDTH, InMobiConstants.RECTANGLE_HEIGHT)
+            InMobiConstants.SMART_SIZE_DESCRIPTION -> if (largeScreen) {
+                Size(InMobiConstants.LARGE_WIDTH, InMobiConstants.LARGE_HEIGHT)
+            } else {
+                Size(InMobiConstants.BANNER_WIDTH, InMobiConstants.BANNER_HEIGHT)
             }
-    }
-
-    override fun getBannerBiddingData(
-        config: JSONObject,
-        adData: JSONObject?
-    ): MutableMap<String?, Any?>? = adapter.getBiddingData()
-
-    private fun getDPSize(banner: ISBannerSize?, largeScreen: Boolean): Size? {
-        when (banner?.description) {
-            "BANNER", "LARGE" ->
-                return Size(320, 50)
-            "RECTANGLE" ->
-                return Size(300, 250)
-            "SMART" ->
-                return if (largeScreen) {
-                    Size(728, 90)
-                } else {
-                    Size(320, 50)
-                }
-            "CUSTOM" ->
-                return Size(banner.width, banner.height)
+            else -> Size(banner.width, banner.height)
         }
-        return null
     }
 
-    private class Size constructor(val width: Int, val height: Int)
+    private class Size(val width: Int, val height: Int)
 
-    private fun isValidPlacementId(placementId: String): Boolean {
-        parseToLong(placementId)?.let {
-            return true
-        }
-        return false
-    }
-
-    private fun parseToLong(placementId: String): Long? {
-        var placementIdLong: Long? = null
-        try {
-            placementIdLong = placementId.toLong()
-        } catch (e: Exception) {
-            IronLog.INTERNAL.error("parseToLong threw error ${e.message}")
-        }
-        return placementIdLong
-    }
-
+    // endregion
 }

@@ -1,4 +1,4 @@
-package com.ironsource.adapters.inmobi.interstitial
+package com.ironsource.adapters.inmobi.rewarded
 
 import android.app.Activity
 import android.content.Context
@@ -7,25 +7,25 @@ import android.os.Looper
 import com.inmobi.ads.InMobiInterstitial
 import com.ironsource.adapters.inmobi.InMobiAdapter
 import com.ironsource.adapters.inmobi.InMobiConstants
-import com.ironsource.mediationsdk.adunit.adapter.listener.InterstitialAdListener
+import com.ironsource.mediationsdk.adunit.adapter.listener.RewardedVideoAdListener
 import com.ironsource.mediationsdk.adunit.adapter.utility.AdData
 import com.ironsource.mediationsdk.adunit.adapter.utility.AdapterErrorType
 import com.ironsource.mediationsdk.adunit.adapter.utility.AdapterErrors
 import com.ironsource.mediationsdk.bidding.BiddingDataCallback
 import com.ironsource.mediationsdk.logger.IronLog
 import com.ironsource.mediationsdk.model.NetworkSettings
-import com.unity3d.mediation.adapters.levelplay.LevelPlayBaseInterstitial
+import com.unity3d.mediation.adapters.levelplay.LevelPlayBaseRewardedVideo
 
-class InMobiInterstitialAdapter(networkSettings: NetworkSettings) :
-    LevelPlayBaseInterstitial<InMobiAdapter>(networkSettings) {
+class InMobiRewardedAdapter(networkSettings: NetworkSettings) :
+    LevelPlayBaseRewardedVideo<InMobiAdapter>(networkSettings) {
 
     private val mainHandler = Handler(Looper.getMainLooper())
-    private var interstitialAd: InMobiInterstitial? = null
+    private var rewardedAd: InMobiInterstitial? = null
 
     override fun loadAd(
         adData: AdData,
         context: Context,
-        listener: InterstitialAdListener
+        listener: RewardedVideoAdListener
     ) {
         // Fetch and validate placementId
         val placementId = adData.getString(InMobiConstants.PLACEMENT_ID_KEY)
@@ -56,32 +56,32 @@ class InMobiInterstitialAdapter(networkSettings: NetworkSettings) :
         }
 
         mainHandler.post {
-            interstitialAd = InMobiInterstitial(
+            rewardedAd = InMobiInterstitial(
                 context.applicationContext,
                 placement,
-                InMobiInterstitialListener(listener)
+                InMobiRewardedListener(listener)
             )
 
             val bytes = adData.serverData.toByteArray(Charsets.UTF_8)
-            interstitialAd?.load(bytes)
+            rewardedAd?.load(bytes)
         }
     }
 
     override fun showAd(
         adData: AdData,
         activity: Activity,
-        listener: InterstitialAdListener
+        listener: RewardedVideoAdListener
     ) {
         IronLog.ADAPTER_API.verbose()
 
         if (!isAdAvailable(adData)) {
-            val errorMessage = InMobiConstants.Logs.AD_NOT_READY_INTERSTITIAL
+            val errorMessage = InMobiConstants.Logs.AD_NOT_READY_REWARDED_VIDEO
             IronLog.INTERNAL.error(errorMessage)
             listener.onAdShowFailed(AdapterErrors.ADAPTER_ERROR_INTERNAL, errorMessage)
             return
         }
 
-        interstitialAd?.let {
+        rewardedAd?.let {
             mainHandler.post {
                 it.show()
             }
@@ -89,12 +89,12 @@ class InMobiInterstitialAdapter(networkSettings: NetworkSettings) :
     }
 
     override fun isAdAvailable(adData: AdData): Boolean {
-        return interstitialAd?.isReady() == true
+        return rewardedAd?.isReady() == true
     }
 
     override fun destroyAd(adData: AdData) {
         IronLog.ADAPTER_API.verbose()
-        interstitialAd = null
+        rewardedAd = null
     }
 
     override fun collectBiddingData(
