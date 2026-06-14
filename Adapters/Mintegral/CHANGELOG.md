@@ -1,5 +1,8 @@
 # Changelog
 
+## Version 5.15.0
+* General improvements and performance enhancements
+
 ## Version 5.14.0
 * Fixed fullscreen ad load failures in multi-ad-unit and load-while-show flows
 
