@@ -1,4 +1,4 @@
-package com.ironsource.adapters.vungle.interstitial
+package com.ironsource.adapters.vungle.rewarded
 
 import android.app.Activity
 import android.content.Context
@@ -6,26 +6,26 @@ import android.os.Handler
 import android.os.Looper
 import com.ironsource.adapters.vungle.VungleAdapter
 import com.ironsource.adapters.vungle.VungleConstants
-import com.ironsource.mediationsdk.adunit.adapter.listener.InterstitialAdListener
+import com.ironsource.mediationsdk.adunit.adapter.listener.RewardedVideoAdListener
 import com.ironsource.mediationsdk.adunit.adapter.utility.AdData
 import com.ironsource.mediationsdk.adunit.adapter.utility.AdapterErrorType
 import com.ironsource.mediationsdk.adunit.adapter.utility.AdapterErrors
 import com.ironsource.mediationsdk.bidding.BiddingDataCallback
 import com.ironsource.mediationsdk.logger.IronLog
 import com.ironsource.mediationsdk.model.NetworkSettings
-import com.unity3d.mediation.adapters.levelplay.LevelPlayBaseInterstitial
+import com.unity3d.mediation.adapters.levelplay.LevelPlayBaseRewardedVideo
 import com.vungle.ads.AdConfig
-import com.vungle.ads.InterstitialAd
+import com.vungle.ads.RewardedAd
 
-class VungleInterstitialAdapter(networkSettings: NetworkSettings) :
-    LevelPlayBaseInterstitial<VungleAdapter>(networkSettings) {
+class VungleRewardedAdapter(networkSettings: NetworkSettings) :
+    LevelPlayBaseRewardedVideo<VungleAdapter>(networkSettings) {
 
     private val mainHandler = Handler(Looper.getMainLooper())
-    private var interstitialAd: InterstitialAd? = null
+    private var rewardedVideoAd: RewardedAd? = null
 
     // region Adapter Methods
 
-    override fun loadAd(adData: AdData, context: Context, listener: InterstitialAdListener) {
+    override fun loadAd(adData: AdData, context: Context, listener: RewardedVideoAdListener) {
         val placementId = adData.getString(VungleConstants.PLACEMENT_ID_KEY)
         IronLog.ADAPTER_API.verbose(VungleConstants.Logs.PLACEMENT_ID.format(placementId ?: ""))
 
@@ -40,14 +40,14 @@ class VungleInterstitialAdapter(networkSettings: NetworkSettings) :
             return
         }
 
-        interstitialAd = InterstitialAd(context.applicationContext, placementId, AdConfig()).apply {
-            adListener = VungleInterstitialListener(listener)
-            adapterAdFormat = VungleConstants.ADAPTER_FORMAT_INTERSTITIAL
+        rewardedVideoAd = RewardedAd(context.applicationContext, placementId, AdConfig()).apply {
+            adListener = VungleRewardedListener(listener)
+            adapterAdFormat = VungleConstants.ADAPTER_FORMAT_REWARDED
         }
-        interstitialAd?.load(adData.serverData)
+        rewardedVideoAd?.load(adData.serverData)
     }
 
-    override fun showAd(adData: AdData, activity: Activity, listener: InterstitialAdListener) {
+    override fun showAd(adData: AdData, activity: Activity, listener: RewardedVideoAdListener) {
         IronLog.ADAPTER_API.verbose()
 
         if (!isAdAvailable(adData)) {
@@ -56,18 +56,24 @@ class VungleInterstitialAdapter(networkSettings: NetworkSettings) :
             return
         }
 
+        getDynamicUserId()?.let { userId ->
+            if (userId.isNotEmpty()) {
+                rewardedVideoAd?.setUserId(userId)
+            }
+        }
+
         mainHandler.post {
-            interstitialAd?.play()
+            rewardedVideoAd?.play()
         }
     }
 
     override fun isAdAvailable(adData: AdData): Boolean {
-        return interstitialAd?.canPlayAd() == true
+        return rewardedVideoAd?.canPlayAd() == true
     }
 
     override fun destroyAd(adData: AdData) {
         IronLog.ADAPTER_API.verbose()
-        interstitialAd = null
+        rewardedVideoAd = null
     }
 
     override fun collectBiddingData(
