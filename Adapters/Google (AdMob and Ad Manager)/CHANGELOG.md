@@ -1,5 +1,8 @@
 # Changelog
 
+## Version 5.11.0
+* Supporting SDK version 1.2.1
+
 ## Version 5.10.0
 * Migrated to Google Ads Next Gen SDK version 1.1.1
 
