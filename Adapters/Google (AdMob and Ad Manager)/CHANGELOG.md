@@ -1,5 +1,32 @@
 # Changelog
 
+## Version 5.10.0
+* Migrated to Google Ads Next Gen SDK version 1.1.1
+
+**Important!** The AdMob adapter has migrated from the legacy Google Mobile Ads SDK (`com.google.android.gms:play-services-ads`) to the new Google Ads Next Gen SDK (`com.google.android.libraries.ads.mobile.sdk:ads-mobile-sdk`).
+
+This migration follows Google's recommendation to adopt the modernized SDK architecture.
+
+**Gradle Dependency Change Required:**
+```groovy
+// Comment out/remove play-services-ads
+// implementation 'com.google.android.gms:play-services-ads:x.x.x'
+
+// Add ads-mobile-sdk
+implementation 'com.google.android.libraries.ads.mobile.sdk:ads-mobile-sdk:1.1.1'
+```
+
+**Migration Requirement:** The Google App ID is no longer read from `AndroidManifest.xml`. Instead, it is passed programmatically during initialization. Publishers must ensure their Google App ID is configured on the LevelPlay platform before upgrading to this adapter version.
+
+---
+
+### ⚠️ Breaking Change – Google Ads SDK Migration
+
+**All adapter releases listed above use the new Google Ads Next Gen SDK (`ads-mobile-sdk`).**  
+**All adapter releases listed below used the legacy Google Mobile Ads SDK (`play-services-ads`).**
+
+---
+
 ## Version 5.9.0
 * Supporting SDK version 25.3.0
 

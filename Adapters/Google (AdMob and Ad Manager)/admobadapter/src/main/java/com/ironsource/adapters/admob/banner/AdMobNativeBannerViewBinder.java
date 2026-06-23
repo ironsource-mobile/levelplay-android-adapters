@@ -6,9 +6,9 @@ import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TextView;
 
-import com.google.android.gms.ads.nativead.MediaView;
-import com.google.android.gms.ads.nativead.NativeAd;
-import com.google.android.gms.ads.nativead.NativeAdView;
+import com.google.android.libraries.ads.mobile.sdk.nativead.MediaView;
+import com.google.android.libraries.ads.mobile.sdk.nativead.NativeAd;
+import com.google.android.libraries.ads.mobile.sdk.nativead.NativeAdView;
 import com.ironsource.adapters.admob.R;
 
 public class AdMobNativeBannerViewBinder {
@@ -16,6 +16,7 @@ public class AdMobNativeBannerViewBinder {
     private NativeAdView mAdView;
     private NativeAd mNativeAd;
     private NativeTemplateType mTemplateType;
+    private MediaView mMediaView;
 
     public void bindView(NativeAd nativeAd, NativeAdView nativeAdView, NativeTemplateType templateType) {
 
@@ -23,7 +24,7 @@ public class AdMobNativeBannerViewBinder {
         mNativeAd = nativeAd;
         mTemplateType = templateType;
         populateView();
-        mAdView.setNativeAd(nativeAd);
+        mAdView.registerNativeAd(nativeAd, mMediaView);
     }
 
     private void populateView() {
@@ -96,8 +97,8 @@ public class AdMobNativeBannerViewBinder {
         MediaView mediaView = mAdView.findViewById(R.id.ad_media);
         if (mediaView != null) {
             if (mNativeAd.getMediaContent() != null) {
-                boolean shouldHideMedia = mNativeAd.getMediaContent().hasVideoContent() && mTemplateType.shouldHideVideoContent();
-                mAdView.setMediaView(mediaView);
+                boolean shouldHideMedia = mNativeAd.getMediaContent().getHasVideoContent() && mTemplateType.shouldHideVideoContent();
+                mMediaView = mediaView;
                 mediaView.setMediaContent(mNativeAd.getMediaContent());
                 mediaView.setVisibility(shouldHideMedia ? GONE : VISIBLE);
             } else {

@@ -6,14 +6,14 @@ import android.view.ViewGroup;
 
 import androidx.annotation.NonNull;
 
-import com.google.android.gms.ads.AdFormat;
-import com.google.android.gms.ads.AdLoader;
-import com.google.android.gms.ads.AdRequest;
-import com.google.android.gms.ads.AdSize;
-import com.google.android.gms.ads.AdView;
-import com.google.android.gms.ads.VideoOptions;
-import com.google.android.gms.ads.nativead.NativeAd;
-import com.google.android.gms.ads.nativead.NativeAdOptions;
+import com.google.android.libraries.ads.mobile.sdk.banner.AdSize;
+import com.google.android.libraries.ads.mobile.sdk.banner.AdView;
+import com.google.android.libraries.ads.mobile.sdk.banner.BannerAdRequest;
+import com.google.android.libraries.ads.mobile.sdk.common.AdFormat;
+import com.google.android.libraries.ads.mobile.sdk.common.VideoOptions;
+import com.google.android.libraries.ads.mobile.sdk.nativead.NativeAd;
+import com.google.android.libraries.ads.mobile.sdk.nativead.NativeAdLoader;
+import com.google.android.libraries.ads.mobile.sdk.nativead.NativeAdRequest;
 import com.ironsource.adapters.admob.AdMobAdapter;
 import com.ironsource.environment.ContextProvider;
 import com.ironsource.mediationsdk.AdapterUtils;
@@ -30,11 +30,12 @@ import com.unity3d.mediation.LevelPlayAdSize;
 import org.jetbrains.annotations.NotNull;
 import org.json.JSONObject;
 
+import java.util.Collections;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class AdMobBannerAdapter extends AbstractBannerAdapter<AdMobAdapter> {
 
-    private final String IS_NATIVE = "isNative";
+    private static final String IS_NATIVE = "isNative";
 
     // Banner maps
     private final ConcurrentHashMap<String, BannerSmashListener> mAdUnitIdToListener;
@@ -125,38 +126,34 @@ public class AdMobBannerAdapter extends AbstractBannerAdapter<AdMobAdapter> {
             @Override
             public void run() {
                 try {
-                    AdRequest adRequest = getAdapter().createAdRequest(adData, serverData);
-                    
                     if (isNative) {
-                        loadNativeBanner(bannerSize, listener, adUnitId, adRequest, config);
+                        loadNativeBanner(bannerSize, listener, adUnitId, serverData, config);
                     } else {
-                        if(bannerSize == null) {
-                            IronLog.INTERNAL.verbose("banner size is null");
+                        //get banner size
+                        final AdSize adMobBannerSize = getAdSize(bannerSize, AdapterUtils.isLargeScreen(ContextProvider.getInstance().getApplicationContext()));
+
+                        if (adMobBannerSize == null) {
                             listener.onBannerAdLoadFailed(ErrorBuilder.unsupportedBannerSize(getAdapter().getProviderName()));
-                        } else{
-                                //get banner size
-                                final AdSize adMobBannerSize = getAdSize(bannerSize, AdapterUtils.isLargeScreen(ContextProvider.getInstance().getApplicationContext()));
-
-                                if (adMobBannerSize == null) {
-                                    listener.onBannerAdLoadFailed(ErrorBuilder.unsupportedBannerSize(getAdapter().getProviderName()));
-                                    return;
-                                }
-
-                                AdView adView = new AdView(ContextProvider.getInstance().getApplicationContext());
-                                adView.setAdSize(adMobBannerSize);
-                                adView.setAdUnitId(adUnitId);
-                                adView.setDescendantFocusability(ViewGroup.FOCUS_BLOCK_DESCENDANTS);
-                                AdMobBannerAdListener adMobBannerAdListener = new AdMobBannerAdListener(listener, adUnitId, adView);
-
-                                adView.setAdListener(adMobBannerAdListener);
-
-                                //add banner ad to map
-                                mAdUnitIdToBannerAd.put(adUnitId, adView);
-
-                                IronLog.ADAPTER_API.verbose("loadAd");
-                                adView.loadAd(adRequest);
-                            }
+                            return;
                         }
+
+                        AdView adView = new AdView(ContextProvider.getInstance().getApplicationContext());
+                        adView.setDescendantFocusability(ViewGroup.FOCUS_BLOCK_DESCENDANTS);
+
+                        AdMobBannerAdListener adMobBannerAdListener = new AdMobBannerAdListener(listener, adUnitId, adView);
+
+                        //add banner ad to map
+                        mAdUnitIdToBannerAd.put(adUnitId, adView);
+
+                        if (serverData != null) {
+                            IronLog.ADAPTER_API.verbose("loadAd with serverData");
+                            adView.loadFromAdResponse(serverData, adMobBannerAdListener);
+                        } else {
+                            BannerAdRequest adRequest = getAdapter().createBannerAdRequest(adUnitId, adMobBannerSize, adData);
+                            IronLog.ADAPTER_API.verbose("loadAd");
+                            adView.loadAd(adRequest, adMobBannerAdListener);
+                        }
+                    }
                 } catch (Exception e) {
                     IronSourceError error = ErrorBuilder.buildLoadFailedError("AdMobAdapter loadBanner exception " + e.getMessage());
                     listener.onBannerAdLoadFailed(error);
@@ -165,7 +162,7 @@ public class AdMobBannerAdapter extends AbstractBannerAdapter<AdMobAdapter> {
         });
     }
 
-    private void loadNativeBanner(ISBannerSize bannerSize, BannerSmashListener listener, String adUnitId, AdRequest adRequest, JSONObject config) {
+    private void loadNativeBanner(ISBannerSize bannerSize, BannerSmashListener listener, String adUnitId, String serverData, JSONObject config) {
         // verify size
         if (!isNativeBannerSizeSupported(bannerSize, AdapterUtils.isLargeScreen(ContextProvider.getInstance().getApplicationContext()))) {
             IronLog.INTERNAL.error("size not supported, size = " + bannerSize.getDescription());
@@ -179,28 +176,22 @@ public class AdMobBannerAdapter extends AbstractBannerAdapter<AdMobAdapter> {
 
         AdMobNativeBannerAdListener adMobNativeBannerAdListener = new AdMobNativeBannerAdListener(AdMobBannerAdapter.this, listener, adUnitId, bannerSize, templateType);
 
-        NativeAdOptions nativeAdOptions = createNativeAdOptions(templateType);
-        AdLoader adLoader = new AdLoader.Builder(ContextProvider.getInstance().getApplicationContext(), adUnitId)
-                .forNativeAd(adMobNativeBannerAdListener)
-                .withNativeAdOptions(nativeAdOptions)
-                .withAdListener(adMobNativeBannerAdListener)
-                .build();
-
-        adLoader.loadAd(adRequest);
-    }
-
-    private NativeAdOptions createNativeAdOptions(NativeTemplateType templateType) {
-
-        NativeAdOptions.Builder optionsBuilder = new NativeAdOptions.Builder();
         VideoOptions videoOptions = new VideoOptions.Builder()
                 .setStartMuted(true)
                 .build();
-        optionsBuilder.setVideoOptions(videoOptions);
 
-        optionsBuilder.setAdChoicesPlacement(templateType.getAdChoicesPlacement());
-        optionsBuilder.setMediaAspectRatio(templateType.getMediaAspectRatio());
+        if (serverData != null) {
+            IronLog.ADAPTER_API.verbose("loading native banner with serverData");
+            NativeAdLoader.loadFromAdResponse(serverData, adMobNativeBannerAdListener);
+        } else {
+            NativeAdRequest adRequest = new NativeAdRequest.Builder(adUnitId, Collections.singletonList(NativeAd.NativeAdType.NATIVE))
+                    .setVideoOptions(videoOptions)
+                    .setAdChoicesPlacement(templateType.getAdChoicesPlacement())
+                    .setMediaAspectRatio(templateType.getMediaAspectRatio())
+                    .build();
 
-        return optionsBuilder.build();
+            NativeAdLoader.load(adRequest, adMobNativeBannerAdListener);
+        }
     }
 
     // destroy banner ad and clear banner ad map
@@ -298,22 +289,23 @@ public class AdMobBannerAdapter extends AbstractBannerAdapter<AdMobAdapter> {
             LevelPlayAdSize levelPlayAdaptiveSize = selectedBannerSize.toLevelPlayAdSize(ContextProvider.getInstance().getApplicationContext());
             AdSize adMobAdaptiveSize = getAdaptiveBannerSize(levelPlayAdaptiveSize.getWidth());
 
-            IronLog.INTERNAL.verbose(
-                "default height - " + adSize.getHeight() +
-                    " adMobAdaptive height - " + adMobAdaptiveSize.getHeight() +
-                    " levelPlayAdaptive height - " + levelPlayAdaptiveSize.getHeight() +
-                    " default width - " + adSize.getWidth() +
-                    " levelPlayAdaptive width - " + levelPlayAdaptiveSize.getWidth());
+            if (adMobAdaptiveSize != null) {
+                IronLog.INTERNAL.verbose(
+                    "default height - " + adSize.getHeight() +
+                        " adMobAdaptive height - " + adMobAdaptiveSize.getHeight() +
+                        " levelPlayAdaptive height - " + levelPlayAdaptiveSize.getHeight() +
+                        " default width - " + adSize.getWidth() +
+                        " levelPlayAdaptive width - " + levelPlayAdaptiveSize.getWidth());
 
-            return adMobAdaptiveSize;
+                return adMobAdaptiveSize;
+            }
         }
 
         return adSize;
     }
 
-    @NotNull
     private static AdSize getAdaptiveBannerSize(int width) {
-        return AdSize.getCurrentOrientationAnchoredAdaptiveBannerAdSize(
+        return AdSize.getLargeAnchoredAdaptiveBannerAdSize(
                 ContextProvider.getInstance().getApplicationContext(),
                 width);
     }

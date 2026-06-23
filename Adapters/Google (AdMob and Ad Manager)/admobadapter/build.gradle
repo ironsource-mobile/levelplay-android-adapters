@@ -33,7 +33,7 @@ android {
     }
 
     defaultConfig {
-        minSdkVersion 23
+        minSdkVersion 24
         targetSdkVersion 36
         versionCode 1
         versionName adapterVersion
@@ -59,7 +59,7 @@ android {
 
  dependencies {
     implementation "com.unity3d.ads-mediation:mediation-sdk:${mediationsdkVersion}"
-    implementation "com.google.android.gms:play-services-ads:${sdkVersion}"
+    implementation "com.google.android.libraries.ads.mobile.sdk:ads-mobile-sdk:${sdkVersion}"
     implementation 'org.jetbrains:annotations:15.0'
 }
 

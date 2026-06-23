@@ -1,18 +1,33 @@
 package com.ironsource.adapters.admob;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.os.Bundle;
 import android.text.TextUtils;
 
-import com.google.android.gms.ads.AdFormat;
-import com.google.android.gms.ads.MobileAds;
-import com.google.android.gms.ads.AdRequest;
-import com.google.android.gms.ads.RequestConfiguration;
-import com.google.android.gms.ads.initialization.AdapterStatus;
-import com.google.android.gms.ads.initialization.InitializationStatus;
-import com.google.android.gms.ads.initialization.OnInitializationCompleteListener;
-import com.google.android.gms.ads.query.QueryInfo;
-import com.google.android.gms.ads.query.QueryInfoGenerationCallback;
+import com.google.android.libraries.ads.mobile.sdk.MobileAds;
+import com.google.android.libraries.ads.mobile.sdk.banner.AdSize;
+import com.google.android.libraries.ads.mobile.sdk.banner.BannerAdRequest;
+import com.google.android.libraries.ads.mobile.sdk.banner.BannerSignalRequest;
+import com.google.android.libraries.ads.mobile.sdk.common.AdChoicesPlacement;
+import com.google.android.libraries.ads.mobile.sdk.common.AdFormat;
+import com.google.android.libraries.ads.mobile.sdk.common.AdRequest;
+import com.google.android.libraries.ads.mobile.sdk.common.LoadAdError;
+import com.google.android.libraries.ads.mobile.sdk.common.RequestConfiguration;
+import com.google.android.libraries.ads.mobile.sdk.initialization.AdapterStatus;
+import com.google.android.libraries.ads.mobile.sdk.interstitial.InterstitialSignalRequest;
+import com.google.android.libraries.ads.mobile.sdk.nativead.NativeAd;
+import com.google.android.libraries.ads.mobile.sdk.nativead.NativeAdRequest;
+import com.google.android.libraries.ads.mobile.sdk.nativead.NativeSignalRequest;
+import com.google.android.libraries.ads.mobile.sdk.rewarded.RewardedSignalRequest;
+import com.google.android.libraries.ads.mobile.sdk.signal.Signal;
+import com.google.android.libraries.ads.mobile.sdk.signal.SignalError;
+import com.google.android.libraries.ads.mobile.sdk.signal.SignalGenerationCallback;
+import com.google.android.libraries.ads.mobile.sdk.signal.SignalRequest;
+import com.google.android.libraries.ads.mobile.sdk.common.RequestConfiguration.MaxAdContentRating;
+import com.google.android.libraries.ads.mobile.sdk.common.RequestConfiguration.TagForChildDirectedTreatment;
+import com.google.android.libraries.ads.mobile.sdk.common.RequestConfiguration.TagForUnderAgeOfConsent;
+import com.google.android.libraries.ads.mobile.sdk.initialization.InitializationConfig;
 import com.ironsource.adapters.admob.banner.AdMobBannerAdapter;
 import com.ironsource.adapters.admob.interstitial.AdMobInterstitialAdapter;
 import com.ironsource.adapters.admob.nativead.AdMobNativeAdAdapter;
@@ -33,20 +48,18 @@ import org.jetbrains.annotations.NotNull;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
-import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import static com.google.android.gms.ads.RequestConfiguration.TAG_FOR_CHILD_DIRECTED_TREATMENT_FALSE;
-import static com.google.android.gms.ads.RequestConfiguration.TAG_FOR_UNDER_AGE_OF_CONSENT_FALSE;
-import static com.google.android.gms.ads.RequestConfiguration.TAG_FOR_UNDER_AGE_OF_CONSENT_TRUE;
-import static com.google.android.gms.ads.mediation.MediationAdConfiguration.TAG_FOR_CHILD_DIRECTED_TREATMENT_TRUE;
 import static com.ironsource.mediationsdk.metadata.MetaData.MetaDataValueTypes.META_DATA_VALUE_BOOLEAN;
 
 import androidx.annotation.NonNull;
+
+import java.util.Set;
 
 public class AdMobAdapter extends AbstractAdapter {
 
@@ -55,7 +68,6 @@ public class AdMobAdapter extends AbstractAdapter {
     private final String PLATFORM_NAME = "unity";
     //adapter version
     private static final String VERSION = BuildConfig.VERSION_NAME;
-
     private static final String GitHash = BuildConfig.GitHash;
     private static final String AD_UNIT_ID = "adUnitId";
     public static final String CREATIVE_ID_KEY = "creativeId";
@@ -68,11 +80,11 @@ public class AdMobAdapter extends AbstractAdapter {
     // shared variables between instances
     private static Boolean mConsent = null;
     private static Boolean mCCPAValue = null;
-    private static Integer mCoppaValue = null;
-    private static Integer mEuValue = null;
-    private static String mRatingValue = "";
-    private static String mContentMappingURLValue = "";
-    private static List<String> mNeighboringContentMappingURLValue = new ArrayList<>();
+    private static TagForChildDirectedTreatment mCoppaValue = null;
+    private static TagForUnderAgeOfConsent mEuValue = null;
+    private static MaxAdContentRating mRatingValue = null;
+    private static String mContentMappingURLValue = null;
+    private static Set<String> mNeighboringContentMappingURLValue = new HashSet<>();
 
     // handle init callback for all adapter instances
     private static final HashSet<INetworkInitCallbackListener> initCallbackListeners = new HashSet<>();
@@ -153,7 +165,16 @@ public class AdMobAdapter extends AbstractAdapter {
     //endregion
 
     //region Initializations methods and callbacks
+    @SuppressLint("MissingPermission")
     public void initSDK(final JSONObject config) {
+        // Get app ID from config - required for Next Gen SDK
+        String appId = config.optString("appId", "");
+        if (TextUtils.isEmpty(appId)) {
+            IronLog.ADAPTER_API.error("appId is missing from config");
+            initializationFailure();
+            return;
+        }
+
         // add self to the init listeners only in case the initialization has not finished yet
         if (mInitState == InitState.INIT_STATE_NONE || mInitState == InitState.INIT_STATE_IN_PROGRESS) {
             initCallbackListeners.add(AdMobAdapter.this);
@@ -162,43 +183,47 @@ public class AdMobAdapter extends AbstractAdapter {
         if (mWasInitCalled.compareAndSet(false, true)) {
             mInitState = InitState.INIT_STATE_IN_PROGRESS;
 
-            IronLog.ADAPTER_API.verbose();
-            boolean networkOnlyInit = config.optBoolean(NETWORK_ONLY_INIT, true);
+            IronLog.ADAPTER_API.verbose("appId = " + appId);
 
-            if (networkOnlyInit) {
-                IronLog.ADAPTER_API.verbose("disableMediationAdapterInitialization");
-                // Limit the AdMob initialization to its network
-                MobileAds.disableMediationAdapterInitialization(ContextProvider.getInstance().getApplicationContext());
-            }
+            boolean networkOnlyInit = config.optBoolean(NETWORK_ONLY_INIT, true);
 
             //check if we want to perform the init process with an init callback
             boolean shouldWaitForInitCallback = config.optBoolean(INIT_RESPONSE_REQUIRED, false);
 
-            if (shouldWaitForInitCallback) {
-                IronLog.ADAPTER_API.verbose("init and wait for callback");
+            // Build initialization config
+            InitializationConfig.Builder initConfigBuilder = new InitializationConfig.Builder(appId);
 
-                //init AdMob sdk with callback
-                MobileAds.initialize(ContextProvider.getInstance().getApplicationContext(), new OnInitializationCompleteListener() {
-                    @Override
-                    public void onInitializationComplete(@NotNull InitializationStatus initializationStatus) {
-                        AdapterStatus status = initializationStatus.getAdapterStatusMap().get("com.google.android.gms.ads.MobileAds");
-                        AdapterStatus.State state = status != null ? status.getInitializationState() : null;
+            if (networkOnlyInit) {
+                IronLog.ADAPTER_API.verbose("disableMediationAdapterInitialization");
+                // Limit the AdMob initialization to its network
+                initConfigBuilder.disableMediationAdapterInitialization();
+            }
 
-                        if (state == AdapterStatus.State.READY) {
-                            IronLog.ADAPTER_API.verbose("initializationStatus = READY");
+            InitializationConfig initConfig = initConfigBuilder.build();
+
+            new Thread(() -> {
+                if (shouldWaitForInitCallback) {
+                    IronLog.ADAPTER_API.verbose("init and wait for callback");
+                    MobileAds.initialize(ContextProvider.getInstance().getApplicationContext(), initConfig, initializationStatus -> {
+                        AdapterStatus adMobStatus = initializationStatus.getAdapterStatusMap().get("com.google.android.gms.ads.MobileAds");
+                        if (adMobStatus != null) {
+                            IronLog.ADAPTER_API.verbose("AdMob initialization state = " + adMobStatus.getInitializationState() + ", description = " + adMobStatus.getDescription());
+                        }
+
+                        if (adMobStatus != null && adMobStatus.getInitializationState() == AdapterStatus.InitializationState.COMPLETE) {
                             initializationSuccess();
                         } else {
-                            IronLog.ADAPTER_API.verbose("initializationStatus = NOT READY");
+                            String error = adMobStatus != null ? adMobStatus.getDescription() : "AdMob adapter status not found";
+                            IronLog.ADAPTER_API.error("AdMob init failed: " + error);
                             initializationFailure();
                         }
-                    }
-                });
-            } else {
-                //init AdMob sdk without callback
-                IronLog.ADAPTER_API.verbose("init without callback");
-                MobileAds.initialize(ContextProvider.getInstance().getApplicationContext());
-                initializationSuccess();
-            }
+                    });
+                } else {
+                    IronLog.ADAPTER_API.verbose("init without callback");
+                    MobileAds.initialize(ContextProvider.getInstance().getApplicationContext(), initConfig);
+                    initializationSuccess();
+                }
+            }).start();
         }
     }
 
@@ -241,9 +266,9 @@ public class AdMobAdapter extends AbstractAdapter {
             return;
         }
 
-        if (values.size() > 1 && key.equalsIgnoreCase(AdMobMetaDataFlags.ADMOB_CONTENT_MAPPING_KEY)){
+        if (values.size() > 1 && key.equalsIgnoreCase(AdMobMetaDataFlags.ADMOB_CONTENT_MAPPING_KEY)) {
             // multiple URL
-            mNeighboringContentMappingURLValue = values;
+            mNeighboringContentMappingURLValue = new HashSet<>(values);
             IronLog.ADAPTER_API.verbose("key = " + key + ", values = " + values);
             return;
         }
@@ -257,7 +282,6 @@ public class AdMobAdapter extends AbstractAdapter {
         } else {
             setAdMobMetaDataValue(StringUtils.toLowerCase(key), StringUtils.toLowerCase(value));
         }
-
     }
 
     @Override
@@ -266,18 +290,18 @@ public class AdMobAdapter extends AbstractAdapter {
 
         // If the contentMapping key maps to a string
         String networkDataContentMappingString = networkData.dataByKeyIgnoreCase(NETWORK_DATA_CONTENT_MAPPING, String.class);
-        if(networkDataContentMappingString != null){
+        if (networkDataContentMappingString != null) {
             processContentMapping(networkDataContentMappingString);
         }
 
         // If the contentMapping key maps to an array
         JSONArray networkDataContentMappingArray = networkData.dataByKeyIgnoreCase(NETWORK_DATA_CONTENT_MAPPING, JSONArray.class);
-        if(networkDataContentMappingArray != null){
+        if (networkDataContentMappingArray != null) {
             processContentMapping(networkDataContentMappingArray);
         }
 
         String networkDataContentRating = networkData.dataByKeyIgnoreCase(NETWORK_DATA_CONTENT_RATING, String.class);
-        if(networkDataContentRating != null){
+        if (networkDataContentRating != null) {
             processContentRating(networkDataContentRating);
         }
     }
@@ -301,7 +325,7 @@ public class AdMobAdapter extends AbstractAdapter {
         setRequestConfiguration();
     }
 
-    private void setCCPAValue(final boolean value) {
+    private void setCCPAValue(boolean value) {
         IronLog.ADAPTER_API.verbose("value = " + value);
         mCCPAValue = value;
     }
@@ -341,35 +365,37 @@ public class AdMobAdapter extends AbstractAdapter {
         setRequestConfiguration();
     }
 
-    private int getAdMobCoppaValue(String value) {
+    private TagForChildDirectedTreatment getAdMobCoppaValue(String value) {
         boolean coppaValue = MetaDataUtils.getMetaDataBooleanValue(value);
-        return coppaValue ? TAG_FOR_CHILD_DIRECTED_TREATMENT_TRUE : TAG_FOR_CHILD_DIRECTED_TREATMENT_FALSE;
+        return coppaValue ? TagForChildDirectedTreatment.TAG_FOR_CHILD_DIRECTED_TREATMENT_TRUE
+                : TagForChildDirectedTreatment.TAG_FOR_CHILD_DIRECTED_TREATMENT_FALSE;
     }
 
-    private int getAdMobEuValue(String value) {
+    private TagForUnderAgeOfConsent getAdMobEuValue(String value) {
         boolean euValue = MetaDataUtils.getMetaDataBooleanValue(value);
-        return euValue ? TAG_FOR_UNDER_AGE_OF_CONSENT_TRUE : TAG_FOR_UNDER_AGE_OF_CONSENT_FALSE;
+        return euValue ? TagForUnderAgeOfConsent.TAG_FOR_UNDER_AGE_OF_CONSENT_TRUE
+                : TagForUnderAgeOfConsent.TAG_FOR_UNDER_AGE_OF_CONSENT_FALSE;
     }
 
-    private String getAdMobRatingValue(String value) {
+    private MaxAdContentRating getAdMobRatingValue(String value) {
         if (TextUtils.isEmpty(value)) {
             IronLog.INTERNAL.error("The ratingValue is null");
             return null;
         }
 
-        String ratingValue = "";
+        MaxAdContentRating ratingValue = null;
         switch (value) {
             case AdMobMaxContentRating.ADMOB_MAX_AD_CONTENT_RATING_G:
-                ratingValue = RequestConfiguration.MAX_AD_CONTENT_RATING_G;
+                ratingValue = MaxAdContentRating.MAX_AD_CONTENT_RATING_G;
                 break;
             case AdMobMaxContentRating.ADMOB_MAX_AD_CONTENT_RATING_PG:
-                ratingValue = RequestConfiguration.MAX_AD_CONTENT_RATING_PG;
+                ratingValue = MaxAdContentRating.MAX_AD_CONTENT_RATING_PG;
                 break;
             case AdMobMaxContentRating.ADMOB_MAX_AD_CONTENT_RATING_T:
-                ratingValue = RequestConfiguration.MAX_AD_CONTENT_RATING_T;
+                ratingValue = MaxAdContentRating.MAX_AD_CONTENT_RATING_T;
                 break;
             case AdMobMaxContentRating.ADMOB_MAX_AD_CONTENT_RATING_MA:
-                ratingValue = RequestConfiguration.MAX_AD_CONTENT_RATING_MA;
+                ratingValue = MaxAdContentRating.MAX_AD_CONTENT_RATING_MA;
                 break;
             default:
                 IronLog.INTERNAL.error("The ratingValue = " + value + " is undefine");
@@ -386,16 +412,160 @@ public class AdMobAdapter extends AbstractAdapter {
         return AdMobAdapter.AD_UNIT_ID;
     }
 
-    public AdRequest createAdRequest(final JSONObject adData, final String serverData) {
-
-        AdRequest.Builder builder = new AdRequest.Builder();
+    public AdRequest createAdRequest(String adUnitId, JSONObject adData) {
+        AdRequest.Builder builder = new AdRequest.Builder(adUnitId);
         builder.setRequestAgent(REQUEST_AGENT);
 
-        if (serverData != null) {
-            // add server data to bidder instance
-            builder.setAdString(serverData);
+        //handle single content mapping for ad request
+        if (!TextUtils.isEmpty(mContentMappingURLValue)) {
+            IronLog.ADAPTER_API.verbose("mContentMappingURLValue = " + mContentMappingURLValue);
+            builder.setContentUrl(mContentMappingURLValue);
         }
 
+        //handle neighboring content mapping for ad request
+        if (!mNeighboringContentMappingURLValue.isEmpty()) {
+            IronLog.ADAPTER_API.verbose("mNeighboringContentMappingURLValue = " + mNeighboringContentMappingURLValue);
+            builder.setNeighboringContentUrls(mNeighboringContentMappingURLValue);
+        }
+
+        setRequestConfiguration();
+
+        builder.setGoogleExtrasBundle(createExtrasBundle(adData));
+
+        return builder.build();
+    }
+
+    public BannerAdRequest createBannerAdRequest(String adUnitId, AdSize adSize, JSONObject adData) {
+        BannerAdRequest.Builder builder = new BannerAdRequest.Builder(adUnitId, adSize);
+        builder.setRequestAgent(REQUEST_AGENT);
+
+        //handle single content mapping for ad request
+        if (!TextUtils.isEmpty(mContentMappingURLValue)) {
+            IronLog.ADAPTER_API.verbose("mContentMappingURLValue = " + mContentMappingURLValue);
+            builder.setContentUrl(mContentMappingURLValue);
+        }
+
+        //handle neighboring content mapping for ad request
+        if (!mNeighboringContentMappingURLValue.isEmpty()) {
+            IronLog.ADAPTER_API.verbose("mNeighboringContentMappingURLValue = " + mNeighboringContentMappingURLValue);
+            builder.setNeighboringContentUrls(mNeighboringContentMappingURLValue);
+        }
+
+        setRequestConfiguration();
+
+        builder.setGoogleExtrasBundle(createExtrasBundle(adData));
+
+        return builder.build();
+    }
+
+    public NativeAdRequest createNativeAdRequest(String adUnitId, AdChoicesPlacement adChoicesPlacement, JSONObject adData) {
+        NativeAdRequest.Builder builder = new NativeAdRequest.Builder(adUnitId, Collections.singletonList(NativeAd.NativeAdType.NATIVE));
+        builder.setRequestAgent(REQUEST_AGENT);
+        builder.setAdChoicesPlacement(adChoicesPlacement);
+
+        //handle single content mapping for ad request
+        if (!TextUtils.isEmpty(mContentMappingURLValue)) {
+            IronLog.ADAPTER_API.verbose("mContentMappingURLValue = " + mContentMappingURLValue);
+            builder.setContentUrl(mContentMappingURLValue);
+        }
+
+        //handle neighboring content mapping for ad request
+        if (!mNeighboringContentMappingURLValue.isEmpty()) {
+            IronLog.ADAPTER_API.verbose("mNeighboringContentMappingURLValue = " + mNeighboringContentMappingURLValue);
+            builder.setNeighboringContentUrls(mNeighboringContentMappingURLValue);
+        }
+
+        setRequestConfiguration();
+
+        builder.setGoogleExtrasBundle(createExtrasBundle(adData));
+
+        return builder.build();
+    }
+
+    private void setRequestConfiguration() {
+        RequestConfiguration.Builder requestConfigurationBuilder = new RequestConfiguration.Builder();
+        RequestConfiguration requestConfiguration = null;
+
+        if (mCoppaValue != null) {
+            requestConfiguration = requestConfigurationBuilder.setTagForChildDirectedTreatment(mCoppaValue).build();
+        }
+
+        if (mEuValue != null) {
+            requestConfiguration = requestConfigurationBuilder.setTagForUnderAgeOfConsent(mEuValue).build();
+        }
+
+        if (mRatingValue != null) {
+            requestConfiguration = requestConfigurationBuilder.setMaxAdContentRating(mRatingValue).build();
+        }
+
+        if (requestConfiguration != null) {
+            MobileAds.setRequestConfiguration(requestConfiguration);
+        }
+    }
+
+    //check if the error was no fill error
+    public static boolean isNoFillError(LoadAdError.ErrorCode errorCode) {
+        return errorCode == LoadAdError.ErrorCode.NO_FILL;
+    }
+
+    public void collectBiddingData(final BiddingDataCallback biddingDataCallback, AdFormat adFormat, Bundle additionalExtras) {
+        if (mInitState == InitState.INIT_STATE_NONE) {
+            String error = "returning null as token since init hasn't started";
+            IronLog.INTERNAL.verbose(error);
+            biddingDataCallback.onFailure(error + " - AdMob");
+            return;
+        }
+
+        IronLog.ADAPTER_API.verbose(adFormat.toString());
+
+        SignalRequest signalRequest = createSignalRequest(adFormat, additionalExtras);
+        if (signalRequest == null) {
+            String error = "unsupported ad format for signal generation: " + adFormat;
+            IronLog.INTERNAL.error(error);
+            biddingDataCallback.onFailure(error + " - AdMob");
+            return;
+        }
+
+        MobileAds.generateSignal(signalRequest, new SignalGenerationCallback() {
+            @Override
+            public void onSuccess(@NonNull Signal signal) {
+                String returnedToken = signal.getSignalString() != null ? signal.getSignalString() : EMPTY_STRING;
+                String sdkVersion = getCoreSDKVersion();
+                IronLog.ADAPTER_API.verbose("token = " + returnedToken + ", sdkVersion = " + sdkVersion);
+                Map<String, Object> biddingDataMap = new HashMap<>();
+                biddingDataMap.put("token", returnedToken);
+                biddingDataMap.put("sdkVersion", sdkVersion);
+                biddingDataCallback.onSuccess(biddingDataMap);
+            }
+
+            @Override
+            public void onFailure(@NonNull SignalError error) {
+                biddingDataCallback.onFailure("failed to receive token - AdMob " + error.getMessage());
+            }
+        });
+    }
+
+    private SignalRequest createSignalRequest(AdFormat adFormat, Bundle additionalExtras) {
+        switch (adFormat) {
+            case INTERSTITIAL:
+                return new InterstitialSignalRequest.Builder("requester_type_2")
+                        .build();
+            case REWARDED:
+                return new RewardedSignalRequest.Builder("requester_type_2")
+                        .build();
+            case BANNER:
+                return new BannerSignalRequest.Builder("requester_type_2")
+                        .setGoogleExtrasBundle(additionalExtras)
+                        .build();
+            case NATIVE:
+                return new NativeSignalRequest.Builder("requester_type_2")
+                        .build();
+            default:
+                return null;
+        }
+    }
+
+    private Bundle createExtrasBundle(JSONObject adData) {
         Bundle extras = new Bundle();
         extras.putString("platform_name", PLATFORM_NAME);
         boolean hybridMode = false;
@@ -414,8 +584,6 @@ public class AdMobAdapter extends AbstractAdapter {
 
         extras.putString("is_hybrid_setup", String.valueOf(hybridMode));
 
-        setRequestConfiguration();
-
         if (mConsent != null || mCCPAValue != null) {
             //handle consent for ad request
             if (mConsent != null && !mConsent) {
@@ -430,91 +598,8 @@ public class AdMobAdapter extends AbstractAdapter {
             }
         }
 
-        //handle single content mapping for ad request
-        if(!TextUtils.isEmpty(mContentMappingURLValue)){
-            IronLog.ADAPTER_API.verbose("mContentMappingURLValue = " + mContentMappingURLValue);
-            builder.setContentUrl(mContentMappingURLValue);
-        }
-
-        //handle neighboring content mapping for ad request
-        if(!mNeighboringContentMappingURLValue.isEmpty()){
-            IronLog.ADAPTER_API.verbose("mNeighboringContentMappingURLValue = " + mNeighboringContentMappingURLValue);
-            builder.setNeighboringContentUrls(mNeighboringContentMappingURLValue);
-        }
-
-        builder.addNetworkExtrasBundle(com.google.ads.mediation.admob.AdMobAdapter.class, extras);
-        return builder.build();
+        return extras;
     }
-
-    private void setRequestConfiguration() {
-        final RequestConfiguration.Builder requestConfigurationBuilder = MobileAds.getRequestConfiguration().toBuilder();
-        RequestConfiguration requestConfiguration = null;
-
-        if (mCoppaValue != null) {
-            requestConfiguration = requestConfigurationBuilder.setTagForChildDirectedTreatment(mCoppaValue).build();
-        }
-
-        if (mEuValue != null) {
-            requestConfiguration = requestConfigurationBuilder.setTagForUnderAgeOfConsent(mEuValue).build();
-        }
-
-        if (!TextUtils.isEmpty(mRatingValue)) {
-            requestConfiguration = requestConfigurationBuilder.setMaxAdContentRating(mRatingValue).build();
-        }
-
-        if (requestConfiguration != null) {
-            MobileAds.setRequestConfiguration(requestConfiguration);
-        }
-    }
-
-    //check if the error was no fill error
-    public static boolean isNoFillError(int errorCode) {
-        return errorCode == AdRequest.ERROR_CODE_NO_FILL || errorCode == AdRequest.ERROR_CODE_MEDIATION_NO_FILL;
-    }
-
-    public void collectBiddingData(final BiddingDataCallback biddingDataCallback, AdFormat adFormat, Bundle additionalExtras) {
-        if (mInitState == InitState.INIT_STATE_NONE) {
-            String error = "returning null as token since init hasn't started";
-            IronLog.INTERNAL.verbose(error);
-            biddingDataCallback.onFailure(error + " - AdMob");
-            return;
-        }
-
-        Bundle extras = new Bundle();
-        extras.putString("query_info_type", "requester_type_2");
-        if (additionalExtras != null) {
-            extras.putAll(additionalExtras);
-        }
-
-        IronLog.ADAPTER_API.verbose(adFormat.toString());
-        AdRequest request =
-                new AdRequest.Builder()
-                        .setRequestAgent(REQUEST_AGENT)
-                        .addNetworkExtrasBundle(com.google.ads.mediation.admob.AdMobAdapter.class, extras)
-                        .build();
-        QueryInfo.generate(ContextProvider.getInstance().getApplicationContext(), adFormat, request,
-                new QueryInfoGenerationCallback() {
-                    // Called when query info generation succeeds
-                    @Override
-                    public void onSuccess(@NonNull final QueryInfo queryInfo) {
-                        String returnedToken = (!TextUtils.isEmpty(queryInfo.getQuery())) ? queryInfo.getQuery() : EMPTY_STRING;
-                        String sdkVersion = getCoreSDKVersion();
-                        IronLog.ADAPTER_API.verbose("token = " + returnedToken + ", sdkVersion = " + sdkVersion);
-                        Map<String, Object> biddingDataMap = new HashMap<>();
-                        biddingDataMap.put("token", returnedToken);
-                        biddingDataMap.put("sdkVersion", sdkVersion);
-                        biddingDataCallback.onSuccess(biddingDataMap);
-                    }
-
-                    // Called when query info generation fails
-                    @Override
-                    public void onFailure(@NonNull String error) {
-                        biddingDataCallback.onFailure("failed to receive token - AdMob " + error);
-                    }
-                });
-
-    }
-
 
     //endregion
 }

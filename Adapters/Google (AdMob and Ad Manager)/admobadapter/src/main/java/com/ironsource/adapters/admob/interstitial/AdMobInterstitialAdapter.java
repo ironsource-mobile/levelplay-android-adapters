@@ -4,9 +4,9 @@ import android.text.TextUtils;
 
 import androidx.annotation.NonNull;
 
-import com.google.android.gms.ads.AdFormat;
-import com.google.android.gms.ads.AdRequest;
-import com.google.android.gms.ads.interstitial.InterstitialAd;
+import com.google.android.libraries.ads.mobile.sdk.common.AdFormat;
+import com.google.android.libraries.ads.mobile.sdk.common.AdRequest;
+import com.google.android.libraries.ads.mobile.sdk.interstitial.InterstitialAd;
 import com.ironsource.adapters.admob.AdMobAdapter;
 import com.ironsource.environment.ContextProvider;
 import com.ironsource.mediationsdk.adapter.AbstractInterstitialAdapter;
@@ -104,9 +104,16 @@ public class AdMobInterstitialAdapter extends AbstractInterstitialAdapter<AdMobA
 
                 // set the interstitial ad availability to false before attempting to load
                 mAdUnitIdToAdsAvailability.put(adUnitId, false);
-                AdRequest adRequest = getAdapter().createAdRequest(adData, serverData);
+
                 AdMobInterstitialAdLoadListener adMobInterstitialAdLoadListener = new AdMobInterstitialAdLoadListener(AdMobInterstitialAdapter.this, adUnitId, listener);
-                InterstitialAd.load(ContextProvider.getInstance().getApplicationContext(), adUnitId, adRequest, adMobInterstitialAdLoadListener);
+
+                if (serverData != null) {
+                    IronLog.ADAPTER_API.verbose("loading with serverData");
+                    InterstitialAd.loadFromAdResponse(serverData, adMobInterstitialAdLoadListener);
+                } else {
+                    AdRequest adRequest = getAdapter().createAdRequest(adUnitId, adData);
+                    InterstitialAd.load(adRequest, adMobInterstitialAdLoadListener);
+                }
             }
         });
     }
@@ -123,7 +130,7 @@ public class AdMobInterstitialAdapter extends AbstractInterstitialAdapter<AdMobA
                 // Show the ad if it's ready.
                 if (isInterstitialReadyForAdUnitId(adUnitId) && interstitialAd != null) {
                     AdMobInterstitialAdShowListener adMobInterstitialAdShowListener = new AdMobInterstitialAdShowListener(adUnitId, listener);
-                    interstitialAd.setFullScreenContentCallback(adMobInterstitialAdShowListener);
+                    interstitialAd.setAdEventCallback(adMobInterstitialAdShowListener);
                     interstitialAd.show(ContextProvider.getInstance().getCurrentActiveActivity());
                 } else {
                     IronLog.ADAPTER_API.error("Ad not ready to display");
