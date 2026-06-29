@@ -1,8 +1,7 @@
-package com.ironsource.adapters.unityads.bold
+package com.ironsource.adapters.unityads
 
 import android.widget.FrameLayout
-import com.ironsource.adapters.unityads.BoldNetworkBridge.Companion.BOLD_NO_FILL_ERROR_CODE
-import com.ironsource.adapters.unityads.UnityAdsErrorReporter
+import com.ironsource.adapters.unityads.UnityAdsNetworkBridge.Companion.BOLD_NO_FILL_ERROR_CODE
 import com.ironsource.mediationsdk.logger.IronLog
 import com.ironsource.mediationsdk.logger.IronSourceError
 import com.ironsource.mediationsdk.sdk.BannerSmashListener

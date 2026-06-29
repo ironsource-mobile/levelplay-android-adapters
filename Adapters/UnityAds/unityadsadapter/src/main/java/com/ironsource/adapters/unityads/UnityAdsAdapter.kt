@@ -3,10 +3,8 @@ package com.ironsource.adapters.unityads
 import android.content.Context
 import com.ironsource.adapters.unityads.UnityAdsAdapterConstants.CONSENT_CCPA
 import com.ironsource.adapters.unityads.UnityAdsAdapterConstants.CONSENT_GDPR
-import com.ironsource.adapters.unityads.UnityAdsAdapterConstants.GAME_DESIGNATION
 import com.ironsource.adapters.unityads.UnityAdsAdapterConstants.GAME_ID
 import com.ironsource.adapters.unityads.UnityAdsAdapterConstants.LWS_SUPPORT_STATE
-import com.ironsource.adapters.unityads.UnityAdsAdapterConstants.MIXED_AUDIENCE
 import com.ironsource.adapters.unityads.UnityAdsAdapterConstants.PLACEMENT_ID
 import com.ironsource.adapters.unityads.UnityAdsAdapterConstants.UNITYADS_COPPA
 import com.ironsource.adapters.unityads.UnityAdsAdapterConstants.UNITYADS_METADATA_COPPA_KEY
@@ -29,21 +27,15 @@ import com.ironsource.mediationsdk.utils.ErrorBuilder
 import com.ironsource.mediationsdk.utils.IronSourceConstants
 import com.unity3d.ads.AdFormat
 import com.unity3d.ads.UnityAds
-import com.unity3d.ads.UnityAdsExperimental
 import com.unity3d.ads.metadata.MetaData
 import com.unity3d.mediation.LevelPlay
 import com.unity3d.services.banners.UnityBannerSize
 import org.json.JSONObject
-import java.util.concurrent.atomic.AtomicReference
 
 class UnityAdsAdapter(providerName: String) : AbstractAdapter(providerName),
     INetworkInitCallbackListener {
 
-    // By default its legacy
-    // The reason it must default to something, is that getToken might proceed init request
-    private val bridgeRef: AtomicReference<NetworkBridge> = AtomicReference(null)
-    private val bridge: NetworkBridge?
-        get() = bridgeRef.get()
+    private val bridge: NetworkBridge = UnityAdsNetworkBridge(providerName)
 
     private val unityAdsStorageLock = Any()
 
@@ -98,9 +90,7 @@ class UnityAdsAdapter(providerName: String) : AbstractAdapter(providerName),
 
         extractEventSender(config)
 
-        initBridge(config)
-
-        bridge?.initSdk(config, isAdaptersDebugEnabled, this)
+        bridge.initSdk(config, isAdaptersDebugEnabled, this)
     }
 
     override fun onNetworkInitCallbackSuccess() = IronLog.ADAPTER_CALLBACK.verbose()
@@ -159,9 +149,7 @@ class UnityAdsAdapter(providerName: String) : AbstractAdapter(providerName),
 
         IronLog.ADAPTER_API.verbose("placementId = $placementId")
 
-        initBridge(config)
-
-        bridge?.loadRewardedAd(placementId, serverData, listener)
+        bridge.loadRewardedAd(placementId, serverData, listener)
     }
 
     override fun showRewardedVideo(
@@ -178,18 +166,14 @@ class UnityAdsAdapter(providerName: String) : AbstractAdapter(providerName),
 
         IronLog.ADAPTER_API.verbose("placementId = $placementId")
 
-        initBridge(config)
-
-        bridge?.showRewardedAd(placementId, dynamicUserId, listener)
+        bridge.showRewardedAd(placementId, dynamicUserId, listener)
     }
 
     override fun isRewardedVideoAvailable(config: JSONObject?): Boolean {
         val placementId = config?.optString(PLACEMENT_ID)
         IronLog.ADAPTER_API.verbose("placementId = $placementId")
 
-        initBridge(config)
-
-        return placementId?.let { bridge?.isRewardedAdAvailable(it) } ?: false
+        return placementId?.let { bridge.isRewardedAdAvailable(it) } ?: false
     }
 
     override fun collectRewardedVideoBiddingData(
@@ -262,9 +246,7 @@ class UnityAdsAdapter(providerName: String) : AbstractAdapter(providerName),
 
         IronLog.ADAPTER_API.verbose("placementId = $placementId")
 
-        initBridge(config)
-
-        bridge?.loadInterstitialAd(placementId, serverData, listener)
+        bridge.loadInterstitialAd(placementId, serverData, listener)
     }
 
     override fun showInterstitial(
@@ -281,16 +263,12 @@ class UnityAdsAdapter(providerName: String) : AbstractAdapter(providerName),
 
         IronLog.ADAPTER_API.verbose("placementId = $placementId")
 
-        initBridge(config)
-
-        bridge?.showInterstitialAd(placementId, listener)
+        bridge.showInterstitialAd(placementId, listener)
     }
 
     override fun isInterstitialReady(config: JSONObject?): Boolean {
         val placementId = config?.optString(PLACEMENT_ID)
         IronLog.ADAPTER_API.verbose("placementId = $placementId")
-
-        initBridge(config)
 
         return placementId?.let { bridge?.isInterstitialAdReady(it) } ?: false
     }
@@ -364,9 +342,7 @@ class UnityAdsAdapter(providerName: String) : AbstractAdapter(providerName),
         val unityBannerSize = getBannerSize(bannerSize,
             AdapterUtils.isLargeScreen(ContextProvider.getInstance().applicationContext))
 
-        initBridge(config)
-
-        bridge?.loadBanner(placementId, adData, serverData, unityBannerSize, listener)
+        bridge.loadBanner(placementId, adData, serverData, unityBannerSize, listener)
     }
 
     override fun collectBannerBiddingData(
@@ -381,7 +357,6 @@ class UnityAdsAdapter(providerName: String) : AbstractAdapter(providerName),
 
     //region legal
 
-    @OptIn(UnityAdsExperimental::class)
     override fun setConsent(consent: Boolean) {
         IronLog.ADAPTER_API.verbose("setConsent = $consent")
 
@@ -417,7 +392,6 @@ class UnityAdsAdapter(providerName: String) : AbstractAdapter(providerName),
         }
     }
 
-    @OptIn(UnityAdsExperimental::class)
     private fun setCOPPAValue(value: Boolean) {
         IronLog.ADAPTER_API.verbose("value = $value")
 
@@ -430,7 +404,6 @@ class UnityAdsAdapter(providerName: String) : AbstractAdapter(providerName),
         UnityAds.nonBehavioral = value
     }
 
-    @OptIn(UnityAdsExperimental::class)
     private fun setCCPAValue(value: Boolean) {
         IronLog.ADAPTER_API.verbose("value = $value")
 
@@ -471,8 +444,7 @@ class UnityAdsAdapter(providerName: String) : AbstractAdapter(providerName),
         adData: JSONObject?,
         biddingDataCallback: BiddingDataCallback
     ) {
-        initBridge(config)
-        val tokenConfiguration = bridge?.getTokenConfig(adFormat, config, adData) ?: return
+        val tokenConfiguration = bridge.getTokenConfig(adFormat, config, adData) ?: return
         UnityAds.getToken(tokenConfiguration) { bidToken ->
             if (!bidToken.isNullOrEmpty()) {
                 IronLog.ADAPTER_API.verbose("token = $bidToken")
@@ -505,12 +477,4 @@ class UnityAdsAdapter(providerName: String) : AbstractAdapter(providerName),
     }
 
     // endregion
-
-    private fun initBridge(config: JSONObject?) {
-        if(bridgeRef.get() == null) {
-            bridgeRef.compareAndSet(
-                null,
-                NetworkBridge.Factory().getNetworkBridge(providerName, config))
-        }
-    }
 }

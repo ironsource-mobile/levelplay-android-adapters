@@ -9,12 +9,6 @@ import com.ironsource.adapters.unityads.UnityAdsAdapterConstants.PLACEMENT_ID
 import com.ironsource.adapters.unityads.UnityAdsAdapterConstants.UADS_AD_DATA_AD_UNIT_ID
 import com.ironsource.adapters.unityads.UnityAdsAdapterConstants.UADS_INIT_BLOB
 import com.ironsource.adapters.unityads.UnityAdsAdapterConstants.UADS_TRAITS
-import com.ironsource.adapters.unityads.bold.UnityAdBannerAdLoadListener
-import com.ironsource.adapters.unityads.bold.UnityAdBannerAdShowListener
-import com.ironsource.adapters.unityads.bold.UnityAdsInterstitialAdLoadListener
-import com.ironsource.adapters.unityads.bold.UnityAdsInterstitialShowAdListener
-import com.ironsource.adapters.unityads.bold.UnityAdsRewardedAdLoadListener
-import com.ironsource.adapters.unityads.bold.UnityAdsRewardedAdShowListener
 import com.ironsource.environment.ContextProvider
 import com.ironsource.mediationsdk.INetworkInitCallbackListener
 import com.ironsource.mediationsdk.ISBannerSize
@@ -40,15 +34,13 @@ import com.unity3d.ads.ShowConfiguration
 import com.unity3d.ads.TokenConfiguration
 import com.unity3d.ads.UnityAds
 import com.unity3d.ads.UnityAdsError
-import com.unity3d.ads.UnityAdsExperimental
 import com.unity3d.mediation.LevelPlay
 import com.unity3d.services.banners.UnityBannerSize
 import org.json.JSONObject
 import java.lang.ref.WeakReference
 import java.util.concurrent.ConcurrentHashMap
 
-@OptIn(UnityAdsExperimental::class)
-class BoldNetworkBridge(private val providerName: String) : NetworkBridge {
+class UnityAdsNetworkBridge(private val providerName: String) : NetworkBridge {
 
   companion object {
     const val BOLD_NO_FILL_ERROR_CODE = 52100

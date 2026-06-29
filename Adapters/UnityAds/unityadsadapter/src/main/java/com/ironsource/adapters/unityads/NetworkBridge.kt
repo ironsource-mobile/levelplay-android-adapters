@@ -75,16 +75,4 @@ interface NetworkBridge {
       widthPixel, FrameLayout.LayoutParams.WRAP_CONTENT, Gravity.CENTER
     )
   }
-
-  class Factory {
-    fun getNetworkBridge(providerName: String, config: JSONObject?): NetworkBridge {
-      if (config?.has(UADS_TRAITS) == true) {
-        val traits = config.optJSONObject(UADS_TRAITS)
-        if (traits?.optBoolean(UADS_TRAITS_ENABLE_NEW_API, false) == true) {
-          return BoldNetworkBridge(providerName)
-        }
-      }
-      return LegacyNetworkBridge(providerName)
-    }
-  }
 }
