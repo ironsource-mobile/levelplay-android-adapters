@@ -1,5 +1,8 @@
 # Changelog
 
+## Version 5.3.0
+* General improvements and performance enhancements
+
 ## Version 5.2.0
 * Supporting SDK version 23.1.0
 * **Requirements:** Minimum Kotlin version 2.1.0
