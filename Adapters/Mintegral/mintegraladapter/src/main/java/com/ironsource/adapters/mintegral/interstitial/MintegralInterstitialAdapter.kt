@@ -21,6 +21,7 @@ class MintegralInterstitialAdapter(networkSettings: NetworkSettings) :
     LevelPlayBaseInterstitial<MintegralAdapter>(networkSettings) {
 
     private var interstitialAd: MBBidNewInterstitialHandler? = null
+    private var interstitialAdListener: MintegralInterstitialListener? = null
     private var reservedPlacementId: String? = null
 
     companion object {
@@ -69,7 +70,8 @@ class MintegralInterstitialAdapter(networkSettings: NetworkSettings) :
             placementId,
             unitId
         ).apply {
-            setInterstitialVideoListener(MintegralInterstitialListener(listener, this))
+            interstitialAdListener = MintegralInterstitialListener(listener, this)
+            setInterstitialVideoListener(interstitialAdListener)
         }
 
         IronLog.ADAPTER_API.verbose(MintegralConstants.Logs.LOAD_INTERSTITIAL.format(placementId, unitId, adData.serverData))
@@ -105,6 +107,7 @@ class MintegralInterstitialAdapter(networkSettings: NetworkSettings) :
         IronLog.ADAPTER_API.verbose(MintegralConstants.Logs.PLACEMENT_ID.format(placementId))
         reservedPlacementId?.let { interstitialPlacementIds.remove(it) }
         reservedPlacementId = null
+        interstitialAdListener = null
         interstitialAd = null
     }
 

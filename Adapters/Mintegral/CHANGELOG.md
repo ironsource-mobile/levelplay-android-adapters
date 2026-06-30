@@ -1,5 +1,8 @@
 # Changelog
 
+## Version 5.16.0
+* General improvements and performance enhancements
+
 ## Version 5.15.0
 * General improvements and performance enhancements
 

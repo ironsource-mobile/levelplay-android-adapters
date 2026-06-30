@@ -21,6 +21,7 @@ class MintegralRewardedAdapter(networkSettings: NetworkSettings) :
     LevelPlayBaseRewardedVideo<MintegralAdapter>(networkSettings) {
 
     private var rewardedVideoAd: MBBidRewardVideoHandler? = null
+    private var rewardedAdListener: MintegralRewardedListener? = null
     private var reservedPlacementId: String? = null
 
     companion object {
@@ -69,7 +70,8 @@ class MintegralRewardedAdapter(networkSettings: NetworkSettings) :
             placementId,
             unitId
         ).apply {
-            setRewardVideoListener(MintegralRewardedListener(listener, this))
+            rewardedAdListener = MintegralRewardedListener(listener, this)
+            setRewardVideoListener(rewardedAdListener)
         }
 
         IronLog.ADAPTER_API.verbose(MintegralConstants.Logs.LOAD_REWARDED.format(placementId, unitId, adData.serverData))
@@ -110,6 +112,7 @@ class MintegralRewardedAdapter(networkSettings: NetworkSettings) :
         IronLog.ADAPTER_API.verbose(MintegralConstants.Logs.PLACEMENT_ID.format(placementId))
         reservedPlacementId?.let { rewardedPlacementIds.remove(it) }
         reservedPlacementId = null
+        rewardedAdListener = null
         rewardedVideoAd = null
     }
 
