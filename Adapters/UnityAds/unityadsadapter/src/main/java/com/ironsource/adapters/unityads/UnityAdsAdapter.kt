@@ -1,431 +1,254 @@
 package com.ironsource.adapters.unityads
 
 import android.content.Context
-import com.ironsource.adapters.unityads.UnityAdsAdapterConstants.CONSENT_CCPA
-import com.ironsource.adapters.unityads.UnityAdsAdapterConstants.CONSENT_GDPR
-import com.ironsource.adapters.unityads.UnityAdsAdapterConstants.GAME_ID
-import com.ironsource.adapters.unityads.UnityAdsAdapterConstants.LWS_SUPPORT_STATE
-import com.ironsource.adapters.unityads.UnityAdsAdapterConstants.PLACEMENT_ID
-import com.ironsource.adapters.unityads.UnityAdsAdapterConstants.UNITYADS_COPPA
-import com.ironsource.adapters.unityads.UnityAdsAdapterConstants.UNITYADS_METADATA_COPPA_KEY
-import com.ironsource.adapters.unityads.UnityAdsAdapterConstants.VERSION
 import com.ironsource.environment.ContextProvider
-import com.ironsource.mediationsdk.AbstractAdapter
-import com.ironsource.mediationsdk.AdapterUtils
-import com.ironsource.mediationsdk.INetworkInitCallbackListener
-import com.ironsource.mediationsdk.ISBannerSize
-import com.ironsource.mediationsdk.IntegrationData
-import com.ironsource.mediationsdk.LoadWhileShowSupportState
+import com.ironsource.mediationsdk.adunit.adapter.listener.NetworkInitializationListener
+import com.ironsource.mediationsdk.adunit.adapter.utility.AdData
+import com.ironsource.mediationsdk.adunit.adapter.utility.AdapterErrorType
+import com.ironsource.mediationsdk.adunit.adapter.utility.AdapterErrors
 import com.ironsource.mediationsdk.bidding.BiddingDataCallback
 import com.ironsource.mediationsdk.logger.IronLog
 import com.ironsource.mediationsdk.metadata.MetaData.MetaDataValueTypes
 import com.ironsource.mediationsdk.metadata.MetaDataUtils
-import com.ironsource.mediationsdk.sdk.BannerSmashListener
-import com.ironsource.mediationsdk.sdk.InterstitialSmashListener
-import com.ironsource.mediationsdk.sdk.RewardedVideoSmashListener
-import com.ironsource.mediationsdk.utils.ErrorBuilder
-import com.ironsource.mediationsdk.utils.IronSourceConstants
 import com.unity3d.ads.AdFormat
+import com.unity3d.ads.BannerSize
+import com.unity3d.ads.InitializationConfiguration
+import com.unity3d.ads.InitializationListener
+import com.unity3d.ads.LogLevel
+import com.unity3d.ads.MediationInfo
+import com.unity3d.ads.TokenConfiguration
 import com.unity3d.ads.UnityAds
+import com.unity3d.ads.UnityAdsError
 import com.unity3d.ads.metadata.MetaData
 import com.unity3d.mediation.LevelPlay
-import com.unity3d.services.banners.UnityBannerSize
-import org.json.JSONObject
+import com.unity3d.mediation.adapters.levelplay.LevelPlayBaseAdapter
+import java.util.concurrent.CopyOnWriteArrayList
+import java.util.concurrent.atomic.AtomicBoolean
 
-class UnityAdsAdapter(providerName: String) : AbstractAdapter(providerName),
-    INetworkInitCallbackListener {
+class UnityAdsAdapter : LevelPlayBaseAdapter() {
 
-    private val bridge: NetworkBridge = UnityAdsNetworkBridge(providerName)
+    companion object {
 
-    private val unityAdsStorageLock = Any()
+        // Init state possible values
+        enum class InitState {
+            INIT_STATE_NONE,
+            INIT_STATE_IN_PROGRESS,
+            INIT_STATE_SUCCESS,
+            INIT_STATE_FAILED
+        }
 
-    // Event sender injected by the SDK via config
+        private const val GitHash: String = BuildConfig.GitHash
 
-    fun extractEventSender(config: JSONObject?) {
-        if (errorReporter == null) {
-            @Suppress("UNCHECKED_CAST")
-            val sender = config?.opt("eventSender") as? ((LevelPlay.AdFormat?, Int, String) -> Unit)
-            if (sender != null) {
-                errorReporter = UnityAdsErrorReporter(sender)
+        internal val mediationInfo = MediationInfo(
+            UnityAdsConstants.MEDIATION_NAME,
+            LevelPlay.getSdkVersion(),
+            UnityAdsConstants.ADAPTER_VERSION
+        )
+
+        // Handle init callback for all adapter instances
+        private val wasInitCalled: AtomicBoolean = AtomicBoolean(false)
+        private var initState: InitState = InitState.INIT_STATE_NONE
+        private val initCallbackListeners = CopyOnWriteArrayList<NetworkInitializationListener>()
+
+        @JvmStatic
+        fun getLoadErrorType(error: UnityAdsError?): AdapterErrorType {
+            return if (error?.code == UnityAdsConstants.UNITYADS_NO_FILL_ERROR_CODE) {
+                AdapterErrorType.ADAPTER_ERROR_TYPE_NO_FILL
+            } else {
+                AdapterErrorType.ADAPTER_ERROR_TYPE_INTERNAL
             }
         }
     }
 
-    companion object {
-        internal var errorReporter: UnityAdsErrorReporter? = null
+    private val unityAdsStorageLock = Any()
 
-        @JvmStatic
-        fun startAdapter(providerName: String): UnityAdsAdapter {
-            return UnityAdsAdapter(providerName)
-        }
+    // region Adapter Methods
 
-        // get the network and adapter integration data
-        @JvmStatic
-        fun getIntegrationData(context: Context?): IntegrationData {
-            return IntegrationData("UnityAds", VERSION)
-        }
+    override fun getAdapterVersion(): String = UnityAdsConstants.ADAPTER_VERSION
 
-        @JvmStatic
-        fun getAdapterSDKVersion(): String = UnityAds.version
-
-    }
-
-    //region Adapter Methods
-
-    // get adapter version
-    override fun getVersion(): String = VERSION
-
-    // get network sdk version
-    override fun getCoreSDKVersion(): String = getAdapterSDKVersion()
+    override fun getNetworkSDKVersion(): String = UnityAds.version
 
     override fun isUsingActivityBeforeImpression(adFormat: LevelPlay.AdFormat): Boolean = false
 
-    //endregion
-
-    //region Initializations methods and callbacks
-
-    private fun initSDK(config: JSONObject) {
-        val gameId = config.optString(GAME_ID)
-        IronLog.ADAPTER_API.verbose("gameId = $gameId")
-
-        extractEventSender(config)
-
-        bridge.initSdk(config, isAdaptersDebugEnabled, this)
-    }
-
-    override fun onNetworkInitCallbackSuccess() = IronLog.ADAPTER_CALLBACK.verbose()
-
-    override fun onNetworkInitCallbackFailed(error: String) = IronLog.ADAPTER_CALLBACK.verbose()
-
-    //endregion
-
-    //region Rewarded Video API
-
-    // Used for flows when the mediation needs to get a callback for init
-    override fun initRewardedVideoWithCallback(
-        appKey: String?,
-        userId: String?,
-        config: JSONObject?,
-        listener: RewardedVideoSmashListener?
+    override fun init(
+        adData: AdData,
+        context: Context,
+        networkInitializationListener: NetworkInitializationListener?
     ) {
-        val placementId = config?.optString(PLACEMENT_ID)
-        val gameId = config?.optString(GAME_ID)
-
-        if (placementId.isNullOrEmpty()) {
-            IronLog.ADAPTER_API.error("Missing param - $PLACEMENT_ID")
-            listener?.onRewardedVideoInitFailed(ErrorBuilder.buildInitFailedError("Missing params - $PLACEMENT_ID", IronSourceConstants.REWARDED_VIDEO_AD_UNIT))
+        // Validate sourceId first before any other checks
+        val sourceId = adData.getString(UnityAdsConstants.SOURCE_ID_KEY)
+        if (sourceId.isNullOrEmpty()) {
+            val errorMessage = UnityAdsConstants.Logs.MISSING_PARAM.format(UnityAdsConstants.SOURCE_ID_KEY)
+            IronLog.INTERNAL.error(errorMessage)
+            networkInitializationListener?.onInitFailed(AdapterErrors.ADAPTER_ERROR_MISSING_PARAMS, errorMessage)
             return
         }
 
-        if (gameId.isNullOrEmpty()) {
-            IronLog.ADAPTER_API.error("Missing param - $GAME_ID")
-            listener?.onRewardedVideoInitFailed(ErrorBuilder.buildInitFailedError("Missing params - $GAME_ID", IronSourceConstants.REWARDED_VIDEO_AD_UNIT))
+        // Check if already initialized
+        if (initState == InitState.INIT_STATE_SUCCESS) {
+            networkInitializationListener?.onInitSuccess()
             return
         }
 
-        IronLog.ADAPTER_API.verbose("placementId = $placementId")
-
-        if (!UnityAds.isInitialized) {
-            initSDK(config)
-        }
-
-        listener?.onRewardedVideoInitSuccess()
-    }
-
-    override fun loadRewardedVideoForBidding(
-        config: JSONObject?,
-        adData: JSONObject?,
-        serverData: String?,
-        listener: RewardedVideoSmashListener?
-    ) {
-
-        val placementId = config?.optString(PLACEMENT_ID)
-
-        if (placementId.isNullOrEmpty()) {
-            IronLog.ADAPTER_API.error("Missing param - $PLACEMENT_ID")
-            listener?.onRewardedVideoLoadFailed(ErrorBuilder.buildLoadFailedError(IronSourceConstants.REWARDED_VIDEO_AD_UNIT, providerName, "Missing params - $PLACEMENT_ID"))
+        // Init previously failed - report failure immediately
+        if (initState == InitState.INIT_STATE_FAILED) {
+            IronLog.INTERNAL.error(UnityAdsConstants.Logs.SDK_INIT_FAILED)
+            networkInitializationListener?.onInitFailed(
+                AdapterErrors.ADAPTER_ERROR_INTERNAL,
+                UnityAdsConstants.Logs.SDK_INIT_FAILED
+            )
             return
         }
 
-        IronLog.ADAPTER_API.verbose("placementId = $placementId")
-
-        bridge.loadRewardedAd(placementId, serverData, listener)
-    }
-
-    override fun showRewardedVideo(
-        config: JSONObject?,
-        listener: RewardedVideoSmashListener?
-    ) {
-        val placementId = config?.optString(PLACEMENT_ID)
-
-        if (placementId.isNullOrEmpty()) {
-            IronLog.ADAPTER_API.error("Missing param - $PLACEMENT_ID")
-            listener?.onRewardedVideoAdShowFailed(ErrorBuilder.buildShowFailedError(IronSourceConstants.REWARDED_VIDEO_AD_UNIT, "Missing params - $PLACEMENT_ID"))
-            return
+        // Add to the init listeners only if init is not finished yet
+        if (initState == InitState.INIT_STATE_NONE || initState == InitState.INIT_STATE_IN_PROGRESS) {
+            networkInitializationListener?.let { initCallbackListeners.add(it) }
         }
 
-        IronLog.ADAPTER_API.verbose("placementId = $placementId")
+        if (wasInitCalled.compareAndSet(false, true)) {
+            initState = InitState.INIT_STATE_IN_PROGRESS
+            IronLog.ADAPTER_API.verbose(UnityAdsConstants.Logs.SOURCE_ID.format(sourceId))
 
-        bridge.showRewardedAd(placementId, dynamicUserId, listener)
+            val initConfig = InitializationConfiguration.Builder(sourceId)
+                .withTestMode(false)
+                .withMediationInfo(mediationInfo)
+                .apply {
+                    if (isAdaptersDebugEnabled()) {
+                        withLogLevel(LogLevel.DEBUG)
+                    }
+                    val extras = buildInitExtras(adData)
+                    if (extras.isNotEmpty()) {
+                        withExtras(extras)
+                    }
+                }
+                .build()
+
+            UnityAds.initialize(initConfig, InitializationListener { error ->
+                if (error == null) {
+                    initializationSuccess()
+                } else {
+                    initializationFailure(error.code, error.message.orEmpty())
+                }
+            })
+        }
     }
 
-    override fun isRewardedVideoAvailable(config: JSONObject?): Boolean {
-        val placementId = config?.optString(PLACEMENT_ID)
-        IronLog.ADAPTER_API.verbose("placementId = $placementId")
+    private fun initializationSuccess() {
+        IronLog.ADAPTER_CALLBACK.verbose()
 
-        return placementId?.let { bridge.isRewardedAdAvailable(it) } ?: false
-    }
+        initState = InitState.INIT_STATE_SUCCESS
 
-    override fun collectRewardedVideoBiddingData(
-        config: JSONObject?,
-        adData: JSONObject?,
-        biddingDataCallback: BiddingDataCallback
-    ) {
-        collectBiddingData(AdFormat.REWARDED, config, adData, biddingDataCallback)
-    }
-
-    // The network's capability to load a Rewarded Video ad while another Rewarded Video ad of that network is showing
-    override fun getLoadWhileShowSupportState(mAdUnitSettings: JSONObject): LoadWhileShowSupportState {
-        var loadWhileShowSupportState = LoadWhileShowSupportState.LOAD_WHILE_SHOW_BY_INSTANCE
-        val isSupportedLWS = mAdUnitSettings.optBoolean(LWS_SUPPORT_STATE, true)
-
-        if (!isSupportedLWS) {
-            loadWhileShowSupportState = LoadWhileShowSupportState.NONE
+        // Iterate over all the adapter instances and report init success
+        for (listener: NetworkInitializationListener in initCallbackListeners) {
+            listener.onInitSuccess()
         }
 
-        return loadWhileShowSupportState
+        initCallbackListeners.clear()
     }
 
-    //endregion
+    private fun initializationFailure(errorCode: Int, errorMessage: String) {
+        IronLog.ADAPTER_CALLBACK.error(UnityAdsConstants.Logs.INIT_FAILED.format(errorCode, errorMessage))
 
-    //region Interstitial API
+        initState = InitState.INIT_STATE_FAILED
 
-    override fun initInterstitialForBidding(
-        appKey: String?,
-        userId: String?,
-        config: JSONObject?,
-        listener: InterstitialSmashListener?
-    ) {
-        val placementId = config?.optString(PLACEMENT_ID)
-        val gameId = config?.optString(GAME_ID)
-
-        if (placementId.isNullOrEmpty()) {
-            IronLog.ADAPTER_API.error("Missing param - $PLACEMENT_ID")
-            listener?.onInterstitialInitFailed(ErrorBuilder.buildInitFailedError("Missing params - $PLACEMENT_ID", IronSourceConstants.INTERSTITIAL_AD_UNIT))
-            return
+        // Iterate over all the adapter instances and report init failed
+        for (listener: NetworkInitializationListener in initCallbackListeners) {
+            listener.onInitFailed(errorCode, errorMessage)
         }
 
-        if (gameId.isNullOrEmpty()) {
-            IronLog.ADAPTER_API.error("Missing param - $GAME_ID")
-            listener?.onInterstitialInitFailed(ErrorBuilder.buildInitFailedError("Missing params - $GAME_ID", IronSourceConstants.INTERSTITIAL_AD_UNIT))
-            return
-        }
-
-        IronLog.ADAPTER_API.verbose("placementId = $placementId")
-
-        if (!UnityAds.isInitialized) {
-            initSDK(config)
-        }
-
-        listener?.onInterstitialInitSuccess()
+        initCallbackListeners.clear()
     }
 
-    override fun loadInterstitialForBidding(
-        config: JSONObject?,
-        adData: JSONObject?,
-        serverData: String?,
-        listener: InterstitialSmashListener?
-    ) {
-        val placementId = config?.optString(PLACEMENT_ID)
+    // endregion
 
-        if (placementId.isNullOrEmpty()) {
-            IronLog.ADAPTER_API.error("Missing param - $PLACEMENT_ID")
-            listener?.onInterstitialAdLoadFailed(ErrorBuilder.buildLoadFailedError(IronSourceConstants.INTERSTITIAL_AD_UNIT, providerName, "Missing params - $PLACEMENT_ID"))
-            return
-        }
-
-        IronLog.ADAPTER_API.verbose("placementId = $placementId")
-
-        bridge.loadInterstitialAd(placementId, serverData, listener)
-    }
-
-    override fun showInterstitial(
-        config: JSONObject?,
-        listener: InterstitialSmashListener?
-    ) {
-        val placementId = config?.optString(PLACEMENT_ID)
-
-        if (placementId.isNullOrEmpty()) {
-            IronLog.ADAPTER_API.error("Missing param - $PLACEMENT_ID")
-            listener?.onInterstitialAdShowFailed(ErrorBuilder.buildShowFailedError(IronSourceConstants.INTERSTITIAL_AD_UNIT, "Missing params - $PLACEMENT_ID"))
-            return
-        }
-
-        IronLog.ADAPTER_API.verbose("placementId = $placementId")
-
-        bridge.showInterstitialAd(placementId, listener)
-    }
-
-    override fun isInterstitialReady(config: JSONObject?): Boolean {
-        val placementId = config?.optString(PLACEMENT_ID)
-        IronLog.ADAPTER_API.verbose("placementId = $placementId")
-
-        return placementId?.let { bridge?.isInterstitialAdReady(it) } ?: false
-    }
-
-    override fun collectInterstitialBiddingData(
-        config: JSONObject?,
-        adData: JSONObject?,
-        biddingDataCallback: BiddingDataCallback
-    ) {
-        collectBiddingData(AdFormat.INTERSTITIAL, config, adData, biddingDataCallback)
-    }
-
-    //endregion
-
-    //region Banner API
-
-    override fun initBannerForBidding(
-        appKey: String?,
-        userId: String?,
-        config: JSONObject?,
-        listener: BannerSmashListener?
-    ) {
-        val placementId = config?.optString(PLACEMENT_ID)
-        val gameId = config?.optString(GAME_ID)
-
-        if (placementId.isNullOrEmpty()) {
-            IronLog.ADAPTER_API.error("Missing param - $PLACEMENT_ID")
-            listener?.onBannerInitFailed(ErrorBuilder.buildInitFailedError("Missing params - $PLACEMENT_ID", IronSourceConstants.BANNER_AD_UNIT))
-            return
-        }
-
-        if (gameId.isNullOrEmpty()) {
-            IronLog.ADAPTER_API.error("Missing param - $GAME_ID")
-            listener?.onBannerInitFailed(ErrorBuilder.buildInitFailedError("Missing params - $GAME_ID", IronSourceConstants.BANNER_AD_UNIT))
-            return
-        }
-
-        IronLog.ADAPTER_API.verbose("placementId = $placementId")
-
-        if (!UnityAds.isInitialized) {
-            initSDK(config)
-        }
-
-        listener?.onBannerInitSuccess()
-    }
-
-    override fun loadBannerForBidding(
-        config: JSONObject?,
-        adData: JSONObject?,
-        serverData: String?,
-        bannerSize: ISBannerSize?,
-        listener: BannerSmashListener?
-    ) {
-        val placementId = config?.optString(PLACEMENT_ID)
-
-        if (placementId.isNullOrEmpty()) {
-            IronLog.ADAPTER_API.error("Missing param - $PLACEMENT_ID")
-            listener?.onBannerAdLoadFailed(ErrorBuilder.buildLoadFailedError(IronSourceConstants.BANNER_AD_UNIT, providerName, "Missing params - $PLACEMENT_ID"))
-            return
-        }
-
-        // check size
-        if (bannerSize == null || !isBannerSizeSupported(bannerSize)) {
-            IronLog.ADAPTER_API.error("size not supported, size = " + bannerSize?.description)
-            listener?.onBannerAdLoadFailed(ErrorBuilder.unsupportedBannerSize(providerName))
-            return
-        }
-
-        IronLog.ADAPTER_API.verbose("placementId = $placementId")
-
-        val unityBannerSize = getBannerSize(bannerSize,
-            AdapterUtils.isLargeScreen(ContextProvider.getInstance().applicationContext))
-
-        bridge.loadBanner(placementId, adData, serverData, unityBannerSize, listener)
-    }
-
-    override fun collectBannerBiddingData(
-        config: JSONObject?,
-        adData: JSONObject?,
-        biddingDataCallback: BiddingDataCallback
-    ) {
-        collectBiddingData(AdFormat.BANNER, config, adData, biddingDataCallback)
-    }
-
-    //endregion
-
-    //region legal
+    // region Legal Methods
 
     override fun setConsent(consent: Boolean) {
-        IronLog.ADAPTER_API.verbose("setConsent = $consent")
+        IronLog.ADAPTER_API.verbose(UnityAdsConstants.Logs.CONSENT.format(consent))
 
-        // both legacy and new apis to be called for privacy.
+        // Both legacy and public privacy apis are called
 
-        // Legacy Api Call
-        setUnityAdsMetaData(CONSENT_GDPR, consent)
+        // Legacy api call
+        setUnityAdsMetaData(UnityAdsConstants.CONSENT_GDPR, consent)
 
-        // Public Api Call
+        // Public api call
         UnityAds.userConsent = consent
     }
 
-    override fun setMetaData(
-        key: String,
-        values: List<String>
-    ) {
-        if (values.isEmpty()) {
+    override fun setMetaData(key: String?, values: MutableList<String?>?) {
+        if (values.isNullOrEmpty()) {
             return
         }
 
-        // this is a list of 1 value
-        val value = values[0]
-        IronLog.ADAPTER_API.verbose("key = $key, value = $value")
+        // This is a list of 1 value
+        val value = values[0] ?: return
+        IronLog.ADAPTER_API.verbose(UnityAdsConstants.Logs.META_DATA_SET.format(key ?: "", value))
 
         if (MetaDataUtils.isValidCCPAMetaData(key, value)) {
             setCCPAValue(MetaDataUtils.getMetaDataBooleanValue(value))
         } else {
             val formattedValue = MetaDataUtils.formatValueForType(value, MetaDataValueTypes.META_DATA_VALUE_BOOLEAN)
-
-            if (MetaDataUtils.isValidMetaData(key, UNITYADS_METADATA_COPPA_KEY, formattedValue)) {
+            if (MetaDataUtils.isValidMetaData(key, UnityAdsConstants.UNITYADS_METADATA_COPPA_KEY, formattedValue)) {
                 setCOPPAValue(MetaDataUtils.getMetaDataBooleanValue(formattedValue))
             }
         }
     }
 
-    private fun setCOPPAValue(value: Boolean) {
-        IronLog.ADAPTER_API.verbose("value = $value")
-
-        // both legacy and new apis to be called for privacy.
-
-        // Legacy Api Call
-        setUnityAdsMetaData(UNITYADS_COPPA, value)
-
-        // Public Api Call
-        UnityAds.nonBehavioral = value
-    }
-
     private fun setCCPAValue(value: Boolean) {
-        IronLog.ADAPTER_API.verbose("value = $value")
+        IronLog.ADAPTER_API.verbose(UnityAdsConstants.Logs.CCPA.format(value))
 
-        // The UnityAds CCPA API expects an indication if the user opts in to targeted advertising.
+        // The UnityAds CCPA api expects an indication if the user opts in to targeted advertising.
         // Given that this is opposite to the ironSource Mediation CCPA flag of do_not_sell
         // we will use the opposite value of what is passed to this method
         val optIn = !value
 
-        // both legacy and new apis to be called for privacy.
+        // Both legacy and public privacy apis are called
 
-        // Legacy Api Call
-        setUnityAdsMetaData(CONSENT_CCPA, optIn)
+        // Legacy api call
+        setUnityAdsMetaData(UnityAdsConstants.CONSENT_CCPA, optIn)
 
-        // Public Api Call
+        // Public api call
         UnityAds.userOptOut = value
     }
 
-    private fun setUnityAdsMetaData(
-        key: String,
-        value: Boolean
-    ) {
-        IronLog.INTERNAL.verbose("key = $key, value = $value")
+    private fun setCOPPAValue(value: Boolean) {
+        IronLog.ADAPTER_API.verbose(UnityAdsConstants.Logs.COPPA.format(value))
+
+        // Both legacy and public privacy apis are called
+
+        // Legacy api call
+        setUnityAdsMetaData(UnityAdsConstants.UNITYADS_COPPA, value)
+
+        // Public api call
+        UnityAds.nonBehavioral = value
+    }
+
+    // endregion
+
+    // region Helper Methods
+
+    private fun buildInitExtras(adData: AdData): Map<String, String> {
+        val extras = mutableMapOf<String, String>()
+
+        adData.getString(UnityAdsConstants.UADS_INIT_BLOB)?.let { initBlob ->
+            if (initBlob.isNotEmpty()) {
+                extras[UnityAdsConstants.UADS_INIT_BLOB] = initBlob
+            }
+        }
+
+        (adData.configuration[UnityAdsConstants.UADS_TRAITS] as? Map<*, *>)?.forEach { (key, value) ->
+            val keyString = key as? String
+            val valueString = value as? String
+            if (!keyString.isNullOrEmpty() && !valueString.isNullOrEmpty()) {
+                extras[keyString] = valueString
+            }
+        }
+
+        return extras
+    }
+
+    private fun setUnityAdsMetaData(key: String, value: Boolean) {
+        IronLog.INTERNAL.verbose(UnityAdsConstants.Logs.META_DATA_SET.format(key, value))
 
         synchronized(unityAdsStorageLock) {
             val metaData = MetaData(ContextProvider.getInstance().applicationContext)
@@ -434,45 +257,39 @@ class UnityAdsAdapter(providerName: String) : AbstractAdapter(providerName),
         }
     }
 
-    // endregion
-
-    //region Adapter Helpers
-
-    private fun collectBiddingData(
+    internal fun collectBiddingData(
+        adData: AdData?,
+        biddingDataCallback: BiddingDataCallback,
         adFormat: AdFormat,
-        config: JSONObject?,
-        adData: JSONObject?,
-        biddingDataCallback: BiddingDataCallback
+        bannerSize: BannerSize? = null
     ) {
-        val tokenConfiguration = bridge.getTokenConfig(adFormat, config, adData) ?: return
-        UnityAds.getToken(tokenConfiguration) { bidToken ->
-            if (!bidToken.isNullOrEmpty()) {
-                IronLog.ADAPTER_API.verbose("token = $bidToken")
-                mutableMapOf<String, Any>()
-                    .apply { put("token", bidToken) }
-                    .let { biddingDataCallback.onSuccess(it) }
-            } else {
-                biddingDataCallback.onFailure("Failed to receive token - UnityAds")
+        val builder = TokenConfiguration.Builder(adFormat)
+            .withMediationInfo(mediationInfo)
+
+        adData?.getString(UnityAdsConstants.ZONE_ID_KEY)?.let { zoneId ->
+            if (zoneId.isNotBlank()) {
+                builder.withPlacementId(zoneId)
             }
         }
-    }
 
-    private fun isBannerSizeSupported(size: ISBannerSize): Boolean {
-        return when (size.description) {
-            "BANNER", "LARGE", "RECTANGLE", "SMART" -> true
-            else -> false
+        (adData?.adUnitData?.get(UnityAdsConstants.AD_UNIT_ID_KEY) as? String)?.let { mediationAdUnitId ->
+            if (mediationAdUnitId.isNotBlank()) {
+                builder.withMediationAdUnitId(mediationAdUnitId)
+            }
         }
-    }
 
-    private fun getBannerSize(
-        size: ISBannerSize,
-        isLargeScreen: Boolean
-    ): UnityBannerSize? {
-        return when (size.description) {
-            "BANNER", "LARGE" -> UnityBannerSize(320, 50)
-            "RECTANGLE" -> UnityBannerSize(300, 250)
-            "SMART" -> if (isLargeScreen) UnityBannerSize(728, 90) else UnityBannerSize(320, 50)
-            else -> null
+        bannerSize?.let { builder.withBannerSize(it) }
+
+        UnityAds.getToken(builder.build()) { bidToken ->
+            if (!bidToken.isNullOrEmpty()) {
+                IronLog.ADAPTER_API.verbose(UnityAdsConstants.Logs.TOKEN.format(bidToken))
+                biddingDataCallback.onSuccess(mutableMapOf<String, Any>().apply {
+                    put(UnityAdsConstants.TOKEN_KEY, bidToken)
+                })
+            } else {
+                IronLog.ADAPTER_API.verbose(UnityAdsConstants.Logs.TOKEN_FAILURE)
+                biddingDataCallback.onFailure(UnityAdsConstants.Logs.TOKEN_FAILURE)
+            }
         }
     }
 
