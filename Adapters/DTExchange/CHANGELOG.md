@@ -1,5 +1,9 @@
 # Changelog
 
+## Version 5.9.0
+* Supporting SDK version 8.4.6
+* Requirements: Minimum SDK Version 23, Minimum Kotlin version 2.1.0
+
 ## Version 5.8.0
 * General improvements and performance enhancements
 
