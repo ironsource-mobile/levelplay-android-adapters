@@ -1,5 +1,8 @@
 # Changelog
 
+## Version 5.5.0
+* Supporting SDK version 1.3.8
+
 ## Version 5.4.0
 * Supporting SDK version 1.3.7
 
