@@ -115,6 +115,10 @@ public class FacebookAdapter extends AbstractAdapter implements AudienceNetworkA
         return com.facebook.ads.BuildConfig.VERSION_NAME;
     }
 
+    public static String networkAdapterVersion() {
+        return VERSION;
+    }
+
     public boolean isUsingActivityBeforeImpression(@NotNull LevelPlay.AdFormat adFormat) {
         return false;
     }

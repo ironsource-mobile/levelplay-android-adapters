@@ -53,17 +53,18 @@ public class FacebookRewardedVideoAdListener implements RewardedVideoAdExtendedL
             return;
         }
 
-        if (mAdapter == null || mAdapter.get() == null) {
+        FacebookRewardedVideoAdapter adapter = mAdapter == null ? null : mAdapter.get();
+        if (adapter == null) {
             IronLog.INTERNAL.verbose("adapter is null");
             return;
         }
 
-        mAdapter.get().mAdsAvailability.put(mPlacementId, false);
+        adapter.mAdsAvailability.put(mPlacementId, false);
         int errorCode = FacebookAdapter.isNoFillError(adError) ? IronSourceError.ERROR_RV_LOAD_NO_FILL : adError.getErrorCode();
         IronSourceError ironSourceError = new IronSourceError(errorCode, adError.getErrorMessage());
 
 
-        if (mAdapter.get().mPlacementIdToShowAttempts.get(mPlacementId)) {
+        if (Boolean.TRUE.equals(adapter.mPlacementIdToShowAttempts.get(mPlacementId))) {
             mListener.onRewardedVideoAdShowFailed(ironSourceError);
         } else {
             mListener.onRewardedVideoAvailabilityChanged(false);

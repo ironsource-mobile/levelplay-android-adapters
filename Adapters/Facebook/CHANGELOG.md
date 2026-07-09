@@ -1,4 +1,8 @@
 # Changelog
+
+## Version 5.3.0
+* Fixed a crash when displaying full-screen ads
+
 ## Version 5.2.0
 * Added test mode support
 
@@ -16,6 +20,9 @@
 Adapter releases listed **below this section** continue to support earlier LevelPlay SDK versions.
 
 ---
+
+## Version 4.3.52
+* Supporting Meta Audience Network SDK version 6.21.0
 
 ## Version 4.3.51
 * Added protection to prevent potential crashes while showing Rewarded Video ads
