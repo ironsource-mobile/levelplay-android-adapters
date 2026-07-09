@@ -23,6 +23,7 @@ class PangleBannerListener(
     override fun onAdLoaded(bannerAd: PAGBannerAd) {
         IronLog.ADAPTER_CALLBACK.verbose()
         adapter.get()?.setBannerAd(bannerAd)
+        bannerAd.setAdInteractionListener(this)
         listener.onAdLoadSuccess(bannerAd.bannerView, layoutParams)
     }
 

@@ -50,6 +50,9 @@ class PangleAdapter() : LevelPlayBaseAdapter() {
         private var childDirected = PangleConstants.PANGLE_CHILD_DIRECTED_TYPE_DEFAULT
 
         private val mainHandler = Handler(Looper.getMainLooper())
+
+        @JvmStatic
+        fun networkAdapterVersion(): String = PangleConstants.ADAPTER_VERSION
     }
 
     // region Adapter Methods

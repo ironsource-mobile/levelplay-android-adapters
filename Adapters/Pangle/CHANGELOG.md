@@ -1,5 +1,8 @@
 # Changelog
 
+## Version 5.20.0
+* Fixed an issue where banner impressions and clicks were not reported; ad display was unaffected
+
 ## Version 5.19.0
 * Supporting SDK version 8.1.0.4
 
