@@ -47,6 +47,9 @@ class InMobiAdapter : LevelPlayBaseAdapter() {
 
         // Main thread handler
         private val mainHandler = Handler(Looper.getMainLooper())
+
+        @JvmStatic
+        fun networkAdapterVersion(): String = InMobiConstants.ADAPTER_VERSION
     }
 
     // region Adapter Methods
