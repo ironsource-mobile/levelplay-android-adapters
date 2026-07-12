@@ -1,5 +1,8 @@
 # Changelog
 
+## Version 5.11.0
+* Supporting SDK version 7.7.5
+
 ## Version 5.10.0
 * General improvements and performance enhancement
 
