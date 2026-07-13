@@ -49,6 +49,9 @@ class VungleAdapter : LevelPlayBaseAdapter() {
                 AdapterErrorType.ADAPTER_ERROR_TYPE_INTERNAL
             }
         }
+
+        @JvmStatic
+        fun networkAdapterVersion(): String = VungleConstants.ADAPTER_VERSION
     }
 
     // region Adapter Methods
