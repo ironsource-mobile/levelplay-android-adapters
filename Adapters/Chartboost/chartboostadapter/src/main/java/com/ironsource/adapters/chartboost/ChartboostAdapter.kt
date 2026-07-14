@@ -50,6 +50,9 @@ class ChartboostAdapter : LevelPlayBaseAdapter() {
         private var consentCollectingUserData: Boolean? = null
         private var doNotSellCollectingUserData: Boolean? = null
         private var coppaUserData: Boolean? = null
+
+        @JvmStatic
+        fun networkAdapterVersion(): String = ChartboostConstants.ADAPTER_VERSION
     }
 
     // region Adapter Methods
