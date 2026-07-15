@@ -40,6 +40,9 @@ class MintegralAdapter : LevelPlayBaseAdapter(), SDKInitStatusListener {
         private var consentCollectingUserData: Boolean? = null
         private var doNotSellCollectingUserData: Boolean? = null
         private var coppaUserData: Boolean? = null
+
+        @JvmStatic
+        fun networkAdapterVersion(): String = MintegralConstants.ADAPTER_VERSION
     }
 
     // region Adapter Methods
