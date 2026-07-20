@@ -51,6 +51,9 @@ class PubMaticAdapter : LevelPlayBaseAdapter() {
                 else -> AdapterErrorType.ADAPTER_ERROR_TYPE_INTERNAL
             }
         }
+
+        @JvmStatic
+        fun networkAdapterVersion(): String = PubMaticConstants.ADAPTER_VERSION
     }
 
     // region Adapter Methods
