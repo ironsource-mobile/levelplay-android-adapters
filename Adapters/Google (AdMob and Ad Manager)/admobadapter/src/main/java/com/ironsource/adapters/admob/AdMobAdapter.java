@@ -159,6 +159,10 @@ public class AdMobAdapter extends AbstractAdapter {
         return MobileAds.getVersion().toString();
     }
 
+    public static String networkAdapterVersion() {
+        return VERSION;
+    }
+
     public boolean isUsingActivityBeforeImpression(@NotNull LevelPlay.AdFormat adFormat) {
         return false;
     }
