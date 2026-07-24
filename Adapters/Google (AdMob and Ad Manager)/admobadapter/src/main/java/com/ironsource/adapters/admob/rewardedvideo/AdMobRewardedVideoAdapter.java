@@ -4,12 +4,11 @@ import android.text.TextUtils;
 
 import androidx.annotation.NonNull;
 
-import com.google.android.gms.ads.AdFormat;
-import com.google.android.gms.ads.AdRequest;
-import com.google.android.gms.ads.rewarded.RewardedAd;
+import com.google.android.libraries.ads.mobile.sdk.common.AdFormat;
+import com.google.android.libraries.ads.mobile.sdk.common.AdRequest;
+import com.google.android.libraries.ads.mobile.sdk.rewarded.RewardedAd;
 import com.ironsource.adapters.admob.AdMobAdapter;
 import com.ironsource.environment.ContextProvider;
-import com.ironsource.mediationsdk.IronSource;
 import com.ironsource.mediationsdk.adapter.AbstractRewardedVideoAdapter;
 import com.ironsource.mediationsdk.bidding.BiddingDataCallback;
 import com.ironsource.mediationsdk.logger.IronLog;
@@ -149,9 +148,16 @@ public class AdMobRewardedVideoAdapter extends AbstractRewardedVideoAdapter<AdMo
 
                 // set the rewarded video availability to false before attempting to load
                 mAdUnitIdToAdsAvailability.put(adUnitId, false);
-                AdRequest adRequest = getAdapter().createAdRequest(adData, serverData);
+
                 AdMobRewardedVideoAdLoadListener adMobRewardedVideoAdLoadListener = new AdMobRewardedVideoAdLoadListener(AdMobRewardedVideoAdapter.this, adUnitId, listener);
-                RewardedAd.load(ContextProvider.getInstance().getApplicationContext(), adUnitId, adRequest, adMobRewardedVideoAdLoadListener);
+
+                if (serverData != null) {
+                    IronLog.ADAPTER_API.verbose("loading with serverData");
+                    RewardedAd.loadFromAdResponse(serverData, adMobRewardedVideoAdLoadListener);
+                } else {
+                    AdRequest adRequest = getAdapter().createAdRequest(adUnitId, adData);
+                    RewardedAd.load(adRequest, adMobRewardedVideoAdLoadListener);
+                }
             }
         });
     }
@@ -168,7 +174,7 @@ public class AdMobRewardedVideoAdapter extends AbstractRewardedVideoAdapter<AdMo
                 if (rewardedAd != null && isRewardedVideoAvailableForAdUnitId(adUnitId)) {
 
                     AdMobRewardedVideoAdShowListener adMobRewardedVideoAdShowListener = new AdMobRewardedVideoAdShowListener(adUnitId, listener);
-                    rewardedAd.setFullScreenContentCallback(adMobRewardedVideoAdShowListener);
+                    rewardedAd.setAdEventCallback(adMobRewardedVideoAdShowListener);
                     rewardedAd.show(ContextProvider.getInstance().getCurrentActiveActivity(), adMobRewardedVideoAdShowListener);
                 } else {
                     listener.onRewardedVideoAdShowFailed(ErrorBuilder.buildNoAdsToShowError(IronSourceConstants.REWARDED_VIDEO_AD_UNIT));

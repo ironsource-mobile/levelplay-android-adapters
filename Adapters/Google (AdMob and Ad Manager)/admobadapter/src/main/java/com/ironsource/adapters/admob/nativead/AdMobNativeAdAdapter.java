@@ -1,19 +1,13 @@
 package com.ironsource.adapters.admob.nativead;
 
-import static com.google.android.gms.ads.nativead.NativeAdOptions.ADCHOICES_BOTTOM_LEFT;
-import static com.google.android.gms.ads.nativead.NativeAdOptions.ADCHOICES_BOTTOM_RIGHT;
-import static com.google.android.gms.ads.nativead.NativeAdOptions.ADCHOICES_TOP_LEFT;
-import static com.google.android.gms.ads.nativead.NativeAdOptions.ADCHOICES_TOP_RIGHT;
-
 import android.text.TextUtils;
 import androidx.annotation.NonNull;
-import com.google.android.gms.ads.AdFormat;
-import com.google.android.gms.ads.AdLoader;
-import com.google.android.gms.ads.nativead.NativeAd;
-import com.google.android.gms.ads.nativead.NativeAdOptions;
+import com.google.android.libraries.ads.mobile.sdk.common.AdChoicesPlacement;
+import com.google.android.libraries.ads.mobile.sdk.common.AdFormat;
+import com.google.android.libraries.ads.mobile.sdk.nativead.NativeAd;
+import com.google.android.libraries.ads.mobile.sdk.nativead.NativeAdLoader;
+import com.google.android.libraries.ads.mobile.sdk.nativead.NativeAdRequest;
 import com.ironsource.adapters.admob.AdMobAdapter;
-import com.ironsource.environment.ContextProvider;
-import com.ironsource.mediationsdk.IronSource;
 import com.ironsource.mediationsdk.adapter.AbstractNativeAdAdapter;
 import com.ironsource.mediationsdk.adunit.adapter.utility.AdOptionsPosition;
 import com.ironsource.mediationsdk.adunit.adapter.utility.NativeAdProperties;
@@ -111,15 +105,14 @@ public class AdMobNativeAdAdapter extends AbstractNativeAdAdapter<AdMobAdapter> 
                 try {
                     AdOptionsPosition adOptionsPosition = nativeAdProperties.getAdOptionsPosition();
                     final AdMobNativeAdListener adMobNativeAdListener = new AdMobNativeAdListener(AdMobNativeAdAdapter.this, adUnitId, listener);
-                    AdLoader adLoader = new AdLoader.Builder(ContextProvider.getInstance().getApplicationContext(), adUnitId)
-                            .forNativeAd(adMobNativeAdListener)
-                            .withAdListener(adMobNativeAdListener)
-                            .withNativeAdOptions(new NativeAdOptions.Builder()
-                                    .setAdChoicesPlacement(getAdChoicesPosition(adOptionsPosition))
-                                    .build())
-                            .build();
 
-                    adLoader.loadAd(getAdapter().createAdRequest(adData, serverData));
+                    if (serverData != null) {
+                        IronLog.ADAPTER_API.verbose("loading with serverData");
+                        NativeAdLoader.loadFromAdResponse(serverData, adMobNativeAdListener);
+                    } else {
+                        NativeAdRequest adRequest = getAdapter().createNativeAdRequest(adUnitId, getAdChoicesPlacement(adOptionsPosition), adData);
+                        NativeAdLoader.load(adRequest, adMobNativeAdListener);
+                    }
                 } catch (Exception e) {
                     IronSourceError error = ErrorBuilder.buildLoadFailedError("AdMobAdapter loadNativeAd exception " + e.getMessage());
                     listener.onNativeAdLoadFailed(error);
@@ -159,17 +152,17 @@ public class AdMobNativeAdAdapter extends AbstractNativeAdAdapter<AdMobAdapter> 
         getAdapter().collectBiddingData(biddingDataCallback, AdFormat.NATIVE, null);
     }
 
-    private int getAdChoicesPosition(AdOptionsPosition adOptionsPosition) {
+    private AdChoicesPlacement getAdChoicesPlacement(AdOptionsPosition adOptionsPosition) {
         switch (adOptionsPosition) {
             case TOP_LEFT:
-                return ADCHOICES_TOP_LEFT;
+                return AdChoicesPlacement.TOP_LEFT;
             case TOP_RIGHT:
-                return ADCHOICES_TOP_RIGHT;
+                return AdChoicesPlacement.TOP_RIGHT;
             case BOTTOM_LEFT:
-                return ADCHOICES_BOTTOM_LEFT;
+                return AdChoicesPlacement.BOTTOM_LEFT;
             case BOTTOM_RIGHT:
-                return ADCHOICES_BOTTOM_RIGHT;
+                return AdChoicesPlacement.BOTTOM_RIGHT;
         }
-        return ADCHOICES_BOTTOM_LEFT;
+        return AdChoicesPlacement.BOTTOM_LEFT;
     }
 }

@@ -1,7 +1,7 @@
 package com.ironsource.adapters.admob.interstitial;
 
-import com.google.android.gms.ads.AdError;
-import com.google.android.gms.ads.FullScreenContentCallback;
+import com.google.android.libraries.ads.mobile.sdk.common.FullScreenContentError;
+import com.google.android.libraries.ads.mobile.sdk.interstitial.InterstitialAdEventCallback;
 import com.ironsource.mediationsdk.logger.IronLog;
 import com.ironsource.mediationsdk.logger.IronSourceError;
 import com.ironsource.mediationsdk.sdk.InterstitialSmashListener;
@@ -9,7 +9,7 @@ import com.ironsource.mediationsdk.sdk.InterstitialSmashListener;
 import org.jetbrains.annotations.NotNull;
 
 // AdMob interstitial show listener
-public class AdMobInterstitialAdShowListener extends FullScreenContentCallback {
+public class AdMobInterstitialAdShowListener implements InterstitialAdEventCallback {
     // data
     private InterstitialSmashListener mListener;
     private String mAdUnitId;
@@ -27,23 +27,18 @@ public class AdMobInterstitialAdShowListener extends FullScreenContentCallback {
 
     // Called when fullscreen content failed to show.
     @Override
-    public void onAdFailedToShowFullScreenContent(@NotNull AdError adError) {
+    public void onAdFailedToShowFullScreenContent(@NotNull FullScreenContentError error) {
         IronLog.ADAPTER_CALLBACK.verbose("adUnitId = " + mAdUnitId);
-        int errorCode = adError.getCode();
 
-        String adapterError = adError.getMessage() + "( " + errorCode + " )";
+        String adapterError = error.getMessage() + "( " + error.getCode() + " )";
 
         if (mListener == null) {
             IronLog.INTERNAL.verbose("listener is null");
             return;
         }
 
-        if (adError.getCause() != null) {
-            adapterError = adapterError + " Caused by - " + adError.getCause();
-        }
-
         IronLog.ADAPTER_CALLBACK.error("adapterError = " + adapterError);
-        mListener.onInterstitialAdShowFailed(new IronSourceError(errorCode, "onInterstitialAdShowFailed " + mAdUnitId + " " + adapterError));
+        mListener.onInterstitialAdShowFailed(new IronSourceError(IronSourceError.ERROR_CODE_GENERIC, "onInterstitialAdShowFailed " + mAdUnitId + " " + adapterError));
     }
 
     // Called when impression is recorded for the ad

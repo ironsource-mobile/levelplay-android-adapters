@@ -1,178 +1,125 @@
 package com.ironsource.adapters.moloco.interstitial
 
+import android.app.Activity
+import android.content.Context
+import android.os.Handler
+import android.os.Looper
 import com.ironsource.adapters.moloco.MolocoAdapter
-import com.ironsource.mediationsdk.IronSource
-import com.ironsource.mediationsdk.adapter.AbstractInterstitialAdapter
+import com.ironsource.adapters.moloco.MolocoConstants
+import com.ironsource.mediationsdk.adunit.adapter.listener.InterstitialAdListener
+import com.ironsource.mediationsdk.adunit.adapter.utility.AdData
+import com.ironsource.mediationsdk.adunit.adapter.utility.AdapterErrorType
+import com.ironsource.mediationsdk.adunit.adapter.utility.AdapterErrors
 import com.ironsource.mediationsdk.bidding.BiddingDataCallback
 import com.ironsource.mediationsdk.logger.IronLog
-import com.ironsource.mediationsdk.logger.IronSourceError
-import com.ironsource.mediationsdk.sdk.InterstitialSmashListener
-import com.ironsource.mediationsdk.utils.ErrorBuilder
-import com.ironsource.mediationsdk.utils.IronSourceConstants
+import com.ironsource.mediationsdk.model.NetworkSettings
 import com.moloco.sdk.publisher.InterstitialAd
-import com.moloco.sdk.publisher.MediationInfo
 import com.moloco.sdk.publisher.Moloco
-import org.json.JSONObject
-import java.lang.ref.WeakReference
+import com.unity3d.mediation.adapters.levelplay.LevelPlayBaseInterstitial
 
-class MolocoInterstitialAdapter(adapter: MolocoAdapter) :
-    AbstractInterstitialAdapter<MolocoAdapter>(adapter) {
+class MolocoInterstitialAdapter(networkSettings: NetworkSettings) :
+    LevelPlayBaseInterstitial<MolocoAdapter>(networkSettings) {
 
-    private var mListener : InterstitialSmashListener? = null
-    private var mAdLoadListener : MolocoInterstitialAdLoadListener? = null
-    private var mAdShowListener : MolocoInterstitialAdShowListener? = null
-    private var mAd: InterstitialAd? = null
-    //regin Interstitial API
+    private val mainHandler = Handler(Looper.getMainLooper())
+    private var interstitialAd: InterstitialAd? = null
 
-    override fun initInterstitialForBidding(
-        appKey: String?,
-        userId: String?,
-        config: JSONObject,
-        listener: InterstitialSmashListener
+    // region Adapter Methods
+
+    override fun loadAd(
+        adData: AdData,
+        context: Context,
+        listener: InterstitialAdListener
     ) {
+        val adUnitId = adData.getString(MolocoConstants.AD_UNIT_ID_KEY)
+        IronLog.ADAPTER_API.verbose(MolocoConstants.Logs.AD_UNIT_ID_LOG.format(adUnitId ?: ""))
 
-        val adUnitIdKey = MolocoAdapter.getAdUnitIdKey()
-        val adUnitId = getConfigStringValueFromKey(config, adUnitIdKey)
-        val appKey = getConfigStringValueFromKey(config, MolocoAdapter.getAppKey())
-
-        if (adUnitId.isEmpty()) {
-            IronLog.INTERNAL.error(getAdUnitIdMissingErrorString(adUnitId))
-            listener.onInterstitialInitFailed(
-                ErrorBuilder.buildInitFailedError(
-                    getAdUnitIdMissingErrorString(adUnitId),
-                    IronSourceConstants.INTERSTITIAL_AD_UNIT
-                )
+        if (adUnitId.isNullOrEmpty()) {
+            IronLog.INTERNAL.error(MolocoConstants.Logs.MISSING_PARAM.format(MolocoConstants.AD_UNIT_ID_KEY))
+            listener.onAdLoadFailed(
+                AdapterErrorType.ADAPTER_ERROR_TYPE_INTERNAL,
+                AdapterErrors.ADAPTER_ERROR_MISSING_PARAMS,
+                MolocoConstants.Logs.MISSING_PARAM.format(MolocoConstants.AD_UNIT_ID_KEY)
             )
             return
         }
 
-        if (appKey.isEmpty()) {
-            IronLog.INTERNAL.error(getAdUnitIdMissingErrorString(appKey))
-            listener.onInterstitialInitFailed(
-                ErrorBuilder.buildInitFailedError(
-                    getAdUnitIdMissingErrorString(appKey),
-                    IronSourceConstants.INTERSTITIAL_AD_UNIT
-                )
-            )
-            return
-        }
-
-        IronLog.ADAPTER_API.verbose("adUnitId = $adUnitId, appKey = $appKey")
-
-        //save interstitial listener
-        mListener = listener
-
-        when (adapter.getInitState()) {
-            MolocoAdapter.Companion.InitState.INIT_STATE_SUCCESS -> {
-                listener.onInterstitialInitSuccess()
-            }
-            MolocoAdapter.Companion.InitState.INIT_STATE_FAILED -> {
-                listener.onInterstitialInitFailed(
-                    ErrorBuilder.buildInitFailedError(
-                        "Moloco sdk init failed",
-                        IronSourceConstants.INTERSTITIAL_AD_UNIT
-                    )
-                )
-            }
-            MolocoAdapter.Companion.InitState.INIT_STATE_NONE,
-            MolocoAdapter.Companion.InitState.INIT_STATE_IN_PROGRESS -> {
-                adapter.initSdk(appKey)
-            }
-        }
-    }
-
-    override fun onNetworkInitCallbackSuccess() {
-        mListener?.onInterstitialInitSuccess()
-    }
-
-    override fun onNetworkInitCallbackFailed(error: String?) {
-        mListener?.onInterstitialInitFailed(
-            ErrorBuilder.buildInitFailedError(
-                error,
-                IronSourceConstants.INTERSTITIAL_AD_UNIT
-            )
-        )
-    }
-
-    override fun loadInterstitialForBidding(
-        config: JSONObject,
-        adData: JSONObject?,
-        serverData: String?,
-        listener: InterstitialSmashListener
-    ){
-        IronLog.ADAPTER_API.verbose()
-
+        val serverData = adData.serverData
         if (serverData.isNullOrEmpty()) {
-            val error = "serverData is empty"
-            IronLog.INTERNAL.error(error)
-            listener.onInterstitialAdLoadFailed(ErrorBuilder.buildLoadFailedError(error))
+            IronLog.INTERNAL.error(MolocoConstants.Logs.SERVER_DATA_EMPTY)
+            listener.onAdLoadFailed(
+                AdapterErrorType.ADAPTER_ERROR_TYPE_INTERNAL,
+                AdapterErrors.ADAPTER_ERROR_MISSING_PARAMS,
+                MolocoConstants.Logs.SERVER_DATA_EMPTY
+            )
             return
         }
 
-        val interstitialAdLoadListener = MolocoInterstitialAdLoadListener(listener, WeakReference(this))
-        mAdLoadListener = interstitialAdLoadListener
-
-        val adUnitIdKey = MolocoAdapter.getAdUnitIdKey()
-        val adUnitId = getConfigStringValueFromKey(config, adUnitIdKey)
-        val mediationInfo = MolocoAdapter.getMediationInfo()
-        Moloco.createInterstitial(mediationInfo, adUnitId) { interstitialAd, error ->
+        Moloco.createInterstitial(MolocoAdapter.mediationInfo, adUnitId) { ad, error ->
             if (error != null) {
-                mListener?.onInterstitialAdLoadFailed(
-                    IronSourceError(error.errorCode,error.description)
+                IronLog.ADAPTER_CALLBACK.error(MolocoConstants.Logs.CREATE_AD_ERROR.format(error.errorCode, error.description))
+                listener.onAdLoadFailed(
+                    AdapterErrorType.ADAPTER_ERROR_TYPE_INTERNAL,
+                    error.errorCode,
+                    error.description
                 )
             } else {
-                interstitialAd?.let { ad ->
-                    mAd = ad
-                    mAd?.load(serverData, mAdLoadListener)
+                ad?.let {
+                    interstitialAd = it
+                    interstitialAd?.load(serverData, MolocoInterstitialLoadListener(listener))
                 } ?: run {
-                    listener.onInterstitialAdLoadFailed(
-                        ErrorBuilder.buildLoadFailedError(MolocoAdapter.INVALID_CONFIGURATION
-                        )
+                    listener.onAdLoadFailed(
+                        AdapterErrorType.ADAPTER_ERROR_TYPE_INTERNAL,
+                        AdapterErrors.ADAPTER_ERROR_INTERNAL,
+                        MolocoConstants.INVALID_CONFIGURATION
                     )
                 }
             }
         }
     }
 
-    override fun showInterstitial(
-        config: JSONObject,
-        listener: InterstitialSmashListener
+    override fun showAd(
+        adData: AdData,
+        activity: Activity,
+        listener: InterstitialAdListener
     ) {
         IronLog.ADAPTER_API.verbose()
-        if (!isInterstitialReady(config)) {
-            listener.onInterstitialAdShowFailed(
-                ErrorBuilder.buildNoAdsToShowError(
-                    IronSourceConstants.INTERSTITIAL_AD_UNIT
-                )
+
+        if (!isAdAvailable(adData)) {
+            listener.onAdShowFailed(
+                AdapterErrors.ADAPTER_ERROR_AD_EXPIRED,
+                MolocoConstants.AD_NOT_AVAILABLE
             )
-        } else {
-            val interstitialAdShowListener = MolocoInterstitialAdShowListener(listener, WeakReference(this))
-            mAdShowListener = interstitialAdShowListener
-            mAd?.show(mAdShowListener)
+            return
+        }
+
+        interstitialAd?.show(MolocoInterstitialShowListener(listener))
+    }
+
+    override fun isAdAvailable(adData: AdData): Boolean =
+        interstitialAd != null && interstitialAd?.isLoaded == true
+
+    override fun destroyAd(adData: AdData) {
+        IronLog.ADAPTER_API.verbose()
+        mainHandler.post {
+            interstitialAd?.destroy()
+            interstitialAd = null
         }
     }
 
-    override fun isInterstitialReady(config: JSONObject): Boolean {
-        return mAd != null && mAd?.isLoaded == true
-    }
-
-    override fun collectInterstitialBiddingData(
-        config: JSONObject,
-        adData: JSONObject?,
+    override fun collectBiddingData(
+        adData: AdData?,
+        context: Context,
         biddingDataCallback: BiddingDataCallback
     ) {
-        adapter.collectBiddingData(biddingDataCallback)
+        val networkAdapter = getNetworkAdapter()
+        if (networkAdapter == null) {
+            IronLog.INTERNAL.error(MolocoConstants.Logs.ADAPTER_UNAVAILABLE)
+            biddingDataCallback.onFailure(MolocoConstants.Logs.ADAPTER_UNAVAILABLE)
+            return
+        }
+
+        networkAdapter.collectBiddingData(context, biddingDataCallback)
     }
 
-    //end region
-
-    //region Helpers
-
-    internal fun destroyInterstitialAd() {
-        mAd?.destroy()
-        mAd = null
-    }
-
-    //end region
-
+    // endregion
 }

@@ -1,158 +1,107 @@
 package com.ironsource.adapters.pubmatic.interstitial
 
+import android.app.Activity
+import android.content.Context
+import android.os.Handler
+import android.os.Looper
 import com.ironsource.adapters.pubmatic.PubMaticAdapter
-import com.ironsource.adapters.pubmatic.PubMaticAdapter.Companion.LOG_INIT_FAILED
-import com.ironsource.environment.ContextProvider
-import com.ironsource.mediationsdk.adapter.AbstractInterstitialAdapter
+import com.ironsource.adapters.pubmatic.PubMaticConstants
+import com.ironsource.mediationsdk.adunit.adapter.listener.InterstitialAdListener
+import com.ironsource.mediationsdk.adunit.adapter.utility.AdData
+import com.ironsource.mediationsdk.adunit.adapter.utility.AdapterErrorType
+import com.ironsource.mediationsdk.adunit.adapter.utility.AdapterErrors
 import com.ironsource.mediationsdk.bidding.BiddingDataCallback
 import com.ironsource.mediationsdk.logger.IronLog
-import com.ironsource.mediationsdk.logger.IronSourceError
-import com.ironsource.mediationsdk.sdk.InterstitialSmashListener
-import com.ironsource.mediationsdk.utils.ErrorBuilder
-import com.ironsource.mediationsdk.utils.IronSourceConstants
+import com.ironsource.mediationsdk.model.NetworkSettings
+import com.unity3d.mediation.adapters.levelplay.LevelPlayBaseInterstitial
 import com.pubmatic.sdk.common.POBAdFormat
 import com.pubmatic.sdk.openwrap.interstitial.POBInterstitial
-import org.json.JSONObject
 
-class PubMaticInterstitialAdapter(adapter: PubMaticAdapter) :
-        AbstractInterstitialAdapter<PubMaticAdapter>(adapter) {
+class PubMaticInterstitialAdapter(networkSettings: NetworkSettings) :
+    LevelPlayBaseInterstitial<PubMaticAdapter>(networkSettings) {
 
-    private var mSmashListener : InterstitialSmashListener? = null
-    private var mAdListener : PubMaticInterstitialAdListener? = null
-    private var mAd: POBInterstitial? = null
+    private val mainHandler = Handler(Looper.getMainLooper())
+    private var interstitialAd: POBInterstitial? = null
 
-    //region Interstitial API
+    // region Adapter Methods
 
-    override fun initInterstitialForBidding(
-            appKey: String?,
-            userId: String?,
-            config: JSONObject,
-            listener: InterstitialSmashListener
-    ) {
-        val adUnitIdKey = PubMaticAdapter.getAdUnitIdKey()
-        val adUnitId = getConfigStringValueFromKey(config, adUnitIdKey)
+    override fun loadAd(adData: AdData, context: Context, listener: InterstitialAdListener) {
+        val adUnitId = adData.getString(PubMaticConstants.AD_UNIT_ID_KEY)
+        IronLog.ADAPTER_API.verbose(PubMaticConstants.Logs.AD_UNIT_ID.format(adUnitId ?: ""))
+
         if (adUnitId.isNullOrEmpty()) {
-            IronLog.INTERNAL.error(getAdUnitIdMissingErrorString(adUnitIdKey))
-            listener.onInterstitialInitFailed(
-                ErrorBuilder.buildInitFailedError(
-                    getAdUnitIdMissingErrorString(adUnitIdKey),
-                    IronSourceConstants.INTERSTITIAL_AD_UNIT
-                )
+            val errorMessage = PubMaticConstants.Logs.MISSING_PARAM.format(PubMaticConstants.AD_UNIT_ID_KEY)
+            IronLog.INTERNAL.error(errorMessage)
+            listener.onAdLoadFailed(
+                AdapterErrorType.ADAPTER_ERROR_TYPE_INTERNAL,
+                AdapterErrors.ADAPTER_ERROR_MISSING_PARAMS,
+                errorMessage
             )
             return
         }
 
-        IronLog.ADAPTER_API.verbose("adUnitId = $adUnitId")
-
-        //save interstitial listener
-        mSmashListener = listener
-
-        when (adapter.getInitState()) {
-            PubMaticAdapter.Companion.InitState.INIT_STATE_SUCCESS -> {
-                listener.onInterstitialInitSuccess()
-            }
-            PubMaticAdapter.Companion.InitState.INIT_STATE_FAILED -> {
-                listener.onInterstitialInitFailed(
-                        ErrorBuilder.buildInitFailedError(
-                            LOG_INIT_FAILED,
-                            IronSourceConstants.INTERSTITIAL_AD_UNIT
-                        )
-                )
-            }
-            PubMaticAdapter.Companion.InitState.INIT_STATE_NONE,
-            PubMaticAdapter.Companion.InitState.INIT_STATE_IN_PROGRESS -> {
-                adapter.initSdk(config)
-            }
-        }
-    }
-
-    override fun onNetworkInitCallbackSuccess() {
-        mSmashListener?.onInterstitialInitSuccess()
-    }
-
-    override fun onNetworkInitCallbackFailed(error: String?) {
-        mSmashListener?.onInterstitialInitFailed(
-            ErrorBuilder.buildInitFailedError(
-                error,
-                IronSourceConstants.INTERSTITIAL_AD_UNIT
-            )
-        )
-    }
-
-    override fun loadInterstitialForBidding(
-            config: JSONObject,
-            adData: JSONObject?,
-            serverData: String?,
-            listener: InterstitialSmashListener
-    ){
-        val adUnitIdKey = PubMaticAdapter.getAdUnitIdKey()
-        val adUnitId = getConfigStringValueFromKey(config, adUnitIdKey)
-
+        val serverData = adData.serverData
         if (serverData.isNullOrEmpty()) {
-            val error = "serverData is empty"
-            IronLog.INTERNAL.error(error)
-            listener.onInterstitialAdLoadFailed(ErrorBuilder.buildLoadFailedError(error))
-            return
-        }
-        IronLog.ADAPTER_API.verbose("adUnitId = $adUnitId")
-
-        mAdListener = PubMaticInterstitialAdListener(listener, adUnitId)
-
-        val context = ContextProvider.getInstance().applicationContext
-
-        mAd = POBInterstitial(context)
-        mAd?.setListener(mAdListener)
-        postOnUIThread {
-            mAd?.loadAd(serverData, PubMaticAdapter.BiddingHost) ?: run {
-                listener.onInterstitialAdLoadFailed(ErrorBuilder.buildLoadFailedError("Ad is null"))
-            }
-        }
-    }
-
-    override fun showInterstitial(config: JSONObject, listener: InterstitialSmashListener) {
-        val adUnitIdKey = PubMaticAdapter.getAdUnitIdKey()
-        val adUnitId = getConfigStringValueFromKey(config, adUnitIdKey)
-        IronLog.ADAPTER_API.verbose("adUnitId = $adUnitId")
-
-        if (!isInterstitialReady(config)) {
-            listener.onInterstitialAdShowFailed(
-                ErrorBuilder.buildNoAdsToShowError(
-                    IronSourceConstants.INTERSTITIAL_AD_UNIT
-                )
+            val errorMessage = PubMaticConstants.Logs.SERVER_DATA_IS_NULL
+            IronLog.INTERNAL.error(errorMessage)
+            listener.onAdLoadFailed(
+                AdapterErrorType.ADAPTER_ERROR_TYPE_INTERNAL,
+                AdapterErrors.ADAPTER_ERROR_MISSING_PARAMS,
+                errorMessage
             )
             return
         }
-        postOnUIThread {
-            mAd?.show() ?: run {
-                listener.onInterstitialAdShowFailed(IronSourceError(IronSourceError.ERROR_CODE_GENERIC, "Ad is null"))
+
+        interstitialAd = POBInterstitial(context.applicationContext).apply {
+            setListener(PubMaticInterstitialListener(listener))
+        }
+
+        mainHandler.post {
+            interstitialAd?.loadAd(serverData, PubMaticAdapter.BIDDING_HOST)
+        }
+    }
+
+    override fun showAd(adData: AdData, activity: Activity, listener: InterstitialAdListener) {
+        IronLog.ADAPTER_API.verbose()
+
+        if (!isAdAvailable(adData)) {
+            listener.onAdShowFailed(AdapterErrors.ADAPTER_ERROR_AD_EXPIRED, PubMaticConstants.Logs.AD_NOT_AVAILABLE)
+            return
+        }
+
+        mainHandler.post {
+            interstitialAd?.show() ?: run {
+                listener.onAdShowFailed(AdapterErrors.ADAPTER_ERROR_INTERNAL, PubMaticConstants.Logs.AD_IS_NULL)
             }
         }
     }
 
-    override fun isInterstitialReady(config: JSONObject): Boolean = mAd?.isReady == true
+    override fun isAdAvailable(adData: AdData): Boolean = interstitialAd?.isReady == true
 
-    override fun collectInterstitialBiddingData(
-            config: JSONObject,
-            adData: JSONObject?,
-            biddingDataCallback: BiddingDataCallback
-    ) {
-        adapter.collectBiddingData(biddingDataCallback, POBAdFormat.INTERSTITIAL)
-    }
-
-    //region Helpers
-
-    override fun destroyInterstitialAd(config: JSONObject?) {
-        val adUnitIdKey = PubMaticAdapter.getAdUnitIdKey()
-        val adUnitId = config?.let { getConfigStringValueFromKey(it, adUnitIdKey) }
-        IronLog.ADAPTER_API.verbose("Destroy interstitial ad of ${PubMaticAdapter.NETWORK_NAME}, adUnitId = $adUnitId")
-        postOnUIThread {
-            mAd?.destroy()
-            mAd = null
-            mAdListener = null
-            mSmashListener = null
+    override fun destroyAd(adData: AdData) {
+        IronLog.ADAPTER_API.verbose()
+        mainHandler.post {
+            interstitialAd?.destroy()
+            interstitialAd = null
         }
     }
 
-    //endregion
+    override fun collectBiddingData(
+        adData: AdData?,
+        context: Context,
+        biddingDataCallback: BiddingDataCallback
+    ) {
+        IronLog.ADAPTER_API.verbose()
 
+        val networkAdapter = getNetworkAdapter()
+        if (networkAdapter == null) {
+            IronLog.INTERNAL.error(PubMaticConstants.Logs.ADAPTER_UNAVAILABLE)
+            biddingDataCallback.onFailure(PubMaticConstants.Logs.ADAPTER_UNAVAILABLE)
+            return
+        }
+
+        networkAdapter.collectBiddingData(context, biddingDataCallback, POBAdFormat.INTERSTITIAL)
+    }
+
+    // endregion
 }

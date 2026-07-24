@@ -1,6 +1,6 @@
 package com.ironsource.adapters.admob.nativead;
 
-import com.google.android.gms.ads.nativead.NativeAd;
+import com.google.android.libraries.ads.mobile.sdk.nativead.NativeAd;
 import com.ironsource.mediationsdk.ads.nativead.AdapterNativeAdData;
 import com.ironsource.mediationsdk.logger.IronLog;
 
@@ -41,11 +41,9 @@ public class AdMobNativeAdData extends AdapterNativeAdData {
 
     @Override
     public Image getIcon() {
-        NativeAd.Image icon = mNativeAd.getIcon();
-
-        if (icon != null) {
-            IronLog.ADAPTER_CALLBACK.verbose("icon uri = " + icon.getUri());
-            return new Image(icon.getDrawable(), icon.getUri());
+        if (mNativeAd.getIcon() != null) {
+            IronLog.ADAPTER_CALLBACK.verbose("icon uri = " + mNativeAd.getIcon().getUri());
+            return new Image(mNativeAd.getIcon().getDrawable(), mNativeAd.getIcon().getUri());
         }
         return null;
     }

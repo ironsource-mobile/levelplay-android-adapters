@@ -1,5 +1,17 @@
 # Changelog
 
+## Version 5.18.0
+* Supporting SDK version 16.9.91
+
+## Version 5.17.0
+* Supporting SDK version 17.1.11
+
+## Version 5.16.0
+* General improvements and performance enhancements
+
+## Version 5.15.0
+* General improvements and performance enhancements
+
 ## Version 5.14.0
 * Fixed fullscreen ad load failures in multi-ad-unit and load-while-show flows
 

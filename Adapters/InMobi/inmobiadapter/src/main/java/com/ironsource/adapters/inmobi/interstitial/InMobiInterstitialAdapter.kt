@@ -1,221 +1,117 @@
 package com.ironsource.adapters.inmobi.interstitial
 
+import android.app.Activity
+import android.content.Context
+import android.os.Handler
+import android.os.Looper
 import com.inmobi.ads.InMobiInterstitial
 import com.ironsource.adapters.inmobi.InMobiAdapter
-import com.ironsource.environment.ContextProvider
-import com.ironsource.mediationsdk.adapter.AbstractInterstitialAdapter
+import com.ironsource.adapters.inmobi.InMobiConstants
+import com.ironsource.mediationsdk.adunit.adapter.listener.InterstitialAdListener
+import com.ironsource.mediationsdk.adunit.adapter.utility.AdData
+import com.ironsource.mediationsdk.adunit.adapter.utility.AdapterErrorType
+import com.ironsource.mediationsdk.adunit.adapter.utility.AdapterErrors
+import com.ironsource.mediationsdk.bidding.BiddingDataCallback
 import com.ironsource.mediationsdk.logger.IronLog
-import com.ironsource.mediationsdk.logger.IronSourceError
-import com.ironsource.mediationsdk.sdk.InterstitialSmashListener
-import com.ironsource.mediationsdk.utils.ErrorBuilder
-import com.ironsource.mediationsdk.utils.IronSourceConstants
-import org.json.JSONObject
-import java.io.UnsupportedEncodingException
-import java.util.concurrent.ConcurrentHashMap
+import com.ironsource.mediationsdk.model.NetworkSettings
+import com.unity3d.mediation.adapters.levelplay.LevelPlayBaseInterstitial
 
-class InMobiInterstitialAdapter (adapter: InMobiAdapter) :
-    AbstractInterstitialAdapter<InMobiAdapter>(adapter) {
+class InMobiInterstitialAdapter(networkSettings: NetworkSettings) :
+    LevelPlayBaseInterstitial<InMobiAdapter>(networkSettings) {
 
-    private val placementToInterstitialAd: ConcurrentHashMap<String, InMobiInterstitial> = ConcurrentHashMap()
-    private val interstitialPlacementToListenerMap:
-            ConcurrentHashMap<String, InterstitialSmashListener> = ConcurrentHashMap()
+    private val mainHandler = Handler(Looper.getMainLooper())
+    private var interstitialAd: InMobiInterstitial? = null
 
-    override fun initInterstitialForBidding(
-        appKey: String?,
-        userId: String?,
-        config: JSONObject,
-        listener: InterstitialSmashListener
+    override fun loadAd(
+        adData: AdData,
+        context: Context,
+        listener: InterstitialAdListener
+    ) {
+        // Fetch and validate placementId
+        val placementId = adData.getString(InMobiConstants.PLACEMENT_ID_KEY)
+
+        IronLog.ADAPTER_API.verbose(InMobiConstants.Logs.PLACEMENT_ID.format(placementId ?: ""))
+
+        if (adData.serverData.isNullOrEmpty()) {
+            val errorMessage = InMobiConstants.Logs.MISSING_PARAM.format(InMobiConstants.SERVER_DATA_KEY)
+            IronLog.INTERNAL.error(errorMessage)
+            listener.onAdLoadFailed(
+                AdapterErrorType.ADAPTER_ERROR_TYPE_INTERNAL,
+                AdapterErrors.ADAPTER_ERROR_MISSING_PARAMS,
+                errorMessage
+            )
+            return
+        }
+
+        val placement = placementId?.toLongOrNull()
+        if (placement == null) {
+            val errorMessage = InMobiConstants.Logs.MISSING_PARAM.format(InMobiConstants.PLACEMENT_ID_KEY)
+            IronLog.INTERNAL.error(errorMessage)
+            listener.onAdLoadFailed(
+                AdapterErrorType.ADAPTER_ERROR_TYPE_INTERNAL,
+                AdapterErrors.ADAPTER_ERROR_MISSING_PARAMS,
+                errorMessage
+            )
+            return
+        }
+
+        mainHandler.post {
+            interstitialAd = InMobiInterstitial(
+                context.applicationContext,
+                placement,
+                InMobiInterstitialListener(listener)
+            )
+
+            val bytes = adData.serverData.toByteArray(Charsets.UTF_8)
+            interstitialAd?.load(bytes)
+        }
+    }
+
+    override fun showAd(
+        adData: AdData,
+        activity: Activity,
+        listener: InterstitialAdListener
     ) {
         IronLog.ADAPTER_API.verbose()
 
-        val placementId = config.optString(InMobiAdapter.PLACEMENT_ID)
-        val accountId = config.optString(InMobiAdapter.ACCOUNT_ID)
-
-        if (!isValidPlacementId(placementId)) {
-            IronLog.INTERNAL.error(getAdUnitIdMissingErrorString(InMobiAdapter.PLACEMENT_ID))
-
-            listener.onInterstitialInitFailed(
-                ErrorBuilder.buildInitFailedError(
-                    "Invalid ${InMobiAdapter.PLACEMENT_ID}",
-                    IronSourceConstants.INTERSTITIAL_AD_UNIT
-                )
-            )
+        if (!isAdAvailable(adData)) {
+            val errorMessage = InMobiConstants.Logs.AD_NOT_READY_INTERSTITIAL
+            IronLog.INTERNAL.error(errorMessage)
+            listener.onAdShowFailed(AdapterErrors.ADAPTER_ERROR_INTERNAL, errorMessage)
             return
         }
 
-        if (accountId.isEmpty()) {
-            IronLog.INTERNAL.error(getAdUnitIdMissingErrorString(InMobiAdapter.ACCOUNT_ID))
-
-            listener.onInterstitialInitFailed(
-                ErrorBuilder.buildInitFailedError(
-                    "Empty ${InMobiAdapter.ACCOUNT_ID}",
-                    IronSourceConstants.INTERSTITIAL_AD_UNIT
-                )
-            )
-            return
-        }
-
-        IronLog.ADAPTER_API.verbose("placementId = <$placementId>")
-
-        // add listener to map
-        interstitialPlacementToListenerMap[placementId] = listener
-
-        // notify listener about init state
-        when (InMobiAdapter.initState) {
-            InMobiAdapter.InitState.INIT_STATE_SUCCESS -> {
-                IronLog.ADAPTER_API.verbose(
-                    "onInterstitialInitSuccess with ${InMobiAdapter.PLACEMENT_ID}: $placementId"
-                )
-
-                // call listener init success
-                listener.onInterstitialInitSuccess()
-            }
-            InMobiAdapter.InitState.INIT_STATE_ERROR -> {
-                IronLog.ADAPTER_API.verbose(
-                    "onInterstitialInitFailed with ${InMobiAdapter.PLACEMENT_ID}: $placementId"
-                )
-                // call listener init failed
-                listener.onInterstitialInitFailed(
-                    ErrorBuilder.buildInitFailedError(
-                        "Init Failed",
-                        IronSourceConstants.INTERSTITIAL_AD_UNIT
-                    )
-                )
-            }
-            else -> {
-                adapter.initSDK(ContextProvider.getInstance().applicationContext, accountId)
+        interstitialAd?.let {
+            mainHandler.post {
+                it.show()
             }
         }
     }
 
-    override fun onNetworkInitCallbackSuccess() {
-        if(adapter.shouldSetAgeRestrictedOnInitSuccess()){
-            InMobiAdapter.ageRestrictionCollectingUserData?.let {
-                adapter.setAgeRestricted(it)
-            }
-        }
-        interstitialPlacementToListenerMap.values.forEach { interstitialListener ->
-            interstitialListener.onInterstitialInitSuccess()
-        }
+    override fun isAdAvailable(adData: AdData): Boolean {
+        return interstitialAd?.isReady() == true
     }
 
-    override fun onNetworkInitCallbackFailed(error: String?) {
-        val message = "init failed: $error"
-        interstitialPlacementToListenerMap.values.forEach { interstitialListener ->
-            interstitialListener.onInterstitialInitFailed(
-                IronSourceError(IronSourceError.ERROR_CODE_INIT_FAILED, message)
-            )
-        }
+    override fun destroyAd(adData: AdData) {
+        IronLog.ADAPTER_API.verbose()
+        interstitialAd = null
     }
 
-    override fun loadInterstitialForBidding(
-        config: JSONObject,
-        adData: JSONObject?,
-        serverData: String?,
-        listener: InterstitialSmashListener
+    override fun collectBiddingData(
+        adData: AdData?,
+        context: Context,
+        biddingDataCallback: BiddingDataCallback
     ) {
-        IronLog.ADAPTER_API.verbose( " <" + config.optString(InMobiAdapter.PLACEMENT_ID) + ">")
-
-        val placementId = config.optString(InMobiAdapter.PLACEMENT_ID)
-
-        if (serverData.isNullOrEmpty()) {
-            val error = "serverData is empty"
-            IronLog.INTERNAL.error(error)
-            listener.onInterstitialAdLoadFailed(ErrorBuilder.buildLoadFailedError(error))
+        val networkAdapter = getNetworkAdapter()
+        if (networkAdapter == null) {
+            val errorMessage = InMobiConstants.Logs.NETWORK_ADAPTER_IS_NULL
+            IronLog.INTERNAL.error(errorMessage)
+            biddingDataCallback.onFailure(errorMessage)
             return
         }
 
-        parseToLong(placementId)?.let { placement ->
-            IronLog.ADAPTER_API.verbose(
-                "create InMobi ad with ${InMobiAdapter.PLACEMENT_ID}: <$placementId>"
-            )
-
-            // create InMobi interstitial listener
-            val interstitialListener = InMobiInterstitialListener(listener, placementId)
-
-            // post on ui thread
-            postOnUIThread {
-                // create InMobi interstitial obj
-                val inMobiInterstitial = InMobiInterstitial(
-                    ContextProvider.getInstance().applicationContext,
-                    placement,
-                    interstitialListener
-                )
-                // add InMobi interstitial obj to map
-                placementToInterstitialAd[placementId] = inMobiInterstitial
-                IronLog.ADAPTER_API.verbose(
-                    "loadInterstitial InMobi ad with placement:<$placement>"
-                )
-                serverData?.let {
-                    // Load InMobi interstitial bidding
-                    try {
-                        val bytes = it.toByteArray(Charsets.UTF_8)
-                        inMobiInterstitial.load(bytes)
-                    } catch (e: UnsupportedEncodingException) {
-                        val error = ErrorBuilder.buildLoadFailedError(
-                            IronSourceConstants.INTERSTITIAL_AD_UNIT,
-                            "InMobi",
-                            "Couldn't parse server data for ${InMobiAdapter.PLACEMENT_ID} = $placement"
-                        )
-                        listener.onInterstitialAdLoadFailed(error)
-                    }
-                }
-            }
-        }
+        networkAdapter.collectBiddingData(biddingDataCallback)
     }
 
-    override fun showInterstitial(config: JSONObject, listener: InterstitialSmashListener) {
-        val placementId = config.optString(InMobiAdapter.PLACEMENT_ID)
-        IronLog.ADAPTER_API.verbose("placementId = <$placementId>")
-        // check if InMobi Interstitial is ready or not
-        if (!isInterstitialReady(config)) {
-            IronLog.INTERNAL.error(
-                "failed: inMobiInterstitial isn't ready <$placementId>"
-            )
-            listener.onInterstitialAdShowFailed(
-                ErrorBuilder.buildGenericError(
-                    IronSourceConstants.INTERSTITIAL_AD_UNIT
-                )
-            )
-            return
-        }
-        placementToInterstitialAd[placementId]?.let { inMobiInterstitial ->
-            IronLog.ADAPTER_API.verbose("showInterstitial InMobi ad <$placementId")
-            postOnUIThread {
-                inMobiInterstitial.show()
-            }
-        }
-    }
-
-    override fun isInterstitialReady(config: JSONObject): Boolean {
-        val placementId = config.optString(InMobiAdapter.PLACEMENT_ID)
-        IronLog.ADAPTER_API.verbose("placementId = <$placementId>")
-
-        // Get InMobi Interstitial
-        val inMobiInterstitial = placementToInterstitialAd[placementId]
-        return inMobiInterstitial?.isReady() == true
-    }
-
-    override fun getInterstitialBiddingData(
-        config: JSONObject,
-        adData: JSONObject?
-    ): MutableMap<String?, Any?>? = adapter.getBiddingData()
-
-    private fun isValidPlacementId(placementId: String): Boolean {
-        parseToLong(placementId)?.let {
-            return true
-        }
-        return false
-    }
-
-    private fun parseToLong(placementId: String): Long? {
-        var placementIdLong: Long? = null
-        try {
-            placementIdLong = placementId.toLong()
-        } catch (e: Exception) {
-            IronLog.INTERNAL.error("parseToLong threw error ${e.message}")
-        }
-        return placementIdLong
-    }
-
+    // endregion
 }

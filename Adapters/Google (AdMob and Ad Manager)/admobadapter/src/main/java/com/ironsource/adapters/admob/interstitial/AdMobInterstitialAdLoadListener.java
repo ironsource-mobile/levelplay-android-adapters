@@ -2,10 +2,10 @@ package com.ironsource.adapters.admob.interstitial;
 
 import android.text.TextUtils;
 
-import com.google.android.gms.ads.LoadAdError;
-import com.google.android.gms.ads.ResponseInfo;
-import com.google.android.gms.ads.interstitial.InterstitialAd;
-import com.google.android.gms.ads.interstitial.InterstitialAdLoadCallback;
+import com.google.android.libraries.ads.mobile.sdk.common.AdLoadCallback;
+import com.google.android.libraries.ads.mobile.sdk.common.LoadAdError;
+import com.google.android.libraries.ads.mobile.sdk.common.ResponseInfo;
+import com.google.android.libraries.ads.mobile.sdk.interstitial.InterstitialAd;
 import com.ironsource.adapters.admob.AdMobAdapter;
 import com.ironsource.mediationsdk.logger.IronLog;
 import com.ironsource.mediationsdk.logger.IronSourceError;
@@ -18,7 +18,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 // AdMob interstitial load listener
-public class AdMobInterstitialAdLoadListener extends InterstitialAdLoadCallback {
+public class AdMobInterstitialAdLoadListener implements AdLoadCallback<InterstitialAd> {
 
     // data
     private final WeakReference<AdMobInterstitialAdapter> mAdapter;
@@ -65,22 +65,20 @@ public class AdMobInterstitialAdLoadListener extends InterstitialAdLoadCallback 
     @Override
     public void onAdFailedToLoad(@NotNull LoadAdError loadAdError) {
         IronLog.ADAPTER_CALLBACK.verbose("adUnitId = " + mAdUnitId);
-        int errorCode = loadAdError.getCode();
-        String adapterError = loadAdError.getMessage() + "( " + errorCode + " ) ";
+        String adapterError = loadAdError.getMessage() + "( " + loadAdError.getCode() + " ) ";
 
         if (mListener == null) {
             IronLog.INTERNAL.verbose("listener is null");
             return;
         }
 
+        int errorCode;
         //check if error is no fill error
-        if (AdMobAdapter.isNoFillError(errorCode)) {
+        if (AdMobAdapter.isNoFillError(loadAdError.getCode())) {
             errorCode = IronSourceError.ERROR_IS_LOAD_NO_FILL;
             adapterError = "No Fill";
-        }
-
-        if (loadAdError.getCause() != null) {
-            adapterError = adapterError + " Caused by - " + loadAdError.getCause();
+        } else {
+            errorCode = IronSourceError.ERROR_CODE_GENERIC;
         }
 
         IronLog.ADAPTER_CALLBACK.error("adapterError = " + adapterError);
@@ -88,7 +86,3 @@ public class AdMobInterstitialAdLoadListener extends InterstitialAdLoadCallback 
         mListener.onInterstitialAdLoadFailed(new IronSourceError(errorCode, adapterError));
     }
 }
-
-
-
-

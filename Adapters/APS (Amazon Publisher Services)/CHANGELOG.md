@@ -1,5 +1,12 @@
 # Changelog
 
+## Version 5.2.0
+* Supporting SDK version 12.+
+* General improvements and performance enhancements
+
+## Version 5.1.0
+* Added support for U.S. Privacy (CCPA)
+
 ## Version 5.0.0
 * Supporting SDK version 11.1.0+
 * The adapter is compatible with LevelPlay 9.0.0 and above

@@ -1,214 +1,94 @@
 package com.ironsource.adapters.vungle.interstitial
 
+import android.app.Activity
+import android.content.Context
+import android.os.Handler
+import android.os.Looper
 import com.ironsource.adapters.vungle.VungleAdapter
-import com.ironsource.environment.ContextProvider
-import com.ironsource.mediationsdk.IronSource
-import com.ironsource.mediationsdk.adapter.AbstractInterstitialAdapter
+import com.ironsource.adapters.vungle.VungleConstants
+import com.ironsource.mediationsdk.adunit.adapter.listener.InterstitialAdListener
+import com.ironsource.mediationsdk.adunit.adapter.utility.AdData
+import com.ironsource.mediationsdk.adunit.adapter.utility.AdapterErrorType
+import com.ironsource.mediationsdk.adunit.adapter.utility.AdapterErrors
 import com.ironsource.mediationsdk.bidding.BiddingDataCallback
 import com.ironsource.mediationsdk.logger.IronLog
-import com.ironsource.mediationsdk.sdk.InterstitialSmashListener
-import com.ironsource.mediationsdk.utils.ErrorBuilder
-import com.ironsource.mediationsdk.utils.IronSourceConstants
+import com.ironsource.mediationsdk.model.NetworkSettings
+import com.unity3d.mediation.adapters.levelplay.LevelPlayBaseInterstitial
 import com.vungle.ads.AdConfig
 import com.vungle.ads.InterstitialAd
 import com.vungle.ads.VungleMediationLogger
-import org.json.JSONObject
-import java.lang.ref.WeakReference
-import java.util.concurrent.ConcurrentHashMap
 
+class VungleInterstitialAdapter(networkSettings: NetworkSettings) :
+    LevelPlayBaseInterstitial<VungleAdapter>(networkSettings) {
 
-class VungleInterstitialAdapter(adapter: VungleAdapter) :
-    AbstractInterstitialAdapter<VungleAdapter>(adapter) {
-    private val mPlacementToInterstitialAd: ConcurrentHashMap<String, InterstitialAd> =
-        ConcurrentHashMap()
-    private val mInterstitialPlacementToListenerMap:
-            ConcurrentHashMap<String, InterstitialSmashListener> = ConcurrentHashMap()
-    private val mPlacementIdToAdAvailability: ConcurrentHashMap<String, Boolean> =
-        ConcurrentHashMap()
+    private val mainHandler = Handler(Looper.getMainLooper())
+    private var interstitialAd: InterstitialAd? = null
 
-    override fun initInterstitial(
-        appKey: String?,
-        userId: String?,
-        config: JSONObject,
-        listener: InterstitialSmashListener
-    ) {
-        initInterstitialInternal(config, listener)
-    }
+    // region Adapter Methods
 
-    override fun initInterstitialForBidding(
-        appKey: String?,
-        userId: String?,
-        config: JSONObject,
-        listener: InterstitialSmashListener
-    ) {
-        initInterstitialInternal(config, listener)
-    }
+    override fun loadAd(adData: AdData, context: Context, listener: InterstitialAdListener) {
+        val placementId = adData.getString(VungleConstants.PLACEMENT_ID_KEY)
+        IronLog.ADAPTER_API.verbose(VungleConstants.Logs.PLACEMENT_ID.format(placementId ?: ""))
 
-    private fun initInterstitialInternal(
-        config: JSONObject,
-        listener: InterstitialSmashListener
-    ) {
-        val placementId = config.optString(VungleAdapter.PLACEMENT_ID)
-        val appId = config.optString(VungleAdapter.APP_ID)
-
-        if (placementId.isEmpty()) {
-            IronLog.INTERNAL.error(getAdUnitIdMissingErrorString(VungleAdapter.PLACEMENT_ID))
-            VungleMediationLogger.logError(null, "NoPlacementId:Interstitial")
-            listener.onInterstitialInitFailed(
-                ErrorBuilder.buildInitFailedError(
-                    getAdUnitIdMissingErrorString(placementId),
-                    IronSourceConstants.INTERSTITIAL_AD_UNIT
-                )
+        if (placementId.isNullOrEmpty()) {
+            val errorMessage = VungleConstants.Logs.MISSING_PARAM.format(VungleConstants.PLACEMENT_ID_KEY)
+            IronLog.INTERNAL.error(errorMessage)
+            VungleMediationLogger.logError(null, VungleConstants.Logs.NO_PLACEMENT_ID.format("Interstitial"))
+            listener.onAdLoadFailed(
+                AdapterErrorType.ADAPTER_ERROR_TYPE_INTERNAL,
+                AdapterErrors.ADAPTER_ERROR_MISSING_PARAMS,
+                errorMessage
             )
             return
         }
-        if (appId.isEmpty()) {
-            IronLog.INTERNAL.error(getAdUnitIdMissingErrorString(VungleAdapter.APP_ID))
-            VungleMediationLogger.logError(null, "NoAppId:Interstitial")
-            listener.onInterstitialInitFailed(
-                ErrorBuilder.buildInitFailedError(
-                    getAdUnitIdMissingErrorString(appId),
-                    IronSourceConstants.INTERSTITIAL_AD_UNIT
-                )
-            )
+
+        interstitialAd = InterstitialAd(context.applicationContext, placementId, AdConfig()).apply {
+            adListener = VungleInterstitialListener(listener)
+            adapterAdFormat = VungleConstants.ADAPTER_FORMAT_INTERSTITIAL
+        }
+        interstitialAd?.load(adData.serverData)
+    }
+
+    override fun showAd(adData: AdData, activity: Activity, listener: InterstitialAdListener) {
+        IronLog.ADAPTER_API.verbose()
+
+        if (!isAdAvailable(adData)) {
+            IronLog.INTERNAL.error(VungleConstants.Logs.AD_NOT_AVAILABLE)
+            VungleMediationLogger.logError(interstitialAd, VungleConstants.Logs.NO_ADS_TO_SHOW.format("Interstitial"))
+            listener.onAdShowFailed(AdapterErrors.ADAPTER_ERROR_AD_EXPIRED, VungleConstants.Logs.AD_NOT_AVAILABLE)
             return
         }
-        IronLog.ADAPTER_API.verbose("placementId = $placementId, appId = $appId")
 
-        //add to interstitial listener map
-        mInterstitialPlacementToListenerMap[placementId] = listener
-
-        when (adapter.getInitState()) {
-            VungleAdapter.Companion.InitState.INIT_STATE_SUCCESS -> {
-                listener.onInterstitialInitSuccess()
-            }
-
-            VungleAdapter.Companion.InitState.INIT_STATE_FAILED -> {
-                // call listener init failed
-                listener.onInterstitialInitFailed(
-                    ErrorBuilder.buildInitFailedError(
-                        "Vungle SDK Init Failed",
-                        IronSourceConstants.INTERSTITIAL_AD_UNIT
-                    )
-                )
-            }
-
-            else -> {
-                adapter.initSDK(ContextProvider.getInstance().applicationContext, appId)
-            }
+        mainHandler.post {
+            interstitialAd?.play()
         }
     }
 
-    override fun onNetworkInitCallbackSuccess() {
-        mInterstitialPlacementToListenerMap.values.forEach { interstitialListener ->
-            interstitialListener.onInterstitialInitSuccess()
-        }
+    override fun isAdAvailable(adData: AdData): Boolean {
+        return interstitialAd?.canPlayAd() == true
     }
 
-    override fun onNetworkInitCallbackFailed(error: String?) {
-        mInterstitialPlacementToListenerMap.values.forEach { interstitialListener ->
-            interstitialListener.onInterstitialInitFailed(
-                ErrorBuilder.buildInitFailedError(
-                    error,
-                    IronSourceConstants.INTERSTITIAL_AD_UNIT
-                )
-            )
-        }
+    override fun destroyAd(adData: AdData) {
+        IronLog.ADAPTER_API.verbose()
+        interstitialAd = null
     }
 
-    override fun loadInterstitial(
-        config: JSONObject,
-        adData: JSONObject?,
-        listener: InterstitialSmashListener
-    ) {
-        val placementId = config.optString(VungleAdapter.PLACEMENT_ID)
-        IronLog.ADAPTER_API.verbose("loadInterstitial Vungle ad with placementId = $placementId")
-        loadInterstitialInternal(config, listener, null)
-    }
-
-    override fun loadInterstitialForBidding(
-        config: JSONObject,
-        adData: JSONObject?,
-        serverData: String?,
-        listener: InterstitialSmashListener
-    ) {
-        val placementId = config.optString(VungleAdapter.PLACEMENT_ID)
-        IronLog.ADAPTER_API.verbose("loadInterstitial Vungle ad with placementId = $placementId")
-        loadInterstitialInternal(config, listener, serverData)
-    }
-
-    private fun loadInterstitialInternal(
-        config: JSONObject,
-        listener: InterstitialSmashListener,
-        serverData: String?
-    ) {
-        val placementId = config.optString(VungleAdapter.PLACEMENT_ID)
-        IronLog.ADAPTER_API.verbose("loadInterstitial Vungle ad with placementId = $placementId")
-        setInterstitialAdAvailability(placementId, false)
-
-        val vungleInterstitialAdListener = VungleInterstitialAdListener(WeakReference(this), listener, placementId)
-        val vungleInterstitial = InterstitialAd(
-            ContextProvider.getInstance().applicationContext,
-            placementId,
-            AdConfig()
-        ).apply {
-
-            adListener = vungleInterstitialAdListener
-            adapterAdFormat = VungleAdapter.ADAPTER_FORMAT_INTERSTITIAL
-        }
-        mPlacementToInterstitialAd[placementId] = vungleInterstitial
-        vungleInterstitial.load(serverData)
-    }
-
-    override fun showInterstitial(config: JSONObject, listener: InterstitialSmashListener) {
-        val placementId = config.optString(VungleAdapter.PLACEMENT_ID)
-        IronLog.ADAPTER_API.verbose("placementId = $placementId")
-        val vungleInterstitial = mPlacementToInterstitialAd[placementId]
-        // Check if Vungle Interstitial Ad is ready
-        if (!isInterstitialReady(config)) {
-            IronLog.INTERNAL.error("There is no ad available for placementId = $placementId")
-            VungleMediationLogger.logError(vungleInterstitial, "NoAdsToShow:Interstitial")
-            listener.onInterstitialAdShowFailed(
-                ErrorBuilder.buildNoAdsToShowError(
-                    IronSourceConstants.INTERSTITIAL_AD_UNIT
-                )
-            )
-            return
-        }
-        IronLog.ADAPTER_API.verbose("showInterstitial vungle ad <$placementId")
-        postOnUIThread{
-            vungleInterstitial?.play()
-        }
-        setInterstitialAdAvailability(placementId, false)
-    }
-
-    override fun isInterstitialReady(config: JSONObject): Boolean {
-        val placementId = config.optString(VungleAdapter.PLACEMENT_ID)
-        IronLog.ADAPTER_API.verbose("placementId = <$placementId>")
-        if (placementId.isEmpty()) {
-            return false
-        }
-
-        val isAvailable = mPlacementIdToAdAvailability[placementId] ?: false
-        if (!isAvailable) {
-            return false
-        }
-
-        // Get Vungle Interstitial
-        val vungleInterstitial = mPlacementToInterstitialAd[placementId]
-        return vungleInterstitial?.canPlayAd() ?: false
-    }
-
-    internal fun setInterstitialAdAvailability(placementId: String, isAvailable: Boolean) {
-        mPlacementIdToAdAvailability[placementId] = isAvailable
-    }
-
-    override fun collectInterstitialBiddingData(
-        config: JSONObject,
-        adData: JSONObject?,
+    override fun collectBiddingData(
+        adData: AdData?,
+        context: Context,
         biddingDataCallback: BiddingDataCallback
     ) {
-        adapter.collectBiddingData(biddingDataCallback)
+        IronLog.ADAPTER_API.verbose()
+
+        val networkAdapter = getNetworkAdapter()
+        if (networkAdapter == null) {
+            IronLog.INTERNAL.error(VungleConstants.Logs.NETWORK_ADAPTER_IS_NULL)
+            biddingDataCallback.onFailure(VungleConstants.Logs.NETWORK_ADAPTER_IS_NULL)
+            return
+        }
+
+        networkAdapter.collectBiddingData(context, biddingDataCallback)
     }
 
+    // endregion
 }

@@ -3,9 +3,9 @@ package com.ironsource.adapters.admob.nativead;
 import android.view.View;
 import android.view.ViewGroup;
 
-import com.google.android.gms.ads.nativead.MediaView;
-import com.google.android.gms.ads.nativead.NativeAd;
-import com.google.android.gms.ads.nativead.NativeAdView;
+import com.google.android.libraries.ads.mobile.sdk.nativead.MediaView;
+import com.google.android.libraries.ads.mobile.sdk.nativead.NativeAd;
+import com.google.android.libraries.ads.mobile.sdk.nativead.NativeAdView;
 import com.ironsource.mediationsdk.ads.nativead.LevelPlayMediaView;
 import com.ironsource.mediationsdk.ads.nativead.internal.NativeAdViewHolder;
 import com.ironsource.mediationsdk.adunit.adapter.internal.nativead.AdapterNativeAdViewBinder;
@@ -34,16 +34,16 @@ public class AdMobNativeAdViewBinder extends AdapterNativeAdViewBinder {
         mNativeAdView.setAdvertiserView(nativeAdViewHolder.getAdvertiserView());
         mNativeAdView.setIconView(nativeAdViewHolder.getIconView());
         mNativeAdView.setBodyView(nativeAdViewHolder.getBodyView());
+        MediaView adMobMediaView = null;
         LevelPlayMediaView levelPlayMediaView = nativeAdViewHolder.getMediaView();
         if (levelPlayMediaView != null) {
-            MediaView adMobMediaView = new MediaView(levelPlayMediaView.getContext());
+            adMobMediaView = new MediaView(levelPlayMediaView.getContext());
             levelPlayMediaView.addView(adMobMediaView);
-            mNativeAdView.setMediaView(adMobMediaView);
         }
         mNativeAdView.setCallToActionView(nativeAdViewHolder.getCallToActionView());
 
         mNativeAdView.addView(nativeAdView);
-        mNativeAdView.setNativeAd(mNativeAd);
+        mNativeAdView.registerNativeAd(mNativeAd, adMobMediaView);
     }
 
     @Override

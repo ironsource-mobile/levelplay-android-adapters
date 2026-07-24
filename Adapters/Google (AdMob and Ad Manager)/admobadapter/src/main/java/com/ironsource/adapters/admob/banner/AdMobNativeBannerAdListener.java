@@ -3,17 +3,17 @@ package com.ironsource.adapters.admob.banner;
 import android.content.Context;
 import android.text.TextUtils;
 
-import com.google.android.gms.ads.AdListener;
-import com.google.android.gms.ads.LoadAdError;
-import com.google.android.gms.ads.ResponseInfo;
-import com.google.android.gms.ads.nativead.NativeAd;
+import com.google.android.libraries.ads.mobile.sdk.common.LoadAdError;
+import com.google.android.libraries.ads.mobile.sdk.common.ResponseInfo;
+import com.google.android.libraries.ads.mobile.sdk.nativead.NativeAd;
+import com.google.android.libraries.ads.mobile.sdk.nativead.NativeAdEventCallback;
+import com.google.android.libraries.ads.mobile.sdk.nativead.NativeAdLoaderCallback;
 import com.ironsource.adapters.admob.AdMobAdapter;
 import com.ironsource.environment.ContextProvider;
 import com.ironsource.mediationsdk.ISBannerSize;
 import com.ironsource.mediationsdk.logger.IronLog;
 import com.ironsource.mediationsdk.logger.IronSourceError;
 import com.ironsource.mediationsdk.sdk.BannerSmashListener;
-import com.ironsource.mediationsdk.utils.ErrorBuilder;
 
 import org.jetbrains.annotations.NotNull;
 
@@ -22,7 +22,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 // AdMob native banner listener
-public class AdMobNativeBannerAdListener extends AdListener implements NativeAd.OnNativeAdLoadedListener {
+public class AdMobNativeBannerAdListener implements NativeAdLoaderCallback, NativeAdEventCallback {
     // data
     private final String mAdUnitId;
     private final WeakReference<AdMobBannerAdapter> mBannerAdapter;
@@ -44,7 +44,7 @@ public class AdMobNativeBannerAdListener extends AdListener implements NativeAd.
         AdMobAdapter.postOnUIThread(new Runnable() {
             @Override
             public void run() {
-                
+
                 if (mListener == null) {
                     IronLog.INTERNAL.verbose("listener is null");
                     return;
@@ -55,6 +55,9 @@ public class AdMobNativeBannerAdListener extends AdListener implements NativeAd.
                     return;
                 }
 
+                // Set event callback
+                nativeAd.setAdEventCallback(AdMobNativeBannerAdListener.this);
+
                 Context context = ContextProvider.getInstance().getApplicationContext();
                 AdMobNativeBannerViewHandler nativeBannerHandler = new AdMobNativeBannerViewHandler(mBannerSize, mTemplateType, context);
                 AdMobNativeBannerViewBinder nativeBannerBinder = new AdMobNativeBannerViewBinder();
@@ -63,16 +66,16 @@ public class AdMobNativeBannerAdListener extends AdListener implements NativeAd.
                 //add native banner ad to map
                 mBannerAdapter.get().mAdUnitIdToNativeBannerAd.put(mAdUnitId, nativeAd);
 
-              ResponseInfo responseInfo = nativeAd.getResponseInfo();
-              String creativeId = (responseInfo != null) ? responseInfo.getResponseId() : null;
+                ResponseInfo responseInfo = nativeAd.getResponseInfo();
+                String creativeId = (responseInfo != null) ? responseInfo.getResponseId() : null;
 
-              if (TextUtils.isEmpty(creativeId)) {
-                mListener.onBannerAdLoaded(nativeBannerHandler.getNativeAdView(), nativeBannerHandler.getLayoutParams());
-              } else {
-                Map<String, Object> extraData = new HashMap<>();
-                extraData.put(AdMobAdapter.CREATIVE_ID_KEY, creativeId);
-                IronLog.ADAPTER_CALLBACK.verbose(AdMobAdapter.CREATIVE_ID_KEY + " = " + creativeId);
-                mListener.onBannerAdLoaded(nativeBannerHandler.getNativeAdView(), nativeBannerHandler.getLayoutParams(), extraData);
+                if (TextUtils.isEmpty(creativeId)) {
+                    mListener.onBannerAdLoaded(nativeBannerHandler.getNativeAdView(), nativeBannerHandler.getLayoutParams());
+                } else {
+                    Map<String, Object> extraData = new HashMap<>();
+                    extraData.put(AdMobAdapter.CREATIVE_ID_KEY, creativeId);
+                    IronLog.ADAPTER_CALLBACK.verbose(AdMobAdapter.CREATIVE_ID_KEY + " = " + creativeId);
+                    mListener.onBannerAdLoaded(nativeBannerHandler.getNativeAdView(), nativeBannerHandler.getLayoutParams(), extraData);
               }
             }
         });
@@ -90,13 +93,9 @@ public class AdMobNativeBannerAdListener extends AdListener implements NativeAd.
 
         String adapterError = loadAdError.getMessage() + "( " + loadAdError.getCode() + " ) ";
 
-        if (loadAdError.getCause() != null) {
-            adapterError = adapterError + " Caused by - " + loadAdError.getCause();
-        }
-
         IronSourceError ironSourceErrorObject = AdMobAdapter.isNoFillError(loadAdError.getCode()) ?
                 new IronSourceError(IronSourceError.ERROR_BN_LOAD_NO_FILL, adapterError) :
-                ErrorBuilder.buildLoadFailedError(adapterError);
+                new IronSourceError(IronSourceError.ERROR_CODE_GENERIC, adapterError);
 
         IronLog.ADAPTER_CALLBACK.error(adapterError);
         mListener.onBannerAdLoadFailed(ironSourceErrorObject);
@@ -129,7 +128,7 @@ public class AdMobNativeBannerAdListener extends AdListener implements NativeAd.
 
     //ad opened an overlay that covers the screen after a click
     @Override
-    public void onAdOpened() {
+    public void onAdShowedFullScreenContent() {
         IronLog.ADAPTER_CALLBACK.verbose("adUnitId = " + mAdUnitId);
 
         if (mListener == null) {
@@ -142,7 +141,7 @@ public class AdMobNativeBannerAdListener extends AdListener implements NativeAd.
 
     // the user is about to return to the app after clicking on an ad.
     @Override
-    public void onAdClosed() {
+    public void onAdDismissedFullScreenContent() {
         IronLog.ADAPTER_CALLBACK.verbose("adUnitId = " + mAdUnitId);
 
         if (mListener == null) {

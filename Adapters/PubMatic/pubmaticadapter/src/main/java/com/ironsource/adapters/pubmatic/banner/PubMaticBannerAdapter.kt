@@ -1,204 +1,146 @@
 package com.ironsource.adapters.pubmatic.banner
 
+import android.app.Activity
+import android.content.Context
+import android.os.Handler
+import android.os.Looper
 import com.ironsource.adapters.pubmatic.PubMaticAdapter
-import com.ironsource.adapters.pubmatic.PubMaticAdapter.Companion.LOG_INIT_FAILED
-import com.ironsource.environment.ContextProvider
+import com.ironsource.adapters.pubmatic.PubMaticConstants
 import com.ironsource.mediationsdk.AdapterUtils
 import com.ironsource.mediationsdk.ISBannerSize
-import com.ironsource.mediationsdk.adapter.AbstractBannerAdapter
+import com.ironsource.mediationsdk.adunit.adapter.listener.BannerAdListener
+import com.ironsource.mediationsdk.adunit.adapter.utility.AdData
+import com.ironsource.mediationsdk.adunit.adapter.utility.AdapterErrorType
+import com.ironsource.mediationsdk.adunit.adapter.utility.AdapterErrors
 import com.ironsource.mediationsdk.bidding.BiddingDataCallback
 import com.ironsource.mediationsdk.logger.IronLog
-import com.ironsource.mediationsdk.sdk.BannerSmashListener
-import com.ironsource.mediationsdk.utils.ErrorBuilder
-import com.ironsource.mediationsdk.utils.IronSourceConstants
+import com.ironsource.mediationsdk.model.NetworkSettings
+import com.unity3d.mediation.adapters.levelplay.LevelPlayBaseBanner
 import com.pubmatic.sdk.common.POBAdFormat
 import com.pubmatic.sdk.common.POBAdSize
 import com.pubmatic.sdk.openwrap.banner.POBBannerView
-import org.json.JSONObject
-import java.lang.ref.WeakReference
 
-class PubMaticBannerAdapter(adapter: PubMaticAdapter) :
-    AbstractBannerAdapter<PubMaticAdapter>(adapter) {
+class PubMaticBannerAdapter(networkSettings: NetworkSettings) :
+    LevelPlayBaseBanner<PubMaticAdapter>(networkSettings) {
 
-    private var mSmashListener : BannerSmashListener? = null
-    private var mAdListener : PubMaticBannerAdListener? = null
-    private var mAdView: POBBannerView? = null
+    private val mainHandler = Handler(Looper.getMainLooper())
+    private var bannerAdView: POBBannerView? = null
 
-    //region Banner API
+    // region Adapter Methods
 
-    override fun initBannerForBidding(
-        appKey: String?,
-        userId: String?,
-        config: JSONObject,
-        listener: BannerSmashListener
+    override fun loadAd(
+        adData: AdData,
+        activity: Activity,
+        bannerSize: ISBannerSize,
+        listener: BannerAdListener
     ) {
-        val adUnitIdKey = PubMaticAdapter.getAdUnitIdKey()
-        val adUnitId = getConfigStringValueFromKey(config, adUnitIdKey)
+        val adUnitId = adData.getString(PubMaticConstants.AD_UNIT_ID_KEY)
+        IronLog.ADAPTER_API.verbose(PubMaticConstants.Logs.AD_UNIT_ID.format(adUnitId ?: ""))
+
         if (adUnitId.isNullOrEmpty()) {
-            IronLog.INTERNAL.error(getAdUnitIdMissingErrorString(adUnitIdKey))
-            listener.onBannerInitFailed(
-                ErrorBuilder.buildInitFailedError(
-                    getAdUnitIdMissingErrorString(adUnitIdKey),
-                    IronSourceConstants.BANNER_AD_UNIT
-                )
+            val errorMessage = PubMaticConstants.Logs.MISSING_PARAM.format(PubMaticConstants.AD_UNIT_ID_KEY)
+            IronLog.INTERNAL.error(errorMessage)
+            listener.onAdLoadFailed(
+                AdapterErrorType.ADAPTER_ERROR_TYPE_INTERNAL,
+                AdapterErrors.ADAPTER_ERROR_MISSING_PARAMS,
+                errorMessage
             )
             return
         }
 
-        IronLog.ADAPTER_API.verbose("adUnitId = $adUnitId")
-
-        //save banner listener
-        mSmashListener = listener
-
-        when (adapter.getInitState()) {
-            PubMaticAdapter.Companion.InitState.INIT_STATE_SUCCESS -> {
-                listener.onBannerInitSuccess()
-            }
-            PubMaticAdapter.Companion.InitState.INIT_STATE_FAILED -> {
-                listener.onBannerInitFailed(
-                    ErrorBuilder.buildInitFailedError(
-                        LOG_INIT_FAILED,
-                        IronSourceConstants.BANNER_AD_UNIT
-                    )
-                )
-            }
-            PubMaticAdapter.Companion.InitState.INIT_STATE_NONE,
-            PubMaticAdapter.Companion.InitState.INIT_STATE_IN_PROGRESS -> {
-                adapter.initSdk(config)
-            }
-        }
-    }
-
-    override fun onNetworkInitCallbackSuccess() {
-        mSmashListener?.onBannerInitSuccess()
-    }
-
-    override fun onNetworkInitCallbackFailed(error: String?) {
-        mSmashListener?.onBannerInitFailed(
-            ErrorBuilder.buildInitFailedError(
-                error,
-                IronSourceConstants.BANNER_AD_UNIT
-            )
-        )
-    }
-
-    override fun loadBannerForBidding(
-        config: JSONObject,
-        adData: JSONObject?,
-        serverData: String?,
-        bannerSize: ISBannerSize?,
-        listener: BannerSmashListener
-    ) {
-        val adUnitIdKey = PubMaticAdapter.getAdUnitIdKey()
-        val adUnitId = getConfigStringValueFromKey(config, adUnitIdKey)
-
-        IronLog.ADAPTER_API.verbose("adUnitId = $adUnitId")
-
-        if (bannerSize == null) {
-            IronLog.INTERNAL.verbose("banner is null")
-            listener.onBannerAdLoadFailed(ErrorBuilder.buildNoConfigurationAvailableError("banner is null"))
-            return
-        }
-
-        val adSize = getBannerSize(bannerSize)
+        val appContext = activity.applicationContext
+        val adSize = getBannerSize(appContext, bannerSize)
         if (adSize == null) {
-            listener.onBannerAdLoadFailed(ErrorBuilder.unsupportedBannerSize(adapter.providerName))
+            IronLog.INTERNAL.error(PubMaticConstants.Logs.UNSUPPORTED_BANNER_SIZE)
+            listener.onAdLoadFailed(
+                AdapterErrorType.ADAPTER_ERROR_TYPE_INTERNAL,
+                AdapterErrors.ADAPTER_ERROR_INTERNAL,
+                PubMaticConstants.Logs.UNSUPPORTED_BANNER_SIZE
+            )
             return
         }
 
+        val serverData = adData.serverData
         if (serverData.isNullOrEmpty()) {
-            val error = "serverData is empty"
-            IronLog.INTERNAL.error(error)
-            listener.onBannerAdLoadFailed(ErrorBuilder.buildLoadFailedError(error))
+            val errorMessage = PubMaticConstants.Logs.SERVER_DATA_IS_NULL
+            IronLog.INTERNAL.error(errorMessage)
+            listener.onAdLoadFailed(
+                AdapterErrorType.ADAPTER_ERROR_TYPE_INTERNAL,
+                AdapterErrors.ADAPTER_ERROR_MISSING_PARAMS,
+                errorMessage
+            )
             return
         }
 
-        val context = ContextProvider.getInstance().applicationContext
-        mAdView = POBBannerView(context)
+        bannerAdView = POBBannerView(appContext).apply {
+            setListener(PubMaticBannerListener(listener, this))
+        }
 
-        mAdListener = PubMaticBannerAdListener(
-            listener,
-            WeakReference(this),
-            adUnitId,
-            mAdView
-        )
-        mAdView?.setListener(mAdListener)
-        postOnUIThread {
-            if (bannerSize == null) {
-                val errorMsg = "banner size is null, banner has been destroyed"
-                IronLog.INTERNAL.verbose(errorMsg)
-                listener.onBannerAdLoadFailed(ErrorBuilder.buildLoadFailedError(errorMsg))
-                return@postOnUIThread
-            }
-            mAdView?.loadAd(serverData, PubMaticAdapter.BiddingHost) ?: run {
-                listener.onBannerAdLoadFailed(ErrorBuilder.buildLoadFailedError("Ad is null"))
-            }
-            mAdView?.pauseAutoRefresh()
+        mainHandler.post {
+            bannerAdView?.loadAd(serverData, PubMaticAdapter.BIDDING_HOST)
+            bannerAdView?.pauseAutoRefresh()
         }
     }
 
-    override fun destroyBanner(config: JSONObject) {
+    override fun destroyAd(adData: AdData) {
         IronLog.ADAPTER_API.verbose()
-        destroyBannerViewAd()
-        mSmashListener = null
-        mAdListener = null
+        mainHandler.post {
+            bannerAdView?.destroy()
+            bannerAdView = null
+        }
     }
 
-    override fun collectBannerBiddingData(
-        config: JSONObject,
-        adData: JSONObject?,
+    override fun collectBiddingData(
+        adData: AdData?,
+        context: Context,
         biddingDataCallback: BiddingDataCallback
     ) {
-        val bannerSize = adData?.opt(IronSourceConstants.BANNER_SIZE) as? ISBannerSize
-        val pubMaticBannerSize = getBannerSize(bannerSize)
-        if (pubMaticBannerSize == null) {
-            val error = "Unsupported or null banner size"
-            IronLog.INTERNAL.verbose(error)
-            biddingDataCallback.onFailure("$error - PubMatic")
+        IronLog.ADAPTER_API.verbose()
+
+        val networkAdapter = getNetworkAdapter()
+        if (networkAdapter == null) {
+            IronLog.INTERNAL.error(PubMaticConstants.Logs.ADAPTER_UNAVAILABLE)
+            biddingDataCallback.onFailure(PubMaticConstants.Logs.ADAPTER_UNAVAILABLE)
             return
         }
 
-        val format = when (pubMaticBannerSize) {
+        val bannerSize = adData?.adUnitData?.get(PubMaticConstants.BANNER_SIZE_KEY)
+        val pubMaticBannerSize = (bannerSize as? ISBannerSize)?.let { getBannerSize(context.applicationContext, it) }
+        if (pubMaticBannerSize == null) {
+            IronLog.INTERNAL.verbose(PubMaticConstants.Logs.UNSUPPORTED_BANNER_SIZE)
+            biddingDataCallback.onFailure("${PubMaticConstants.Logs.UNSUPPORTED_BANNER_SIZE} - ${PubMaticConstants.NETWORK_NAME}")
+            return
+        }
+
+        val adFormat = when (pubMaticBannerSize) {
             POBAdSize.BANNER_SIZE_300x250 -> POBAdFormat.MREC
             else -> POBAdFormat.BANNER
         }
-        adapter.collectBiddingData(biddingDataCallback, format)
+
+        networkAdapter.collectBiddingData(context, biddingDataCallback, adFormat)
     }
 
-    //endregion
+    // endregion
 
-    // region Helpers
+    // region Helper Methods
 
-    private fun destroyBannerViewAd() {
-        postOnUIThread {
-            mAdView?.destroy()
-            mAdView = null
-        }
-    }
-
-    internal fun setBannerView(bannerAdView: POBBannerView) {
-        mAdView = bannerAdView
-    }
-
-    private fun getBannerSize(bannerSize: ISBannerSize?): POBAdSize? {
-        if (bannerSize == null) {
-            IronLog.INTERNAL.verbose("Banner size is null")
-            return null
-        }
-
+    private fun getBannerSize(context: Context, bannerSize: ISBannerSize): POBAdSize? {
         return when (bannerSize.description) {
-            ISBannerSize.BANNER.description -> POBAdSize.BANNER_SIZE_320x50
-            ISBannerSize.LARGE.description -> POBAdSize.BANNER_SIZE_320x100
-            ISBannerSize.RECTANGLE.description -> POBAdSize.BANNER_SIZE_300x250
-            ISBannerSize.SMART.description -> if (AdapterUtils.isLargeScreen(ContextProvider.getInstance().applicationContext)) {
-                POBAdSize.BANNER_SIZE_728x90
-            } else {
-                POBAdSize.BANNER_SIZE_320x50
+            PubMaticConstants.BANNER_SIZE_BANNER -> POBAdSize.BANNER_SIZE_320x50
+            PubMaticConstants.BANNER_SIZE_LARGE -> POBAdSize.BANNER_SIZE_320x100
+            PubMaticConstants.BANNER_SIZE_RECTANGLE -> POBAdSize.BANNER_SIZE_300x250
+            PubMaticConstants.BANNER_SIZE_SMART ->
+                if (AdapterUtils.isLargeScreen(context)) {
+                    POBAdSize.BANNER_SIZE_728x90
+                } else {
+                    POBAdSize.BANNER_SIZE_320x50
+                }
+            else -> {
+                IronLog.INTERNAL.verbose(PubMaticConstants.Logs.BANNER_SIZE_NULL)
+                null
             }
-            else -> null
         }
     }
 
-    //endregion
-
+    // endregion
 }

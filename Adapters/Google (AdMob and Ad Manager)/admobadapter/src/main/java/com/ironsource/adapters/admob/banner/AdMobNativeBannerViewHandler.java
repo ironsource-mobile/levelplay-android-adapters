@@ -1,13 +1,13 @@
 package com.ironsource.adapters.admob.banner;
 
-import static com.google.android.gms.ads.nativead.NativeAdOptions.*;
-
 import android.content.Context;
 import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.widget.FrameLayout;
 
-import com.google.android.gms.ads.nativead.NativeAdView;
+import com.google.android.libraries.ads.mobile.sdk.common.AdChoicesPlacement;
+import com.google.android.libraries.ads.mobile.sdk.nativead.NativeAd;
+import com.google.android.libraries.ads.mobile.sdk.nativead.NativeAdView;
 import com.ironsource.adapters.admob.R;
 import com.ironsource.mediationsdk.AdapterUtils;
 import com.ironsource.mediationsdk.ISBannerSize;
@@ -16,21 +16,21 @@ import org.json.JSONObject;
 
 enum NativeTemplateType {
 
-    NB_TMP_BASIC(R.layout.ad_mob_native_banner_template_basic_layout, true, true, ADCHOICES_TOP_RIGHT, NATIVE_MEDIA_ASPECT_RATIO_ANY),
-    NB_TMP_BASIC_LARGE(R.layout.ad_mob_native_banner_template_basic_layout, false,true, ADCHOICES_TOP_RIGHT, NATIVE_MEDIA_ASPECT_RATIO_ANY),
-    NB_TMP_ICON_TEXT(R.layout.ad_mob_native_banner_template_icon_text_layout, true, true, ADCHOICES_TOP_RIGHT, NATIVE_MEDIA_ASPECT_RATIO_ANY),
-    NB_TMP_TEXT_CTA(R.layout.ad_mob_native_banner_template_text_cta_layout, false, true, ADCHOICES_BOTTOM_LEFT, NATIVE_MEDIA_ASPECT_RATIO_ANY),
-    NB_TMP_RECT(R.layout.ad_mob_native_banner_template_rect_layout, false, false, ADCHOICES_TOP_RIGHT, NATIVE_MEDIA_ASPECT_RATIO_ANY);
+    NB_TMP_BASIC(R.layout.ad_mob_native_banner_template_basic_layout, true, true, AdChoicesPlacement.TOP_RIGHT, NativeAd.NativeMediaAspectRatio.ANY),
+    NB_TMP_BASIC_LARGE(R.layout.ad_mob_native_banner_template_basic_layout, false, true, AdChoicesPlacement.TOP_RIGHT, NativeAd.NativeMediaAspectRatio.ANY),
+    NB_TMP_ICON_TEXT(R.layout.ad_mob_native_banner_template_icon_text_layout, true, true, AdChoicesPlacement.TOP_RIGHT, NativeAd.NativeMediaAspectRatio.ANY),
+    NB_TMP_TEXT_CTA(R.layout.ad_mob_native_banner_template_text_cta_layout, false, true, AdChoicesPlacement.BOTTOM_LEFT, NativeAd.NativeMediaAspectRatio.ANY),
+    NB_TMP_RECT(R.layout.ad_mob_native_banner_template_rect_layout, false, false, AdChoicesPlacement.TOP_RIGHT, NativeAd.NativeMediaAspectRatio.ANY);
 
     private final int mLayoutId;
     private final boolean mHideCallToAction;
     private final boolean mHideVideoContent;
-    private final int mAdChoicesPlacement;
-    private final int mMediaAspectRatio;
+    private final AdChoicesPlacement mAdChoicesPlacement;
+    private final NativeAd.NativeMediaAspectRatio mMediaAspectRatio;
 
     private static final String NATIVE_TEMPLATE_NAME = "nativeBannerTemplateName";
 
-    NativeTemplateType(int layoutId, boolean hideCallToAction, boolean hideVideoContent, int adChoicesPlacement, int mediaAspectRatio) {
+    NativeTemplateType(int layoutId, boolean hideCallToAction, boolean hideVideoContent, AdChoicesPlacement adChoicesPlacement, NativeAd.NativeMediaAspectRatio mediaAspectRatio) {
         this.mLayoutId = layoutId;
         this.mHideCallToAction = hideCallToAction;
         this.mHideVideoContent = hideVideoContent;
@@ -50,11 +50,11 @@ enum NativeTemplateType {
         return mHideVideoContent;
     }
 
-    public int getAdChoicesPlacement() {
+    public AdChoicesPlacement getAdChoicesPlacement() {
         return mAdChoicesPlacement;
     }
 
-    public int getMediaAspectRatio() {
+    public NativeAd.NativeMediaAspectRatio getMediaAspectRatio() {
         return mMediaAspectRatio;
     }
 

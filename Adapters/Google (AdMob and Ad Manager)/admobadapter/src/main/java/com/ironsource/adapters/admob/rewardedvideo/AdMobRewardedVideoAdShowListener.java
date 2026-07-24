@@ -1,9 +1,9 @@
 package com.ironsource.adapters.admob.rewardedvideo;
 
-import com.google.android.gms.ads.AdError;
-import com.google.android.gms.ads.FullScreenContentCallback;
-import com.google.android.gms.ads.OnUserEarnedRewardListener;
-import com.google.android.gms.ads.rewarded.RewardItem;
+import com.google.android.libraries.ads.mobile.sdk.common.FullScreenContentError;
+import com.google.android.libraries.ads.mobile.sdk.rewarded.OnUserEarnedRewardListener;
+import com.google.android.libraries.ads.mobile.sdk.rewarded.RewardItem;
+import com.google.android.libraries.ads.mobile.sdk.rewarded.RewardedAdEventCallback;
 import com.ironsource.mediationsdk.logger.IronLog;
 import com.ironsource.mediationsdk.logger.IronSourceError;
 import com.ironsource.mediationsdk.sdk.RewardedVideoSmashListener;
@@ -11,7 +11,7 @@ import com.ironsource.mediationsdk.sdk.RewardedVideoSmashListener;
 import org.jetbrains.annotations.NotNull;
 
 // AdMob rewarded video show listener
-public class AdMobRewardedVideoAdShowListener extends FullScreenContentCallback implements OnUserEarnedRewardListener {
+public class AdMobRewardedVideoAdShowListener implements RewardedAdEventCallback, OnUserEarnedRewardListener {
 
     // data
     private RewardedVideoSmashListener mListener;
@@ -30,23 +30,18 @@ public class AdMobRewardedVideoAdShowListener extends FullScreenContentCallback 
 
     // Called when fullscreen content failed to show.
     @Override
-    public void onAdFailedToShowFullScreenContent(@NotNull AdError adError) {
+    public void onAdFailedToShowFullScreenContent(@NotNull FullScreenContentError error) {
         IronLog.ADAPTER_CALLBACK.verbose("adUnitId = " + mAdUnitId);
-        int errorCode = adError.getCode();
 
-        String adapterError = adError.getMessage() + "( " + errorCode + " )";
+        String adapterError = error.getMessage() + "( " + error.getCode() + " )";
 
         if (mListener == null) {
             IronLog.INTERNAL.verbose("listener is null");
             return;
         }
 
-        if (adError.getCause() != null) {
-            adapterError = adapterError + " Caused by - " + adError.getCause();
-        }
-
         IronLog.ADAPTER_CALLBACK.error("adapterError = " + adapterError);
-        mListener.onRewardedVideoAdShowFailed(new IronSourceError(errorCode,"onRewardedAdFailedToShow " + mAdUnitId + " " + adapterError));
+        mListener.onRewardedVideoAdShowFailed(new IronSourceError(IronSourceError.ERROR_CODE_GENERIC, "onRewardedAdFailedToShow " + mAdUnitId + " " + adapterError));
     }
 
     // Called when impression is recorded for the ad

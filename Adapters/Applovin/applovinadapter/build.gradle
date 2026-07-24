@@ -69,7 +69,6 @@ android {
  dependencies {
      implementation "com.unity3d.ads-mediation:mediation-sdk:${mediationsdkVersion}"
      implementation "com.applovin:applovin-sdk:${sdkVersion}"
-     implementation "org.jetbrains:annotations:16.0.2"
  }
 
 task sourcesJar(type: Jar) {

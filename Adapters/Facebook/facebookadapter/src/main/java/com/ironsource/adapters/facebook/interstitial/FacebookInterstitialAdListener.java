@@ -55,16 +55,17 @@ public class FacebookInterstitialAdListener implements InterstitialAdExtendedLis
             return;
         }
 
-        if (mAdapter == null || mAdapter.get() == null) {
+        FacebookInterstitialAdapter adapter = mAdapter == null ? null : mAdapter.get();
+        if (adapter == null) {
             IronLog.INTERNAL.verbose("adapter is null");
             return;
         }
 
-        mAdapter.get().mAdsAvailability.put(mPlacementId, false);
+        adapter.mAdsAvailability.put(mPlacementId, false);
         int errorCode = FacebookAdapter.isNoFillError(adError) ? IronSourceError.ERROR_IS_LOAD_NO_FILL : adError.getErrorCode();
         IronSourceError ironSourceError = new IronSourceError(errorCode, adError.getErrorMessage());
 
-        if (mAdapter.get().mPlacementIdToShowAttempts.get(mPlacementId)) {
+        if (Boolean.TRUE.equals(adapter.mPlacementIdToShowAttempts.get(mPlacementId))) {
             mListener.onInterstitialAdShowFailed(ironSourceError);
         } else {
             mListener.onInterstitialAdLoadFailed(ironSourceError);

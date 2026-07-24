@@ -1,22 +1,22 @@
 package com.ironsource.adapters.admob.nativead;
 
-import androidx.annotation.NonNull;
-
-import com.google.android.gms.ads.AdListener;
-import com.google.android.gms.ads.LoadAdError;
-import com.google.android.gms.ads.nativead.NativeAd;
+import com.google.android.libraries.ads.mobile.sdk.common.LoadAdError;
+import com.google.android.libraries.ads.mobile.sdk.nativead.NativeAd;
+import com.google.android.libraries.ads.mobile.sdk.nativead.NativeAdEventCallback;
+import com.google.android.libraries.ads.mobile.sdk.nativead.NativeAdLoaderCallback;
 import com.ironsource.adapters.admob.AdMobAdapter;
 import com.ironsource.mediationsdk.ads.nativead.AdapterNativeAdData;
 import com.ironsource.mediationsdk.adunit.adapter.internal.nativead.AdapterNativeAdViewBinder;
 import com.ironsource.mediationsdk.ads.nativead.interfaces.NativeAdSmashListener;
 import com.ironsource.mediationsdk.logger.IronLog;
 import com.ironsource.mediationsdk.logger.IronSourceError;
-import com.ironsource.mediationsdk.utils.ErrorBuilder;
+
+import org.jetbrains.annotations.NotNull;
 
 import java.lang.ref.WeakReference;
 
 // AdMob native ad listener
-public class AdMobNativeAdListener extends AdListener implements NativeAd.OnNativeAdLoadedListener {
+public class AdMobNativeAdListener implements NativeAdLoaderCallback, NativeAdEventCallback {
     // data
     private final WeakReference<AdMobNativeAdAdapter> mAdapter;
     private final String mAdUnitId;
@@ -30,7 +30,7 @@ public class AdMobNativeAdListener extends AdListener implements NativeAd.OnNati
 
     // ad finished loading
     @Override
-    public void onNativeAdLoaded(@NonNull NativeAd nativeAd) {
+    public void onNativeAdLoaded(@NotNull NativeAd nativeAd) {
         IronLog.ADAPTER_CALLBACK.verbose("adUnitId = " + mAdUnitId);
 
         if (mListener == null) {
@@ -43,6 +43,9 @@ public class AdMobNativeAdListener extends AdListener implements NativeAd.OnNati
             return;
         }
 
+        // Set event callback
+        nativeAd.setAdEventCallback(this);
+
         mAdapter.get().mAd = new WeakReference<>(nativeAd);
 
         AdapterNativeAdData adapterNativeAdData = new AdMobNativeAdData(nativeAd);
@@ -52,39 +55,23 @@ public class AdMobNativeAdListener extends AdListener implements NativeAd.OnNati
     }
 
     @Override
-    public void onAdLoaded() {
-        // not used for native ads
-    }
-
-    @Override
-    public void onAdFailedToLoad(@NonNull LoadAdError loadAdError) {
+    public void onAdFailedToLoad(@NotNull LoadAdError loadAdError) {
         IronLog.ADAPTER_CALLBACK.verbose("adUnitId = " + mAdUnitId);
-        String adapterError;
-        IronSourceError ironSourceErrorObject;
 
         if (mListener == null) {
             IronLog.INTERNAL.verbose("listener is null");
             return;
         }
 
-        adapterError = loadAdError.getMessage() + "( " + loadAdError.getCode() + " ) ";
-
-        if (loadAdError.getCause() != null) {
-            adapterError = adapterError + " Caused by - " + loadAdError.getCause();
-        }
+        String adapterError = loadAdError.getMessage() + "( " + loadAdError.getCode() + " ) ";
 
         IronLog.ADAPTER_CALLBACK.error("adapterError = " + adapterError);
 
-        ironSourceErrorObject = AdMobAdapter.isNoFillError(loadAdError.getCode()) ?
+        IronSourceError ironSourceErrorObject = AdMobAdapter.isNoFillError(loadAdError.getCode()) ?
                 new IronSourceError(IronSourceError.ERROR_NT_LOAD_NO_FILL, adapterError) :
-                ErrorBuilder.buildLoadFailedError(adapterError);
+                new IronSourceError(IronSourceError.ERROR_CODE_GENERIC, adapterError);
 
         mListener.onNativeAdLoadFailed(ironSourceErrorObject);
-    }
-    
-    @Override
-    public void onAdOpened() {
-        IronLog.ADAPTER_CALLBACK.verbose("adUnitId = " + mAdUnitId);
     }
 
     @Override
@@ -107,12 +94,17 @@ public class AdMobNativeAdListener extends AdListener implements NativeAd.OnNati
             IronLog.INTERNAL.verbose("listener is null");
             return;
         }
-        
+
         mListener.onNativeAdClicked();
     }
 
     @Override
-    public void onAdClosed() {
+    public void onAdShowedFullScreenContent() {
+        IronLog.ADAPTER_CALLBACK.verbose("adUnitId = " + mAdUnitId);
+    }
+
+    @Override
+    public void onAdDismissedFullScreenContent() {
         IronLog.ADAPTER_CALLBACK.verbose("adUnitId = " + mAdUnitId);
     }
 }

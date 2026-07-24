@@ -1,10 +1,10 @@
 package com.ironsource.adapters.admob.rewardedvideo;
 
 import android.text.TextUtils;
-import com.google.android.gms.ads.LoadAdError;
-import com.google.android.gms.ads.ResponseInfo;
-import com.google.android.gms.ads.rewarded.RewardedAd;
-import com.google.android.gms.ads.rewarded.RewardedAdLoadCallback;
+import com.google.android.libraries.ads.mobile.sdk.common.AdLoadCallback;
+import com.google.android.libraries.ads.mobile.sdk.common.LoadAdError;
+import com.google.android.libraries.ads.mobile.sdk.common.ResponseInfo;
+import com.google.android.libraries.ads.mobile.sdk.rewarded.RewardedAd;
 import com.ironsource.adapters.admob.AdMobAdapter;
 import com.ironsource.mediationsdk.logger.IronLog;
 import com.ironsource.mediationsdk.logger.IronSourceError;
@@ -17,7 +17,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 // AdMob rewarded video load listener
-public class AdMobRewardedVideoAdLoadListener extends RewardedAdLoadCallback {
+public class AdMobRewardedVideoAdLoadListener implements AdLoadCallback<RewardedAd> {
 
     // data
     private WeakReference<AdMobRewardedVideoAdapter> mRewardedVideoAdapter;
@@ -71,21 +71,16 @@ public class AdMobRewardedVideoAdLoadListener extends RewardedAdLoadCallback {
         }
 
         int errorCode;
-        String adapterError;
-
-        errorCode = loadAdError.getCode();
-        adapterError = loadAdError.getMessage() + "( " + errorCode + " )";
+        String adapterError = loadAdError.getMessage() + "( " + loadAdError.getCode() + " )";
 
         IronLog.ADAPTER_CALLBACK.error("adapterError = " + adapterError);
 
         //check if error is no fill error
-        if (AdMobAdapter.isNoFillError(errorCode)) {
+        if (AdMobAdapter.isNoFillError(loadAdError.getCode())) {
             errorCode = IronSourceError.ERROR_RV_LOAD_NO_FILL;
             adapterError = "No Fill";
-        }
-
-        if (loadAdError.getCause() != null) {
-            adapterError = adapterError + "Caused by " + loadAdError.getCause();
+        } else {
+            errorCode = IronSourceError.ERROR_CODE_GENERIC;
         }
 
         IronLog.ADAPTER_CALLBACK.error("adapterError = " + adapterError);
@@ -94,6 +89,3 @@ public class AdMobRewardedVideoAdLoadListener extends RewardedAdLoadCallback {
         mListener.onRewardedVideoLoadFailed(new IronSourceError(errorCode, adapterError));
     }
 }
-
-
-

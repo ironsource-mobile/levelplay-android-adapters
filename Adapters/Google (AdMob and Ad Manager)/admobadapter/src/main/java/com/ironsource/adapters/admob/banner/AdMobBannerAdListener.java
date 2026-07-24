@@ -4,21 +4,24 @@ import android.text.TextUtils;
 import android.view.Gravity;
 import android.widget.FrameLayout;
 
-import com.google.android.gms.ads.AdListener;
-import com.google.android.gms.ads.AdView;
-import com.google.android.gms.ads.LoadAdError;
-import com.google.android.gms.ads.ResponseInfo;
+import com.google.android.libraries.ads.mobile.sdk.banner.AdView;
+import com.google.android.libraries.ads.mobile.sdk.banner.BannerAd;
+import com.google.android.libraries.ads.mobile.sdk.banner.BannerAdEventCallback;
+import com.google.android.libraries.ads.mobile.sdk.common.AdLoadCallback;
+import com.google.android.libraries.ads.mobile.sdk.common.LoadAdError;
+import com.google.android.libraries.ads.mobile.sdk.common.ResponseInfo;
 import com.ironsource.adapters.admob.AdMobAdapter;
 import com.ironsource.mediationsdk.logger.IronLog;
 import com.ironsource.mediationsdk.logger.IronSourceError;
 import com.ironsource.mediationsdk.sdk.BannerSmashListener;
-import com.ironsource.mediationsdk.utils.ErrorBuilder;
+
+import org.jetbrains.annotations.NotNull;
 
 import java.util.HashMap;
 import java.util.Map;
 
 // AdMob banner listener
-public class AdMobBannerAdListener extends AdListener {
+public class AdMobBannerAdListener implements AdLoadCallback<BannerAd>, BannerAdEventCallback {
     // data
     private BannerSmashListener mListener;
     private String mAdUnitId;
@@ -32,7 +35,7 @@ public class AdMobBannerAdListener extends AdListener {
 
     // ad finished loading
     @Override
-    public void onAdLoaded() {
+    public void onAdLoaded(@NotNull BannerAd bannerAd) {
         IronLog.ADAPTER_CALLBACK.verbose("adUnitId = " + mAdUnitId);
 
         if (mListener == null) {
@@ -45,10 +48,13 @@ public class AdMobBannerAdListener extends AdListener {
             return;
         }
 
+        // Set event callback
+        bannerAd.setAdEventCallback(this);
+
         FrameLayout.LayoutParams layoutParams = new FrameLayout.LayoutParams(FrameLayout.LayoutParams.WRAP_CONTENT, FrameLayout.LayoutParams.WRAP_CONTENT);
         layoutParams.gravity = Gravity.CENTER;
 
-        ResponseInfo responseInfo = mAdView.getResponseInfo();
+        ResponseInfo responseInfo = bannerAd.getResponseInfo();
         String creativeId = (responseInfo != null) ? responseInfo.getResponseId() : null;
 
         if (TextUtils.isEmpty(creativeId)) {
@@ -63,7 +69,7 @@ public class AdMobBannerAdListener extends AdListener {
 
     // ad request failed
     @Override
-    public void onAdFailedToLoad(LoadAdError loadAdError) {
+    public void onAdFailedToLoad(@NotNull LoadAdError loadAdError) {
         IronLog.ADAPTER_CALLBACK.verbose("adUnitId = " + mAdUnitId);
         String adapterError;
         IronSourceError ironSourceErrorObject;
@@ -73,20 +79,11 @@ public class AdMobBannerAdListener extends AdListener {
             return;
         }
 
-        if (loadAdError != null) {
-            adapterError = loadAdError.getMessage() + "( " + loadAdError.getCode() + " ) ";
+        adapterError = loadAdError.getMessage() + "( " + loadAdError.getCode() + " ) ";
 
-            if (loadAdError.getCause() != null) {
-                adapterError = adapterError + " Caused by - " + loadAdError.getCause();
-            }
-
-            ironSourceErrorObject = AdMobAdapter.isNoFillError(loadAdError.getCode()) ?
-                    new IronSourceError(IronSourceError.ERROR_BN_LOAD_NO_FILL, adapterError) :
-                    ErrorBuilder.buildLoadFailedError(adapterError);
-        } else {
-            adapterError = "Banner failed to load (loadAdError is null)";
-            ironSourceErrorObject = ErrorBuilder.buildLoadFailedError(adapterError);
-        }
+        ironSourceErrorObject = AdMobAdapter.isNoFillError(loadAdError.getCode()) ?
+                new IronSourceError(IronSourceError.ERROR_BN_LOAD_NO_FILL, adapterError) :
+                new IronSourceError(IronSourceError.ERROR_CODE_GENERIC, adapterError);
 
         IronLog.ADAPTER_CALLBACK.error(adapterError);
         mListener.onBannerAdLoadFailed(ironSourceErrorObject);
@@ -120,7 +117,7 @@ public class AdMobBannerAdListener extends AdListener {
 
     //ad opened an overlay that covers the screen after a click
     @Override
-    public void onAdOpened() {
+    public void onAdShowedFullScreenContent() {
         IronLog.ADAPTER_CALLBACK.verbose("adUnitId = " + mAdUnitId);
 
         if (mListener == null) {
@@ -133,7 +130,7 @@ public class AdMobBannerAdListener extends AdListener {
 
     // the user is about to return to the app after clicking on an ad.
     @Override
-    public void onAdClosed() {
+    public void onAdDismissedFullScreenContent() {
         IronLog.ADAPTER_CALLBACK.verbose("adUnitId = " + mAdUnitId);
 
         if (mListener == null) {
