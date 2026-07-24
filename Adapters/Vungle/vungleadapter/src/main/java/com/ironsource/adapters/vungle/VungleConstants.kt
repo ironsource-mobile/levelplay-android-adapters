@@ -52,6 +52,9 @@ object VungleConstants {
         const val AD_NOT_AVAILABLE = "Ad is not available"
         const val UNSUPPORTED_BANNER_SIZE = "Unsupported banner size"
         const val CUSTOM_SIZE_MISMATCH = "CustomBannerSizeMismatch:w-%s|h-%s"
+        const val NO_PLACEMENT_ID = "NoPlacementId:%s"
+        const val NO_VUNGLE_BANNER_SIZE = "NoVungleBannerSize:%s"
+        const val NO_ADS_TO_SHOW = "NoAdsToShow:%s"
         const val TOKEN = "sdkVersion = %s, token = %s"
         const val TOKEN_FAILURE = "failed to receive token - Vungle , error = %s"
     }

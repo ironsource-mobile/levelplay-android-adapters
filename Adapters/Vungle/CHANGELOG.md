@@ -1,5 +1,8 @@
 # Changelog
 
+## Version 5.13.0
+* Supporting Adapter Logging 2
+
 ## Version 5.12.0
 * Supporting SDK version 7.7.6
 

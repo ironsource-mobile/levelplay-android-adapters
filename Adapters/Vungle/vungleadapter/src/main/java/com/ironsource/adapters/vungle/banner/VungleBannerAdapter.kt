@@ -41,6 +41,7 @@ class VungleBannerAdapter(networkSettings: NetworkSettings) :
         if (placementId.isNullOrEmpty()) {
             val errorMessage = VungleConstants.Logs.MISSING_PARAM.format(VungleConstants.PLACEMENT_ID_KEY)
             IronLog.INTERNAL.error(errorMessage)
+            VungleMediationLogger.logError(null, VungleConstants.Logs.NO_PLACEMENT_ID.format("Banner"))
             listener.onAdLoadFailed(
                 AdapterErrorType.ADAPTER_ERROR_TYPE_INTERNAL,
                 AdapterErrors.ADAPTER_ERROR_MISSING_PARAMS,
@@ -53,6 +54,7 @@ class VungleBannerAdapter(networkSettings: NetworkSettings) :
         val vungleBannerSize = getBannerSize(appContext, bannerSize)
         if (vungleBannerSize == null) {
             IronLog.INTERNAL.error(VungleConstants.Logs.UNSUPPORTED_BANNER_SIZE)
+            VungleMediationLogger.logError(null, VungleConstants.Logs.NO_VUNGLE_BANNER_SIZE.format(placementId))
             listener.onAdLoadFailed(
                 AdapterErrorType.ADAPTER_ERROR_TYPE_INTERNAL,
                 AdapterErrors.ADAPTER_ERROR_INTERNAL,

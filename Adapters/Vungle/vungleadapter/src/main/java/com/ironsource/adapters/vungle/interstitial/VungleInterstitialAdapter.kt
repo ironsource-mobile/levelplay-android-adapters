@@ -16,6 +16,7 @@ import com.ironsource.mediationsdk.model.NetworkSettings
 import com.unity3d.mediation.adapters.levelplay.LevelPlayBaseInterstitial
 import com.vungle.ads.AdConfig
 import com.vungle.ads.InterstitialAd
+import com.vungle.ads.VungleMediationLogger
 
 class VungleInterstitialAdapter(networkSettings: NetworkSettings) :
     LevelPlayBaseInterstitial<VungleAdapter>(networkSettings) {
@@ -32,6 +33,7 @@ class VungleInterstitialAdapter(networkSettings: NetworkSettings) :
         if (placementId.isNullOrEmpty()) {
             val errorMessage = VungleConstants.Logs.MISSING_PARAM.format(VungleConstants.PLACEMENT_ID_KEY)
             IronLog.INTERNAL.error(errorMessage)
+            VungleMediationLogger.logError(null, VungleConstants.Logs.NO_PLACEMENT_ID.format("Interstitial"))
             listener.onAdLoadFailed(
                 AdapterErrorType.ADAPTER_ERROR_TYPE_INTERNAL,
                 AdapterErrors.ADAPTER_ERROR_MISSING_PARAMS,
@@ -52,6 +54,7 @@ class VungleInterstitialAdapter(networkSettings: NetworkSettings) :
 
         if (!isAdAvailable(adData)) {
             IronLog.INTERNAL.error(VungleConstants.Logs.AD_NOT_AVAILABLE)
+            VungleMediationLogger.logError(interstitialAd, VungleConstants.Logs.NO_ADS_TO_SHOW.format("Interstitial"))
             listener.onAdShowFailed(AdapterErrors.ADAPTER_ERROR_AD_EXPIRED, VungleConstants.Logs.AD_NOT_AVAILABLE)
             return
         }
