@@ -2,212 +2,189 @@ package com.ironsource.adapters.line
 
 import android.content.Context
 import com.five_corp.ad.AdLoader
-import com.five_corp.ad.FiveAd
 import com.five_corp.ad.FiveAdConfig
-import com.ironsource.adapters.line.interstitial.LineInterstitialAdapter
-import com.ironsource.adapters.line.rewardedvideo.LineRewardedVideoAdapter
-import com.ironsource.environment.ContextProvider
-import com.ironsource.mediationsdk.AbstractAdapter
-import com.ironsource.mediationsdk.INetworkInitCallbackListener
-import com.ironsource.mediationsdk.IntegrationData
-import com.ironsource.mediationsdk.LoadWhileShowSupportState
+import com.five_corp.ad.FiveAdErrorCode
+import com.ironsource.mediationsdk.adunit.adapter.listener.NetworkInitializationListener
+import com.ironsource.mediationsdk.adunit.adapter.utility.AdData
+import com.ironsource.mediationsdk.adunit.adapter.utility.AdapterErrorType
+import com.ironsource.mediationsdk.adunit.adapter.utility.AdapterErrors
 import com.ironsource.mediationsdk.bidding.BiddingDataCallback
 import com.ironsource.mediationsdk.logger.IronLog
-import com.ironsource.mediationsdk.logger.IronSourceError
 import com.unity3d.mediation.LevelPlay
-import org.json.JSONObject
+import com.unity3d.mediation.adapters.levelplay.LevelPlayBaseAdapter
+import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.atomic.AtomicBoolean
-import com.five_corp.ad.AdLoader.*
-import com.five_corp.ad.FiveAdErrorCode
 
-class LineAdapter(providerName: String) : AbstractAdapter(providerName),
-    INetworkInitCallbackListener {
-
-    init {
-        setRewardedVideoAdapter(LineRewardedVideoAdapter(this))
-        setInterstitialAdapter(LineInterstitialAdapter(this))
-
-        // The network's capability to load a Rewarded Video ad while another Rewarded Video ad of that network is showing
-        mLWSSupportState = LoadWhileShowSupportState.LOAD_WHILE_SHOW_BY_NETWORK
-    }
+class LineAdapter : LevelPlayBaseAdapter() {
 
     companion object {
-
-        // Adapter version
-        private const val VERSION: String = BuildConfig.VERSION_NAME
-        private const val GitHash: String = BuildConfig.GitHash
-
-        // Verve Keys
-        private const val NETWORK_NAME: String = "Line"
-        private const val APP_ID_KEY: String = "appId"
-        private const val SLOT_ID_KEY: String = "slotId"
-
-        const val LOG_INIT_FAILED = "$NETWORK_NAME sdk init failed"
-
-        // Handle init callback for all adapter instances
-        private val mWasInitCalled: AtomicBoolean = AtomicBoolean(false)
-        private var mInitState: InitState = InitState.INIT_STATE_NONE
-        private val initCallbackListeners = HashSet<INetworkInitCallbackListener>()
-
-        private var fiveAdConfig: FiveAdConfig? = null
 
         // Init state possible values
         enum class InitState {
             INIT_STATE_NONE,
+            INIT_STATE_IN_PROGRESS,
             INIT_STATE_SUCCESS,
             INIT_STATE_FAILED
         }
 
-        @JvmStatic
-        fun startAdapter(providerName: String): LineAdapter {
-            return LineAdapter(providerName)
-        }
+        private const val GitHash: String = BuildConfig.GitHash
+
+        // Handle init callback for all adapter instances
+        private val wasInitCalled: AtomicBoolean = AtomicBoolean(false)
+        private var initState: InitState = InitState.INIT_STATE_NONE
+        private val initListeners = CopyOnWriteArrayList<NetworkInitializationListener>()
+        private var fiveAdConfig: FiveAdConfig? = null
 
         @JvmStatic
-        fun getIntegrationData(context: Context?): IntegrationData {
-            return IntegrationData(NETWORK_NAME, VERSION)
-        }
-
-        @JvmStatic
-        fun getAdapterSDKVersion(): String {
-            return FiveAd.getSdkSemanticVersion()
-        }
-
-        fun getAppIdKey(): String {
-            return APP_ID_KEY
-        }
-
-        fun getSlotIdKey(): String {
-            return SLOT_ID_KEY
-        }
-
-        fun getLoadError(errorCode: FiveAdErrorCode): IronSourceError {
-            return IronSourceError(errorCode.value, errorCode.name)
-        }
-
-        fun getFiveAdConfig(appId: String): FiveAdConfig {
-            return fiveAdConfig ?: FiveAdConfig(appId).also {
-                fiveAdConfig = it
+        fun getLoadErrorType(errorCode: FiveAdErrorCode): AdapterErrorType {
+            return when (errorCode) {
+                FiveAdErrorCode.NO_AD -> AdapterErrorType.ADAPTER_ERROR_TYPE_NO_FILL
+                else -> AdapterErrorType.ADAPTER_ERROR_TYPE_INTERNAL
             }
         }
 
-        fun getAdLoader(appId: String): AdLoader? {
-            val context = ContextProvider.getInstance().applicationContext
-            val config = getFiveAdConfig(appId)
-            val adLoader = forConfig(context, config)
-            return adLoader
+        @JvmStatic
+        fun networkAdapterVersion(): String = LineConstants.ADAPTER_VERSION
+
+        internal fun getFiveAdConfig(appId: String): FiveAdConfig {
+            return fiveAdConfig ?: FiveAdConfig(appId).also { fiveAdConfig = it }
+        }
+
+        internal fun getAdLoader(context: Context): AdLoader? {
+            return fiveAdConfig?.let { AdLoader.forConfig(context.applicationContext, it) }
         }
     }
 
-    //region Adapter Methods
+    // region Adapter Methods
 
-    // Get adapter version
-    override fun getVersion(): String {
-        return VERSION
-    }
+    override fun getAdapterVersion(): String = LineConstants.ADAPTER_VERSION
 
-    // Get network sdk version
-    override fun getCoreSDKVersion(): String {
-        return getAdapterSDKVersion()
-    }
+    override fun getNetworkSDKVersion(): String = AdLoader.getSemanticVersion()
 
-    override fun isUsingActivityBeforeImpression(adFormat: LevelPlay.AdFormat): Boolean {
-        return false
-    }
+    override fun isUsingActivityBeforeImpression(adFormat: LevelPlay.AdFormat): Boolean = false
 
-    //endregion
-
-    //region Initializations methods and callbacks
-
-    fun initSdk(config: JSONObject) {
-        val appIdKey = getAppIdKey()
-        val appId = config.optString(appIdKey)
-
-        IronLog.ADAPTER_API.verbose("appId = $appId")
-
-        // Add self to the init listeners only in case the initialization has not finished yet
-        if (mInitState == InitState.INIT_STATE_NONE) {
-            initCallbackListeners.add(this)
-        }
-
-        if (FiveAd.isInitialized()) {
-            IronLog.ADAPTER_API.verbose("Initialization success")
-            initializationSuccess()
+    override fun init(
+        adData: AdData,
+        context: Context,
+        networkInitializationListener: NetworkInitializationListener?
+    ) {
+        // Validate configuration params first before any other checks
+        val appId = adData.getString(LineConstants.APP_ID_KEY)
+        if (appId.isNullOrEmpty()) {
+            val errorMessage = LineConstants.Logs.MISSING_PARAM.format(LineConstants.APP_ID_KEY)
+            IronLog.INTERNAL.error(errorMessage)
+            networkInitializationListener?.onInitFailed(AdapterErrors.ADAPTER_ERROR_MISSING_PARAMS, errorMessage)
             return
         }
 
-        IronLog.ADAPTER_API.verbose("$appId: $appId")
-        val context = ContextProvider.getInstance().applicationContext
-        val lineConfig = getFiveAdConfig(appId)
+        val slotId = adData.getString(LineConstants.SLOT_ID_KEY)
+        if (slotId.isNullOrEmpty()) {
+            val errorMessage = LineConstants.Logs.MISSING_PARAM.format(LineConstants.SLOT_ID_KEY)
+            IronLog.INTERNAL.error(errorMessage)
+            networkInitializationListener?.onInitFailed(AdapterErrors.ADAPTER_ERROR_MISSING_PARAMS, errorMessage)
+            return
+        }
 
-        try {
-            val adLoader = forConfig(context, lineConfig)
-            if (adLoader == null) {
-                IronLog.ADAPTER_API.verbose("Initialization failed: AdLoader is null")
+        if (initState == InitState.INIT_STATE_SUCCESS) {
+            networkInitializationListener?.onInitSuccess()
+            return
+        }
+
+        if (initState == InitState.INIT_STATE_FAILED) {
+            networkInitializationListener?.onInitFailed(
+                AdapterErrors.ADAPTER_ERROR_INTERNAL,
+                LineConstants.Logs.INIT_FAILED
+            )
+            return
+        }
+
+        if (initState == InitState.INIT_STATE_NONE || initState == InitState.INIT_STATE_IN_PROGRESS) {
+            networkInitializationListener?.let { initListeners.add(it) }
+        }
+
+        if (wasInitCalled.compareAndSet(false, true)) {
+            initState = InitState.INIT_STATE_IN_PROGRESS
+            IronLog.ADAPTER_API.verbose(LineConstants.Logs.APP_ID_AND_SLOT_ID.format(appId, slotId))
+            try {
+                val loader = AdLoader.forConfig(context.applicationContext, getFiveAdConfig(appId))
+                if (loader == null) {
+                    IronLog.INTERNAL.error(LineConstants.Logs.AD_LOADER_NULL)
+                    initializationFailure()
+                } else {
+                    initializationSuccess()
+                }
+            } catch (e: IllegalArgumentException) {
+                IronLog.INTERNAL.error(LineConstants.Logs.FAILED_TO_LOAD.format(LineConstants.Logs.INIT_FAILED, e.message ?: ""))
                 initializationFailure()
-            } else {
-                initializationSuccess()
             }
-        } catch (e: IllegalArgumentException) {
-            IronLog.ADAPTER_API.verbose("Initialization failed: ${e.message}")
-            initializationFailure()
         }
     }
 
     private fun initializationSuccess() {
         IronLog.ADAPTER_CALLBACK.verbose()
 
-        mInitState = InitState.INIT_STATE_SUCCESS
+        initState = InitState.INIT_STATE_SUCCESS
 
-        //iterate over all the adapter instances and report init success
-        for (adapter: INetworkInitCallbackListener in initCallbackListeners) {
-            adapter.onNetworkInitCallbackSuccess()
+        // Iterate over all the adapter instances and report init success
+        for (listener: NetworkInitializationListener in initListeners) {
+            listener.onInitSuccess()
         }
-        initCallbackListeners.clear()
+
+        initListeners.clear()
     }
 
     private fun initializationFailure() {
-        IronLog.ADAPTER_CALLBACK.verbose()
+        IronLog.ADAPTER_CALLBACK.error(LineConstants.Logs.INIT_FAILED)
 
-        mInitState = InitState.INIT_STATE_FAILED
+        initState = InitState.INIT_STATE_FAILED
 
-        //iterate over all the adapter instances and report init failed
-        for (adapter: INetworkInitCallbackListener in initCallbackListeners) {
-            adapter.onNetworkInitCallbackFailed("Line sdk init failed")
+        // Iterate over all the adapter instances and report init failed
+        for (listener: NetworkInitializationListener in initListeners) {
+            listener.onInitFailed(AdapterErrors.ADAPTER_ERROR_INTERNAL, LineConstants.Logs.INIT_FAILED)
         }
-        initCallbackListeners.clear()
+
+        initListeners.clear()
     }
 
-    fun getInitState(): InitState {
-        return mInitState
-    }
+    // endregion
 
-    //endregion
+    // region Helper Methods
 
-    // region Helpers
-
-    fun collectBiddingData(biddingDataCallback: BiddingDataCallback, config: JSONObject) {
-        val appId = config.optString(getAppIdKey())
-        val adLoader = getAdLoader(appId)
-        if (adLoader == null) {
-            biddingDataCallback.onFailure("failed to receive token adLoader is null - Line")
+    internal fun collectBiddingData(
+        context: Context,
+        appId: String?,
+        slotId: String,
+        biddingDataCallback: BiddingDataCallback
+    ) {
+        if (appId.isNullOrEmpty()) {
+            val errorMessage = LineConstants.Logs.MISSING_PARAM.format(LineConstants.APP_ID_KEY)
+            IronLog.INTERNAL.error(errorMessage)
+            biddingDataCallback.onFailure(errorMessage)
             return
         }
-        val slotId = config.optString(getSlotIdKey())
-        adLoader.collectSignal(slotId, object : CollectSignalCallback {
+
+        val loader = AdLoader.forConfig(context.applicationContext, getFiveAdConfig(appId))
+        if (loader == null) {
+            IronLog.INTERNAL.error(LineConstants.Logs.TOKEN_AD_LOADER_NULL)
+            biddingDataCallback.onFailure(LineConstants.Logs.TOKEN_AD_LOADER_NULL)
+            return
+        }
+
+        loader.collectSignal(slotId, object : AdLoader.CollectSignalCallback {
             override fun onCollect(token: String) {
+                IronLog.ADAPTER_API.verbose(LineConstants.Logs.TOKEN.format(token))
                 val ret: MutableMap<String?, Any?> = HashMap()
-                IronLog.ADAPTER_API.verbose("token = $token")
-                ret["token"] = token
+                ret[LineConstants.TOKEN_KEY] = token
                 biddingDataCallback.onSuccess(ret)
             }
 
             override fun onError(fiveAdErrorCode: FiveAdErrorCode) {
-                biddingDataCallback.onFailure("failed to receive token - Line, error = $fiveAdErrorCode")
+                val errorMessage = LineConstants.Logs.TOKEN_FAILURE.format(fiveAdErrorCode.name)
+                IronLog.INTERNAL.error(errorMessage)
+                biddingDataCallback.onFailure(errorMessage)
             }
         })
     }
 
-    //endregion
-
+    // endregion
 }

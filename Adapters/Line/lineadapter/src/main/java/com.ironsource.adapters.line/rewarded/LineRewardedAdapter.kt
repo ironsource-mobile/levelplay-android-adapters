@@ -1,31 +1,31 @@
-package com.ironsource.adapters.line.interstitial
+package com.ironsource.adapters.line.rewarded
 
 import android.app.Activity
 import android.content.Context
 import com.five_corp.ad.BidData
-import com.five_corp.ad.FiveAdInterstitial
+import com.five_corp.ad.FiveAdVideoReward
 import com.ironsource.adapters.line.LineAdapter
 import com.ironsource.adapters.line.LineConstants
-import com.ironsource.mediationsdk.adunit.adapter.listener.InterstitialAdListener
+import com.ironsource.mediationsdk.adunit.adapter.listener.RewardedVideoAdListener
 import com.ironsource.mediationsdk.adunit.adapter.utility.AdData
 import com.ironsource.mediationsdk.adunit.adapter.utility.AdapterErrorType
 import com.ironsource.mediationsdk.adunit.adapter.utility.AdapterErrors
 import com.ironsource.mediationsdk.bidding.BiddingDataCallback
 import com.ironsource.mediationsdk.logger.IronLog
 import com.ironsource.mediationsdk.model.NetworkSettings
-import com.unity3d.mediation.adapters.levelplay.LevelPlayBaseInterstitial
+import com.unity3d.mediation.adapters.levelplay.LevelPlayBaseRewardedVideo
 import java.lang.ref.WeakReference
 
-class LineInterstitialAdapter(networkSettings: NetworkSettings) :
-    LevelPlayBaseInterstitial<LineAdapter>(networkSettings) {
+class LineRewardedAdapter(networkSettings: NetworkSettings) :
+    LevelPlayBaseRewardedVideo<LineAdapter>(networkSettings) {
 
-    private var interstitialAdListener: LineInterstitialListener? = null
-    private var interstitialAd: FiveAdInterstitial? = null
+    private var rewardedAdListener: LineRewardedListener? = null
+    private var rewardedAd: FiveAdVideoReward? = null
     private var isAdAvailableFlag = false
 
     // region Adapter Methods
 
-    override fun loadAd(adData: AdData, context: Context, listener: InterstitialAdListener) {
+    override fun loadAd(adData: AdData, context: Context, listener: RewardedVideoAdListener) {
         IronLog.ADAPTER_API.verbose()
 
         val serverData = adData.serverData
@@ -51,13 +51,13 @@ class LineInterstitialAdapter(networkSettings: NetworkSettings) :
             return
         }
 
-        setInterstitialAdAvailability(false)
+        setRewardedAdAvailability(false)
 
-        interstitialAdListener = LineInterstitialListener(listener, WeakReference(this))
-        adLoader.loadInterstitialAd(BidData(serverData, null), interstitialAdListener!!)
+        rewardedAdListener = LineRewardedListener(listener, WeakReference(this))
+        adLoader.loadRewardAd(BidData(serverData, null), rewardedAdListener!!)
     }
 
-    override fun showAd(adData: AdData, activity: Activity, listener: InterstitialAdListener) {
+    override fun showAd(adData: AdData, activity: Activity, listener: RewardedVideoAdListener) {
         IronLog.ADAPTER_API.verbose()
 
         if (!isAdAvailable(adData)) {
@@ -68,20 +68,20 @@ class LineInterstitialAdapter(networkSettings: NetworkSettings) :
             return
         }
 
-        interstitialAd?.apply {
-            interstitialAdListener?.let { setEventListener(it) }
+        rewardedAd?.apply {
+            rewardedAdListener?.let { setEventListener(it) }
             showAd()
         }
     }
 
     override fun isAdAvailable(adData: AdData): Boolean {
-        return interstitialAd != null && isAdAvailableFlag
+        return rewardedAd != null && isAdAvailableFlag
     }
 
     override fun destroyAd(adData: AdData) {
         IronLog.ADAPTER_API.verbose()
-        interstitialAd = null
-        interstitialAdListener = null
+        rewardedAd = null
+        rewardedAdListener = null
         isAdAvailableFlag = false
     }
 
@@ -107,12 +107,12 @@ class LineInterstitialAdapter(networkSettings: NetworkSettings) :
 
     // region Helper Methods
 
-    internal fun setInterstitialAdAvailability(isAvailable: Boolean) {
+    internal fun setRewardedAdAvailability(isAvailable: Boolean) {
         isAdAvailableFlag = isAvailable
     }
 
-    internal fun setInterstitialAd(ad: FiveAdInterstitial) {
-        interstitialAd = ad
+    internal fun setRewardedAd(ad: FiveAdVideoReward) {
+        rewardedAd = ad
     }
 
     // endregion
