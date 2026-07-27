@@ -69,6 +69,9 @@ class VoodooAdapter(providerName: String) : AbstractAdapter(providerName), INetw
             return AdnSdk.getVersion()
         }
 
+        @JvmStatic
+        fun networkAdapterVersion(): String = BuildConfig.VERSION_NAME
+
         fun getPlacementIdKey(): String {
             return PLACEMENT_ID_KEY
         }
