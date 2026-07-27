@@ -1,29 +1,29 @@
-package com.ironsource.adapters.yso.interstitial
+package com.ironsource.adapters.yso.rewarded
 
 import android.app.Activity
 import android.content.Context
 import com.ironsource.adapters.yso.YSOAdapter
 import com.ironsource.adapters.yso.YSOConstants
-import com.ironsource.mediationsdk.adunit.adapter.listener.InterstitialAdListener
+import com.ironsource.mediationsdk.adunit.adapter.listener.RewardedVideoAdListener
 import com.ironsource.mediationsdk.adunit.adapter.utility.AdData
 import com.ironsource.mediationsdk.adunit.adapter.utility.AdapterErrorType
 import com.ironsource.mediationsdk.adunit.adapter.utility.AdapterErrors
 import com.ironsource.mediationsdk.bidding.BiddingDataCallback
 import com.ironsource.mediationsdk.logger.IronLog
 import com.ironsource.mediationsdk.model.NetworkSettings
-import com.unity3d.mediation.adapters.levelplay.LevelPlayBaseInterstitial
+import com.unity3d.mediation.adapters.levelplay.LevelPlayBaseRewardedVideo
 import com.ysocorp.ysonetwork.YsoNetwork
 import java.lang.ref.WeakReference
 
-class YSOInterstitialAdapter(networkSettings: NetworkSettings) :
-    LevelPlayBaseInterstitial<YSOAdapter>(networkSettings) {
+class YSORewardedAdapter(networkSettings: NetworkSettings) :
+    LevelPlayBaseRewardedVideo<YSOAdapter>(networkSettings) {
 
-    private var interstitialAdListener: YSOInterstitialListener? = null
+    private var rewardedAdListener: YSORewardedListener? = null
     private var isAdAvailableFlag = false
 
     // region Adapter Methods
 
-    override fun loadAd(adData: AdData, context: Context, listener: InterstitialAdListener) {
+    override fun loadAd(adData: AdData, context: Context, listener: RewardedVideoAdListener) {
         val placementKey = adData.getString(YSOConstants.PLACEMENT_KEY)
         IronLog.ADAPTER_API.verbose(YSOConstants.Logs.PLACEMENT_KEY_LOG.format(placementKey ?: ""))
 
@@ -39,13 +39,13 @@ class YSOInterstitialAdapter(networkSettings: NetworkSettings) :
             return
         }
 
-        setInterstitialAdAvailability(false)
+        setRewardedAdAvailability(false)
 
-        interstitialAdListener = YSOInterstitialListener(listener, WeakReference(this))
-        YsoNetwork.interstitialLoad(placementKey, serverData, interstitialAdListener)
+        rewardedAdListener = YSORewardedListener(listener, WeakReference(this))
+        YsoNetwork.rewardedLoad(placementKey, serverData, rewardedAdListener)
     }
 
-    override fun showAd(adData: AdData, activity: Activity, listener: InterstitialAdListener) {
+    override fun showAd(adData: AdData, activity: Activity, listener: RewardedVideoAdListener) {
         val placementKey = adData.getString(YSOConstants.PLACEMENT_KEY)
         IronLog.ADAPTER_API.verbose(YSOConstants.Logs.PLACEMENT_KEY_LOG.format(placementKey ?: ""))
 
@@ -57,8 +57,8 @@ class YSOInterstitialAdapter(networkSettings: NetworkSettings) :
             return
         }
 
-        setInterstitialAdAvailability(false)
-        YsoNetwork.interstitialShow(placementKey, interstitialAdListener, activity)
+        setRewardedAdAvailability(false)
+        YsoNetwork.rewardedShow(placementKey, rewardedAdListener, activity)
     }
 
     override fun isAdAvailable(adData: AdData): Boolean = isAdAvailableFlag
@@ -66,7 +66,7 @@ class YSOInterstitialAdapter(networkSettings: NetworkSettings) :
     override fun destroyAd(adData: AdData) {
         IronLog.ADAPTER_API.verbose()
         isAdAvailableFlag = false
-        interstitialAdListener = null
+        rewardedAdListener = null
     }
 
     override fun collectBiddingData(
@@ -88,7 +88,7 @@ class YSOInterstitialAdapter(networkSettings: NetworkSettings) :
 
     // region Helper Methods
 
-    internal fun setInterstitialAdAvailability(isAvailable: Boolean) {
+    internal fun setRewardedAdAvailability(isAvailable: Boolean) {
         isAdAvailableFlag = isAvailable
     }
 
