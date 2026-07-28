@@ -38,6 +38,9 @@ class MolocoAdapter : LevelPlayBaseAdapter() {
         private val wasInitCalled: AtomicBoolean = AtomicBoolean(false)
         private var initState: InitState = InitState.INIT_STATE_NONE
         private val initListeners = CopyOnWriteArrayList<NetworkInitializationListener>()
+
+        @JvmStatic
+        fun networkAdapterVersion(): String = MolocoConstants.ADAPTER_VERSION
     }
 
     // region Adapter Methods
