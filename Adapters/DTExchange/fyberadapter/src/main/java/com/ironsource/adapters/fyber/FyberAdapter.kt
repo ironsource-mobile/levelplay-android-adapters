@@ -55,6 +55,9 @@ class FyberAdapter : LevelPlayBaseAdapter(), AdapterNetworkDataInterface {
                 AdapterErrorType.ADAPTER_ERROR_TYPE_INTERNAL
             }
         }
+
+        @JvmStatic
+        fun networkAdapterVersion(): String = FyberConstants.ADAPTER_VERSION
     }
 
     private val mainHandler = Handler(Looper.getMainLooper())
