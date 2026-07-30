@@ -52,6 +52,9 @@ class YandexAdapter : LevelPlayBaseAdapter() {
                 .filter { !TextUtils.isEmpty(it) }
                 .joinToString(",")
         }
+
+        @JvmStatic
+        fun networkAdapterVersion(): String = YandexConstants.ADAPTER_VERSION
     }
 
     // region Adapter Methods
