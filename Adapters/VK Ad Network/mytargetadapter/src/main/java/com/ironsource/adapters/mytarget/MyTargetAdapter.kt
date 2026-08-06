@@ -31,6 +31,9 @@ class MyTargetAdapter : LevelPlayBaseAdapter() {
         private val wasInitCalled: AtomicBoolean = AtomicBoolean(false)
         private var initState: InitState = InitState.INIT_STATE_NONE
         private val initListeners = CopyOnWriteArrayList<NetworkInitializationListener>()
+
+        @JvmStatic
+        fun networkAdapterVersion(): String = MyTargetConstants.ADAPTER_VERSION
     }
 
     // region Adapter Methods
