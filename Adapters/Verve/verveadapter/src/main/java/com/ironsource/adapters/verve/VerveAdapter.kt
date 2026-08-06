@@ -34,6 +34,9 @@ class VerveAdapter() : LevelPlayBaseAdapter() {
         private val wasInitCalled: AtomicBoolean = AtomicBoolean(false)
         private var initState: InitState = InitState.INIT_STATE_NONE
         private val initCallbackListeners = CopyOnWriteArrayList<NetworkInitializationListener>()
+
+        @JvmStatic
+        fun networkAdapterVersion(): String = VerveConstants.ADAPTER_VERSION
     }
 
     // region Adapter Methods
