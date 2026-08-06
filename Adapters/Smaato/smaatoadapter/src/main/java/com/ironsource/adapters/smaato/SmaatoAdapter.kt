@@ -48,6 +48,9 @@ class SmaatoAdapter : LevelPlayBaseAdapter() {
                 null
             }
         }
+
+        @JvmStatic
+        fun networkAdapterVersion(): String = SmaatoConstants.ADAPTER_VERSION
     }
 
     // region Adapter Methods
