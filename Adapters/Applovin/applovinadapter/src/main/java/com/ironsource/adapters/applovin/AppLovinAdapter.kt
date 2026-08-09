@@ -76,6 +76,9 @@ class AppLovinAdapter : LevelPlayBaseAdapter() {
                 else -> AppLovinConstants.Logs.ERROR_UNKNOWN
             }
         }
+
+        @JvmStatic
+        fun networkAdapterVersion(): String = AppLovinConstants.ADAPTER_VERSION
     }
 
     private val mainHandler = Handler(Looper.getMainLooper())
