@@ -30,32 +30,31 @@ class MobileFuseRewardedAdapter(networkSettings: NetworkSettings) :
         IronLog.ADAPTER_API.verbose(MobileFuseConstants.Logs.PLACEMENT_ID.format(placementId ?: ""))
 
         if (placementId.isNullOrEmpty()) {
-            IronLog.INTERNAL.error(MobileFuseConstants.Logs.PLACEMENT_ID_EMPTY)
+            val errorMessage = MobileFuseConstants.Logs.MISSING_PARAM.format(MobileFuseConstants.PLACEMENT_ID_KEY)
+            IronLog.INTERNAL.error(errorMessage)
             listener.onAdLoadFailed(
                 AdapterErrorType.ADAPTER_ERROR_TYPE_INTERNAL,
                 AdapterErrors.ADAPTER_ERROR_MISSING_PARAMS,
-                MobileFuseConstants.Logs.PLACEMENT_ID_EMPTY
+                errorMessage
             )
             return
         }
 
         val serverData = adData.serverData
         if (serverData.isNullOrEmpty()) {
-            IronLog.INTERNAL.error(MobileFuseConstants.SERVER_DATA_EMPTY)
+            val errorMessage = MobileFuseConstants.Logs.MISSING_PARAM.format(MobileFuseConstants.SERVER_DATA)
+            IronLog.INTERNAL.error(errorMessage)
             listener.onAdLoadFailed(
                 AdapterErrorType.ADAPTER_ERROR_TYPE_INTERNAL,
                 AdapterErrors.ADAPTER_ERROR_MISSING_PARAMS,
-                MobileFuseConstants.SERVER_DATA_EMPTY
+                errorMessage
             )
             return
         }
 
-        val ad = MobileFuseRewardedAd(context.applicationContext, placementId)
-        rewardedAd = ad
-
-        val rewardedVideoAdListener = MobileFuseRewardedListener(listener)
-        ad.setListener(rewardedVideoAdListener)
-        ad.loadAdFromBiddingToken(serverData)
+        rewardedAd = MobileFuseRewardedAd(context.applicationContext, placementId)
+        rewardedAd?.setListener(MobileFuseRewardedListener(listener))
+        rewardedAd?.loadAdFromBiddingToken(serverData)
     }
 
     override fun showAd(

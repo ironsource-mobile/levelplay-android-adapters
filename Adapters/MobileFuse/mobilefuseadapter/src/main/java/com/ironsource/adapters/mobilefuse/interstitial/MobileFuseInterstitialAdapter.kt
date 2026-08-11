@@ -30,32 +30,31 @@ class MobileFuseInterstitialAdapter(networkSettings: NetworkSettings) :
         IronLog.ADAPTER_API.verbose(MobileFuseConstants.Logs.PLACEMENT_ID.format(placementId ?: ""))
 
         if (placementId.isNullOrEmpty()) {
-            IronLog.INTERNAL.error(MobileFuseConstants.Logs.PLACEMENT_ID_EMPTY)
+            val errorMessage = MobileFuseConstants.Logs.MISSING_PARAM.format(MobileFuseConstants.PLACEMENT_ID_KEY)
+            IronLog.INTERNAL.error(errorMessage)
             listener.onAdLoadFailed(
                 AdapterErrorType.ADAPTER_ERROR_TYPE_INTERNAL,
                 AdapterErrors.ADAPTER_ERROR_MISSING_PARAMS,
-                MobileFuseConstants.Logs.PLACEMENT_ID_EMPTY
+                errorMessage
             )
             return
         }
 
         val serverData = adData.serverData
         if (serverData.isNullOrEmpty()) {
-            IronLog.INTERNAL.error(MobileFuseConstants.SERVER_DATA_EMPTY)
+            val errorMessage = MobileFuseConstants.Logs.MISSING_PARAM.format(MobileFuseConstants.SERVER_DATA)
+            IronLog.INTERNAL.error(errorMessage)
             listener.onAdLoadFailed(
                 AdapterErrorType.ADAPTER_ERROR_TYPE_INTERNAL,
                 AdapterErrors.ADAPTER_ERROR_MISSING_PARAMS,
-                MobileFuseConstants.SERVER_DATA_EMPTY
+                errorMessage
             )
             return
         }
 
-        val ad = MobileFuseInterstitialAd(context.applicationContext, placementId)
-        interstitialAd = ad
-
-        val interstitialAdListener = MobileFuseInterstitialListener(listener)
-        ad.setListener(interstitialAdListener)
-        ad.loadAdFromBiddingToken(serverData)
+        interstitialAd = MobileFuseInterstitialAd(context.applicationContext, placementId)
+        interstitialAd?.setListener(MobileFuseInterstitialListener(listener))
+        interstitialAd?.loadAdFromBiddingToken(serverData)
     }
 
     override fun showAd(

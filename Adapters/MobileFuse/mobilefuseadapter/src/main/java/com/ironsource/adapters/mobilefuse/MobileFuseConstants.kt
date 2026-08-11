@@ -7,6 +7,7 @@ object MobileFuseConstants {
 
     // Configuration keys
     const val PLACEMENT_ID_KEY = "placementId"
+    const val SERVER_DATA = "serverData"
 
     // Mediation name
     const val MEDIATION_NAME = "unity_bidding"
@@ -27,7 +28,6 @@ object MobileFuseConstants {
 
     // Error messages
     const val UNKNOWN_ERROR = "Unknown error"
-    const val SERVER_DATA_EMPTY = "serverData is empty"
     const val AD_NOT_AVAILABLE = "Ad not available"
     const val UNSUPPORTED_BANNER_SIZE = "Unsupported banner size"
     const val AD_EXPIRED = "Ad expired"
@@ -40,8 +40,8 @@ object MobileFuseConstants {
         const val PLACEMENT_ID = "placementId = %s"
         const val INIT_FAILED = "MobileFuse sdk init failed"
         const val INIT_SUCCESS = "SDK initialized successfully"
-        const val PLACEMENT_ID_EMPTY = "Missing params - placementId"
         const val NETWORK_ADAPTER_IS_NULL = "Network adapter is null"
+        const val MISSING_PARAM = "Missing params - %s"
         const val TOKEN_ERROR = "returning null as token since init isn't completed"
         const val TOKEN = "token = %s"
         const val TOKEN_GENERATION_FAILED = "Token generation failed with error: %s"

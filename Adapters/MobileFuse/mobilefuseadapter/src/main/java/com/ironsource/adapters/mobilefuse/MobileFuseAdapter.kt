@@ -41,6 +41,9 @@ class MobileFuseAdapter() : LevelPlayBaseAdapter(), com.mobilefuse.sdk.SdkInitLi
         private var coppaValue: Boolean = false
         private var doNotSellValue: String = MobileFuseConstants.DEFAULT_DO_NOT_SELL_VALUE
         private var doNotTrackValue: Boolean = false
+
+        @JvmStatic
+        fun networkAdapterVersion(): String = MobileFuseConstants.ADAPTER_VERSION
     }
 
     // region Adapter Methods
@@ -59,6 +62,13 @@ class MobileFuseAdapter() : LevelPlayBaseAdapter(), com.mobilefuse.sdk.SdkInitLi
         // Check if already initialized
         if (initState == InitState.INIT_STATE_SUCCESS) {
             networkInitializationListener?.onInitSuccess()
+            return
+        }
+
+        // Check if init failed previously
+        if (initState == InitState.INIT_STATE_FAILED) {
+            IronLog.INTERNAL.error(MobileFuseConstants.Logs.INIT_FAILED)
+            networkInitializationListener?.onInitFailed(AdapterErrors.ADAPTER_ERROR_INTERNAL, MobileFuseConstants.Logs.INIT_FAILED)
             return
         }
 
