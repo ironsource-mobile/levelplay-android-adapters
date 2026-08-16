@@ -41,6 +41,9 @@ class BigoAdapter : LevelPlayBaseAdapter() {
             put(BigoConstants.MEDIATION_INFO_MEDIATION_VERSION, LevelPlay.getSdkVersion())
             put(BigoConstants.MEDIATION_INFO_ADAPTER_VERSION, BigoConstants.ADAPTER_VERSION)
         }.toString()
+
+        @JvmStatic
+        fun networkAdapterVersion(): String = BigoConstants.ADAPTER_VERSION
     }
 
     // region Adapter Methods
