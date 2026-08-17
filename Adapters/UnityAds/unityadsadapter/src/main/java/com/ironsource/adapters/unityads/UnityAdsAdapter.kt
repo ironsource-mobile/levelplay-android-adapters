@@ -58,6 +58,10 @@ class UnityAdsAdapter : LevelPlayBaseAdapter() {
                 AdapterErrorType.ADAPTER_ERROR_TYPE_INTERNAL
             }
         }
+
+        @Suppress("ACCIDENTAL_OVERRIDE")
+        @JvmStatic
+        fun networkAdapterVersion(): String = UnityAdsConstants.ADAPTER_VERSION
     }
 
     private val unityAdsStorageLock = Any()
