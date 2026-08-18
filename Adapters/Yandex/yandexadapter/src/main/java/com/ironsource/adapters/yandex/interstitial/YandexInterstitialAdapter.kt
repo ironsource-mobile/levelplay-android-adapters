@@ -73,14 +73,13 @@ class YandexInterstitialAdapter(networkSettings: NetworkSettings) :
 
         interstitialAdListener = YandexInterstitialListener(listener, WeakReference(this))
 
-        val interstitialLoader = InterstitialAdLoader(context.applicationContext)
-
         val adRequest: AdRequest = AdRequest.Builder(adUnitId)
             .setBiddingData(serverData)
             .setParameters(networkAdapter.getConfigParams())
             .build()
 
         mainHandler.post {
+            val interstitialLoader = InterstitialAdLoader(context.applicationContext)
             interstitialLoader.loadAd(adRequest, interstitialAdListener!!)
         }
     }

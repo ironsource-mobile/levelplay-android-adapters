@@ -1,5 +1,8 @@
 # Changelog
 
+## Version 5.13.0
+* Fix potential issue with ad loading
+
 ## Version 5.12.0
 * Supporting SDK version 8.3.0
 

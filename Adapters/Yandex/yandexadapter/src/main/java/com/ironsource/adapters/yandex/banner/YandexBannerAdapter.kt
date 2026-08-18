@@ -94,17 +94,16 @@ class YandexBannerAdapter(networkSettings: NetworkSettings) :
             Gravity.CENTER
         )
 
-        bannerAdView = BannerAdView(appContext).apply {
-            setAdSize(yandexBannerSize)
-            setBannerAdEventListener(YandexBannerListener(listener, this, layoutParams))
-        }
-
         val adRequest: AdRequest = AdRequest.Builder(adUnitId)
             .setBiddingData(serverData)
             .setParameters(networkAdapter.getConfigParams())
             .build()
 
         mainHandler.post {
+            bannerAdView = BannerAdView(appContext).apply {
+                setAdSize(yandexBannerSize)
+                setBannerAdEventListener(YandexBannerListener(listener, this, layoutParams))
+            }
             bannerAdView?.loadAd(adRequest)
         }
     }

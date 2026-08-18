@@ -73,14 +73,13 @@ class YandexRewardedAdapter(networkSettings: NetworkSettings) :
 
         rewardedAdListener = YandexRewardedListener(listener, WeakReference(this))
 
-        val rewardedLoader = RewardedAdLoader(context.applicationContext)
-
         val adRequest: AdRequest = AdRequest.Builder(adUnitId)
             .setBiddingData(serverData)
             .setParameters(networkAdapter.getConfigParams())
             .build()
 
         mainHandler.post {
+            val rewardedLoader = RewardedAdLoader(context.applicationContext)
             rewardedLoader.loadAd(adRequest, rewardedAdListener!!)
         }
     }

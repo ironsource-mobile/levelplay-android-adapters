@@ -53,6 +53,7 @@ class YandexAdapter : LevelPlayBaseAdapter() {
                 .joinToString(",")
         }
 
+        @Suppress("ACCIDENTAL_OVERRIDE")
         @JvmStatic
         fun networkAdapterVersion(): String = YandexConstants.ADAPTER_VERSION
     }
