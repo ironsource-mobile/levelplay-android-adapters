@@ -52,6 +52,7 @@ class PubMaticAdapter : LevelPlayBaseAdapter() {
             }
         }
 
+        @Suppress("ACCIDENTAL_OVERRIDE")
         @JvmStatic
         fun networkAdapterVersion(): String = PubMaticConstants.ADAPTER_VERSION
     }
