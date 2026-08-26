@@ -40,6 +40,10 @@ class BidMachineAdapter : LevelPlayBaseAdapter() {
                 else -> AdapterErrorType.ADAPTER_ERROR_TYPE_INTERNAL
             }
         }
+
+        @Suppress("ACCIDENTAL_OVERRIDE")
+        @JvmStatic
+        fun networkAdapterVersion(): String = BidMachineConstants.ADAPTER_VERSION
     }
 
     // region Adapter Methods
