@@ -96,7 +96,7 @@ class MintegralInterstitialAdapter(networkSettings: NetworkSettings) :
             return
         }
 
-        interstitialAd?.showFromBid()
+        interstitialAd?.showFromBid(activity)
     }
 
     override fun isAdAvailable(adData: AdData): Boolean =

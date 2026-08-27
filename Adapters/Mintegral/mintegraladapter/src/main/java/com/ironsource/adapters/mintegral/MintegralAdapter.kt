@@ -41,6 +41,7 @@ class MintegralAdapter : LevelPlayBaseAdapter(), SDKInitStatusListener {
         private var doNotSellCollectingUserData: Boolean? = null
         private var coppaUserData: Boolean? = null
 
+        @Suppress("ACCIDENTAL_OVERRIDE")
         @JvmStatic
         fun networkAdapterVersion(): String = MintegralConstants.ADAPTER_VERSION
     }

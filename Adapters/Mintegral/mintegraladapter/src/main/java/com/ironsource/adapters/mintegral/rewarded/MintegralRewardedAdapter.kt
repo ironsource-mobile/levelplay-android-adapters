@@ -98,9 +98,9 @@ class MintegralRewardedAdapter(networkSettings: NetworkSettings) :
 
         val userId = getDynamicUserId()
         if (!userId.isNullOrEmpty()) {
-            rewardedVideoAd?.showFromBid(userId)
+            rewardedVideoAd?.showFromBid(activity, userId)
         } else {
-            rewardedVideoAd?.showFromBid()
+            rewardedVideoAd?.showFromBid(activity)
         }
     }
 
