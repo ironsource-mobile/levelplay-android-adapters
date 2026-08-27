@@ -50,6 +50,7 @@ class VungleAdapter : LevelPlayBaseAdapter() {
             }
         }
 
+        @Suppress("ACCIDENTAL_OVERRIDE")
         @JvmStatic
         fun networkAdapterVersion(): String = VungleConstants.ADAPTER_VERSION
     }
