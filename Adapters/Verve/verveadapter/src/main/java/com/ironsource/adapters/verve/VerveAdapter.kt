@@ -35,6 +35,7 @@ class VerveAdapter() : LevelPlayBaseAdapter() {
         private var initState: InitState = InitState.INIT_STATE_NONE
         private val initCallbackListeners = CopyOnWriteArrayList<NetworkInitializationListener>()
 
+        @Suppress("ACCIDENTAL_OVERRIDE")
         @JvmStatic
         fun networkAdapterVersion(): String = VerveConstants.ADAPTER_VERSION
     }
