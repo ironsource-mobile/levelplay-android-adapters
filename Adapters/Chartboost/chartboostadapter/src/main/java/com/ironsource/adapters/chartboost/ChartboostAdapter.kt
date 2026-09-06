@@ -51,6 +51,7 @@ class ChartboostAdapter : LevelPlayBaseAdapter() {
         private var doNotSellCollectingUserData: Boolean? = null
         private var coppaUserData: Boolean? = null
 
+        @Suppress("ACCIDENTAL_OVERRIDE")
         @JvmStatic
         fun networkAdapterVersion(): String = ChartboostConstants.ADAPTER_VERSION
     }
