@@ -49,6 +49,7 @@ class SmaatoAdapter : LevelPlayBaseAdapter() {
             }
         }
 
+        @Suppress("ACCIDENTAL_OVERRIDE")
         @JvmStatic
         fun networkAdapterVersion(): String = SmaatoConstants.ADAPTER_VERSION
     }
