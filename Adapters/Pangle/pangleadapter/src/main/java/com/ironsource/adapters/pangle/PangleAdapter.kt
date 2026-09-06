@@ -51,6 +51,7 @@ class PangleAdapter() : LevelPlayBaseAdapter() {
 
         private val mainHandler = Handler(Looper.getMainLooper())
 
+        @Suppress("ACCIDENTAL_OVERRIDE")
         @JvmStatic
         fun networkAdapterVersion(): String = PangleConstants.ADAPTER_VERSION
     }
