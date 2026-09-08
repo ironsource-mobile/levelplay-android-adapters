@@ -1,5 +1,8 @@
 # Changelog
 
+## Version 5.9.0
+* Minimum SDK version updated to 24
+
 ## Version 5.8.0
 * Supporting SDK version 4.29.3
 
