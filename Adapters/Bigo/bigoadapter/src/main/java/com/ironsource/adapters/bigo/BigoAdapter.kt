@@ -42,6 +42,7 @@ class BigoAdapter : LevelPlayBaseAdapter() {
             put(BigoConstants.MEDIATION_INFO_ADAPTER_VERSION, BigoConstants.ADAPTER_VERSION)
         }.toString()
 
+        @Suppress("ACCIDENTAL_OVERRIDE")
         @JvmStatic
         fun networkAdapterVersion(): String = BigoConstants.ADAPTER_VERSION
     }
