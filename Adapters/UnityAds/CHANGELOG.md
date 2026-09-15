@@ -4,7 +4,7 @@
 * Supporting SDK version 4.20.1
 
 ## Version 5.12.0
-* Supporting SDK version 4.20.0
+* Requires Unity Ads SDK 4.20.0 or above. This adapter will not show ads on earlier SDK versions.
 
 ## Version 5.11.0
 * General improvements and performance enhancements
