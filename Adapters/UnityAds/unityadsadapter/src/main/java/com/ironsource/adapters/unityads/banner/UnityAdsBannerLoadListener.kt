@@ -9,10 +9,8 @@ import com.ironsource.mediationsdk.logger.IronLog
 import com.unity3d.ads.BannerAd
 import com.unity3d.ads.LoadListener
 import com.unity3d.ads.UnityAdsError
-import com.unity3d.ads.UnityAdsExperimental
 import java.lang.ref.WeakReference
 
-@OptIn(UnityAdsExperimental::class)
 class UnityAdsBannerLoadListener(
     private val listener: BannerAdListener,
     private val layoutParams: FrameLayout.LayoutParams,

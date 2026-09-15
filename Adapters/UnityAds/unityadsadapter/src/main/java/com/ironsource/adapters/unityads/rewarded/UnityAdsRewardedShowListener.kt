@@ -7,9 +7,7 @@ import com.unity3d.ads.RewardedAd
 import com.unity3d.ads.RewardedShowListener
 import com.unity3d.ads.ShowFinishState
 import com.unity3d.ads.UnityAdsError
-import com.unity3d.ads.UnityAdsExperimental
 
-@OptIn(UnityAdsExperimental::class)
 class UnityAdsRewardedShowListener(
     private val listener: RewardedVideoAdListener
 ) : RewardedShowListener {

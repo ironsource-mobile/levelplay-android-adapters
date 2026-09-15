@@ -6,9 +6,7 @@ import com.ironsource.mediationsdk.logger.IronLog
 import com.unity3d.ads.BannerAd
 import com.unity3d.ads.BannerShowListener
 import com.unity3d.ads.UnityAdsError
-import com.unity3d.ads.UnityAdsExperimental
 
-@OptIn(UnityAdsExperimental::class)
 class UnityAdsBannerShowListener(
     private val listener: BannerAdListener
 ) : BannerShowListener {

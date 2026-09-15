@@ -8,10 +8,8 @@ import com.ironsource.mediationsdk.logger.IronLog
 import com.unity3d.ads.LoadListener
 import com.unity3d.ads.RewardedAd
 import com.unity3d.ads.UnityAdsError
-import com.unity3d.ads.UnityAdsExperimental
 import java.lang.ref.WeakReference
 
-@OptIn(UnityAdsExperimental::class)
 class UnityAdsRewardedLoadListener(
     private val listener: RewardedVideoAdListener,
     private val adapter: WeakReference<UnityAdsRewardedAdapter>

@@ -7,9 +7,7 @@ import com.unity3d.ads.InterstitialAd
 import com.unity3d.ads.InterstitialShowListener
 import com.unity3d.ads.ShowFinishState
 import com.unity3d.ads.UnityAdsError
-import com.unity3d.ads.UnityAdsExperimental
 
-@OptIn(UnityAdsExperimental::class)
 class UnityAdsInterstitialShowListener(
     private val listener: InterstitialAdListener
 ) : InterstitialShowListener {
