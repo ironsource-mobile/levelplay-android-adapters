@@ -1,0 +1,26 @@
+name: Notify Code Graph
+
+on:
+  push:
+    branches:
+      - main
+      - master
+  workflow_dispatch:
+
+jobs:
+  ingest-iads-graph:
+    uses: ironsource-mobile/github-actions-and-workflows/.github/workflows/code-graph-webhook.yaml@main
+    with:
+      github_event: "push"
+    secrets:
+      WEBHOOK_TOKEN: ${{ secrets.CODE_GRAPH_WEBHOOK_TOKEN }}
+
+  ingest-uads-graph:
+    uses: ironsource-mobile/github-actions-and-workflows/.github/workflows/code-graph-webhook.yaml@main
+    with:
+      github_event: "push"
+      webhook_url: "https://infra-ingress-service-tfo-agentic-evolution.internal.25.gusc1.stg.data.unity3d.com/webhook"
+      runs_on: "unity-linux-runner"
+      extra_payload: '{"repository": {"name": "levelplay-android-adapters", "full_name": "ironsource-mobile/levelplay-android-adapters", "owner": {"login": "ironsource-mobile"}}}'
+    secrets:
+      WEBHOOK_TOKEN: ${{ secrets.CODE_GRAPH_WEBHOOK_TOKEN }}
