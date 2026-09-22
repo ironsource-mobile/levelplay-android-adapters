@@ -1,7 +1,10 @@
 # Changelog
 
+## Version 5.4.0
+* Supporting SDK version 6.4.7
+
 ## Version 5.3.0
-* Refactored the adapter to Kotlin and migrated to the new LevelPlay adapter architecture
+* General improvements and performance enhancements
 
 ## Version 5.2.0
 * Supporting SDK version 6.4.6

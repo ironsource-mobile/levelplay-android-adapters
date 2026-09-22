@@ -32,6 +32,10 @@ class HyprMXAdapter : LevelPlayBaseAdapter() {
         private val wasInitCalled: AtomicBoolean = AtomicBoolean(false)
         private var initState: InitState = InitState.INIT_STATE_NONE
         private val initListeners = CopyOnWriteArrayList<NetworkInitializationListener>()
+
+        @Suppress("ACCIDENTAL_OVERRIDE")
+        @JvmStatic
+        fun networkAdapterVersion(): String = HyprMXConstants.ADAPTER_VERSION
     }
 
     // region Adapter Methods
