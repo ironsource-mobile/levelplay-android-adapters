@@ -67,7 +67,7 @@ class APSBannerAdapter(networkSettings: NetworkSettings) :
             return
         }
 
-        val apsBannerListener = APSBannerListener(listener, WeakReference(this), layoutParams)
+        val apsBannerListener = APSBannerListener(listener, WeakReference(this), layoutParams, adResponse.crid)
         val bidInfo = SDKUtilities.getBidInfo(adResponse)
 
         mainHandler.post {

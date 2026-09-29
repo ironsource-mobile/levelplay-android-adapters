@@ -11,14 +11,22 @@ import java.lang.ref.WeakReference
 
 class APSInterstitialListener(
     private val listener: InterstitialAdListener,
-    private val adapter: WeakReference<APSInterstitialAdapter>
+    private val adapter: WeakReference<APSInterstitialAdapter>,
+    private val bidCreativeId: String?
 ) : ApsAdListener {
 
     /** Called when the interstitial ad was loaded successfully */
     override fun onAdLoaded(apsAd: ApsAd?) {
-        IronLog.ADAPTER_CALLBACK.verbose()
+        val creativeId = apsAd?.crid.takeUnless { it.isNullOrEmpty() } ?: bidCreativeId
+        IronLog.ADAPTER_CALLBACK.verbose(APSConstants.Logs.CREATIVE_ID.format(creativeId ?: ""))
         adapter.get()?.setAdAvailability(true)
-        listener.onAdLoadSuccess()
+
+        if (creativeId.isNullOrEmpty()) {
+            listener.onAdLoadSuccess()
+        } else {
+            val extraData: Map<String, Any> = mapOf(APSConstants.CREATIVE_ID_KEY to creativeId)
+            listener.onAdLoadSuccess(extraData)
+        }
     }
 
     /** Called when the interstitial ad failed to load */

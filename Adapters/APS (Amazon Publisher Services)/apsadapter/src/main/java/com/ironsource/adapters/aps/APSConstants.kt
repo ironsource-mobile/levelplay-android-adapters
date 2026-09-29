@@ -17,6 +17,7 @@ object APSConstants {
     const val PRICE_POINT_ENCODED: String = "pricePointEncoded"
     const val WIDTH: String = "width"
     const val HEIGHT: String = "height"
+    const val CREATIVE_ID_KEY: String = "creativeId"
 
     // Banner size keys
     const val BANNER_SIZE_BANNER: String = "BANNER"
@@ -65,6 +66,7 @@ object APSConstants {
         const val CCPA_OPT_OUT: String = "CCPA opt-out = %s"
         const val META_DATA_SET: String = "key = %s, value = %s"
         const val UUID_LOG: String = "uuid = %s"
+        const val CREATIVE_ID: String = "creativeId = %s"
         const val APS_MANUAL_LOADING_NOT_REQUIRED: String =
             "APS loading is handled by Mediation and does not require any additional implementation in your code."
     }

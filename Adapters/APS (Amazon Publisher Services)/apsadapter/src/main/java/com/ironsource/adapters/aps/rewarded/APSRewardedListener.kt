@@ -11,14 +11,22 @@ import java.lang.ref.WeakReference
 
 class APSRewardedListener(
     private val listener: RewardedVideoAdListener,
-    private val adapter: WeakReference<APSRewardedAdapter>
+    private val adapter: WeakReference<APSRewardedAdapter>,
+    private val bidCreativeId: String?
 ) : ApsAdListener {
 
     /** Called when the rewarded video ad was loaded successfully */
     override fun onAdLoaded(apsAd: ApsAd?) {
-        IronLog.ADAPTER_CALLBACK.verbose()
+        val creativeId = apsAd?.crid.takeUnless { it.isNullOrEmpty() } ?: bidCreativeId
+        IronLog.ADAPTER_CALLBACK.verbose(APSConstants.Logs.CREATIVE_ID.format(creativeId ?: ""))
         adapter.get()?.setAdAvailability(true)
-        listener.onAdLoadSuccess()
+
+        if (creativeId.isNullOrEmpty()) {
+            listener.onAdLoadSuccess()
+        } else {
+            val extraData: Map<String, Any> = mapOf(APSConstants.CREATIVE_ID_KEY to creativeId)
+            listener.onAdLoadSuccess(extraData)
+        }
     }
 
     /** Called when the rewarded video ad failed to load */

@@ -29,6 +29,7 @@ class APSAdapter : LevelPlayBaseAdapter(), SetAPSInterface {
 
         private var usPrivacyValue: String = APSConstants.US_PRIVACY_NOT_APPLICABLE
 
+        @Suppress("ACCIDENTAL_OVERRIDE")
         @JvmStatic
         fun networkAdapterVersion(): String = APSConstants.ADAPTER_VERSION
     }

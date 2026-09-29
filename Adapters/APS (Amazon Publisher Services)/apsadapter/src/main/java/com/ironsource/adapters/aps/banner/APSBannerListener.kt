@@ -13,22 +13,27 @@ import java.lang.ref.WeakReference
 class APSBannerListener(
     private val listener: BannerAdListener,
     private val adapter: WeakReference<APSBannerAdapter>,
-    private val layoutParams: FrameLayout.LayoutParams
+    private val layoutParams: FrameLayout.LayoutParams,
+    private val bidCreativeId: String?
 ) : ApsAdListener {
 
     /** Called when the banner ad was loaded successfully */
     override fun onAdLoaded(apsAd: ApsAd?) {
-        IronLog.ADAPTER_CALLBACK.verbose()
+        val creativeId = apsAd?.crid.takeUnless { it.isNullOrEmpty() } ?: bidCreativeId
+        IronLog.ADAPTER_CALLBACK.verbose(APSConstants.Logs.CREATIVE_ID.format(creativeId ?: ""))
         val bannerView = adapter.get()?.getBannerView()
-        if (bannerView != null) {
-            listener.onAdLoadSuccess(bannerView, layoutParams)
-        } else {
+        if (bannerView == null) {
             IronLog.INTERNAL.error(APSConstants.Logs.BANNER_VIEW_MISSING)
             listener.onAdLoadFailed(
                 AdapterErrorType.ADAPTER_ERROR_TYPE_INTERNAL,
                 AdapterErrors.ADAPTER_ERROR_INTERNAL,
                 APSConstants.Logs.BANNER_VIEW_MISSING
             )
+        } else if (creativeId.isNullOrEmpty()) {
+            listener.onAdLoadSuccess(bannerView, layoutParams)
+        } else {
+            val extraData: Map<String, Any> = mapOf(APSConstants.CREATIVE_ID_KEY to creativeId)
+            listener.onAdLoadSuccess(bannerView, layoutParams, extraData)
         }
     }
 

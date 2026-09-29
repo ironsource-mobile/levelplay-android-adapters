@@ -48,7 +48,7 @@ class APSInterstitialAdapter(networkSettings: NetworkSettings) :
 
         isAdAvailableFlag = false
 
-        val apsInterstitialListener = APSInterstitialListener(listener, WeakReference(this))
+        val apsInterstitialListener = APSInterstitialListener(listener, WeakReference(this), adResponse.crid)
         val bidInfo = SDKUtilities.getBidInfo(adResponse)
 
         mainHandler.post {

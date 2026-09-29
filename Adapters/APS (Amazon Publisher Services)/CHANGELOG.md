@@ -1,5 +1,9 @@
 # Changelog
 
+## Version 5.3.0
+* Add support for Creative ID
+* Minimum SDK version updated to 24
+
 ## Version 5.2.0
 * Supporting SDK version 12.+
 * General improvements and performance enhancements

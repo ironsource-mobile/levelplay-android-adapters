@@ -47,7 +47,7 @@ class APSRewardedAdapter(networkSettings: NetworkSettings) :
 
         isAdAvailableFlag = false
 
-        val apsRewardedListener = APSRewardedListener(listener, WeakReference(this))
+        val apsRewardedListener = APSRewardedListener(listener, WeakReference(this), adResponse.crid)
         val bidInfo = SDKUtilities.getBidInfo(adResponse)
 
         mainHandler.post {
