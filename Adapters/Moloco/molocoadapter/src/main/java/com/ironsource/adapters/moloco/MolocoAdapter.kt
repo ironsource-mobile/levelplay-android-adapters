@@ -39,6 +39,10 @@ class MolocoAdapter : LevelPlayBaseAdapter() {
         private var initState: InitState = InitState.INIT_STATE_NONE
         private val initListeners = CopyOnWriteArrayList<NetworkInitializationListener>()
 
+        private var isUserConsent: Boolean? = null
+        private var isAgeRestrictedUser: Boolean? = null
+        private var isDoNotSell: Boolean? = null
+
         @Suppress("ACCIDENTAL_OVERRIDE")
         @JvmStatic
         fun networkAdapterVersion(): String = MolocoConstants.ADAPTER_VERSION
@@ -149,12 +153,8 @@ class MolocoAdapter : LevelPlayBaseAdapter() {
 
     override fun setConsent(consent: Boolean) {
         IronLog.ADAPTER_API.verbose(MolocoConstants.Logs.CONSENT.format(consent))
-        val privacy = MolocoPrivacy.PrivacySettings(
-            isUserConsent = consent,
-            isAgeRestrictedUser = null,
-            isDoNotSell = null
-        )
-        MolocoPrivacy.setPrivacy(privacy)
+        isUserConsent = consent
+        updatePrivacySettings()
     }
 
     override fun setMetaData(key: String?, values: MutableList<String?>?) {
@@ -182,22 +182,24 @@ class MolocoAdapter : LevelPlayBaseAdapter() {
 
     private fun setCCPAValue(value: Boolean) {
         IronLog.ADAPTER_API.verbose(MolocoConstants.Logs.VALUE.format(value))
-        val privacy = MolocoPrivacy.PrivacySettings(
-            isUserConsent = null,
-            isAgeRestrictedUser = null,
-            isDoNotSell = value
-        )
-        MolocoPrivacy.setPrivacy(privacy)
+        isDoNotSell = value
+        updatePrivacySettings()
     }
 
     private fun setCOPPAValue(value: Boolean) {
         IronLog.ADAPTER_API.verbose(MolocoConstants.Logs.IS_COPPA.format(value))
-        val privacy = MolocoPrivacy.PrivacySettings(
-            isUserConsent = null,
-            isAgeRestrictedUser = value,
-            isDoNotSell = null
+        isAgeRestrictedUser = value
+        updatePrivacySettings()
+    }
+
+    private fun updatePrivacySettings() {
+        MolocoPrivacy.setPrivacy(
+            MolocoPrivacy.PrivacySettings(
+                isUserConsent = isUserConsent,
+                isAgeRestrictedUser = isAgeRestrictedUser,
+                isDoNotSell = isDoNotSell
+            )
         )
-        MolocoPrivacy.setPrivacy(privacy)
     }
 
     // endregion
