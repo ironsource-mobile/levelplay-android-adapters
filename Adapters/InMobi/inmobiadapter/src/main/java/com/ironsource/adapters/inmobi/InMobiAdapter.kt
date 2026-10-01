@@ -48,6 +48,7 @@ class InMobiAdapter : LevelPlayBaseAdapter() {
         // Main thread handler
         private val mainHandler = Handler(Looper.getMainLooper())
 
+        @Suppress("ACCIDENTAL_OVERRIDE")
         @JvmStatic
         fun networkAdapterVersion(): String = InMobiConstants.ADAPTER_VERSION
     }
