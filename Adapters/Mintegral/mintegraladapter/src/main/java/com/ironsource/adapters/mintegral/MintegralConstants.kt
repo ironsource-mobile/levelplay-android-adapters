@@ -57,6 +57,7 @@ object MintegralConstants {
         const val INIT_FAILED = "Mintegral SDK initialization failed - %s"
         const val CONSENT = "consent = %s"
         const val CONSENT_STATUS = "setConsentStatus consentStatus = %s"
+        const val CONSENT_AFTER_INIT = "Mintegral recommends setting consent before SDK initialization; the value set after init may not take effect"
         const val DO_NOT_TRACK_STATUS = "setDoNotTrackStatus with ccpa = %s"
         const val COPPA_VALUE = "set coppa value = %s"
         const val CHANNEL_CODE_ERROR = "Error setting channel code %s"

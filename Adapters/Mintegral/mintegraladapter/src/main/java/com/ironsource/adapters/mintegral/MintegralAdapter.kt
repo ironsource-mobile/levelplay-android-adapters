@@ -37,8 +37,6 @@ class MintegralAdapter : LevelPlayBaseAdapter(), SDKInitStatusListener {
         private var initState: InitState = InitState.INIT_STATE_NONE
         private val initListeners = CopyOnWriteArrayList<NetworkInitializationListener>()
 
-        private var consentCollectingUserData: Boolean? = null
-        private var doNotSellCollectingUserData: Boolean? = null
         private var coppaUserData: Boolean? = null
 
         @Suppress("ACCIDENTAL_OVERRIDE")
@@ -113,14 +111,6 @@ class MintegralAdapter : LevelPlayBaseAdapter(), SDKInitStatusListener {
 
             setChannelCode()
 
-            consentCollectingUserData?.let {
-                setConsent(it)
-            }
-
-            doNotSellCollectingUserData?.let {
-                setCCPAValue(it)
-            }
-
             sdk.init(map, context.applicationContext, this)
         }
     }
@@ -159,16 +149,15 @@ class MintegralAdapter : LevelPlayBaseAdapter(), SDKInitStatusListener {
 
     override fun setConsent(consent: Boolean) {
         IronLog.ADAPTER_API.verbose(MintegralConstants.Logs.CONSENT.format(consent))
-        when (initState) {
-            InitState.INIT_STATE_NONE -> consentCollectingUserData = consent
-            InitState.INIT_STATE_IN_PROGRESS -> {
-                val sdk: MBridgeSDK = MBridgeSDKFactory.getMBridgeSDK()
-                val consentStatus: Int = if (consent) MBridgeConstans.IS_SWITCH_ON else MBridgeConstans.IS_SWITCH_OFF
-                IronLog.ADAPTER_API.verbose(MintegralConstants.Logs.CONSENT_STATUS.format(consentStatus))
-                sdk.setConsentStatus(ContextProvider.getInstance().applicationContext, consentStatus)
-            }
-            else -> {}
+
+        if (initState == InitState.INIT_STATE_SUCCESS || initState == InitState.INIT_STATE_FAILED) {
+            IronLog.ADAPTER_API.warning(MintegralConstants.Logs.CONSENT_AFTER_INIT)
         }
+
+        val sdk: MBridgeSDK = MBridgeSDKFactory.getMBridgeSDK()
+        val consentStatus: Int = if (consent) MBridgeConstans.IS_SWITCH_ON else MBridgeConstans.IS_SWITCH_OFF
+        IronLog.ADAPTER_API.verbose(MintegralConstants.Logs.CONSENT_STATUS.format(consentStatus))
+        sdk.setConsentStatus(ContextProvider.getInstance().applicationContext, consentStatus)
     }
 
     override fun setMetaData(key: String?, values: MutableList<String?>?) {
@@ -196,14 +185,8 @@ class MintegralAdapter : LevelPlayBaseAdapter(), SDKInitStatusListener {
 
     private fun setCCPAValue(ccpa: Boolean) {
         IronLog.ADAPTER_API.verbose(MintegralConstants.Logs.DO_NOT_TRACK_STATUS.format(ccpa))
-        when (initState) {
-            InitState.INIT_STATE_NONE -> doNotSellCollectingUserData = ccpa
-            InitState.INIT_STATE_IN_PROGRESS -> {
-                val sdk: MBridgeSDK = MBridgeSDKFactory.getMBridgeSDK()
-                sdk.setDoNotTrackStatus(ContextProvider.getInstance().applicationContext, ccpa)
-            }
-            else -> {}
-        }
+        val sdk: MBridgeSDK = MBridgeSDKFactory.getMBridgeSDK()
+        sdk.setDoNotTrackStatus(ContextProvider.getInstance().applicationContext, ccpa)
     }
 
     private fun setCOPPAValue(value: Boolean) {
