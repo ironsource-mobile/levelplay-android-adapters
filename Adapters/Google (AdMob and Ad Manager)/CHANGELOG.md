@@ -1,5 +1,10 @@
 # Changelog
 
+## Version 5.16.0
+* General improvements and performance enhancements
+* Removed support for Native Banner ads
+* **Important**: for this adapter version native ads are supported from SDK version 9.6.1 and above
+
 ## Version 5.15.0
 * Supporting SDK version 1.5.0
 
