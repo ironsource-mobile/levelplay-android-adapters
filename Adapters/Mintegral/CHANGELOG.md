@@ -1,5 +1,8 @@
 # Changelog
 
+## Version 5.21.0
+* Fixed low code obfuscation in R8 release builds
+
 ## Version 5.20.0
 * Fixed privacy settings handling
 
