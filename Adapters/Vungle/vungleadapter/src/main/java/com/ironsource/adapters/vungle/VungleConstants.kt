@@ -6,6 +6,9 @@ object VungleConstants {
     const val ADAPTER_VERSION = BuildConfig.VERSION_NAME
     const val MEDIATION_NAME = "ironsource"
 
+    // Canonical dashboard name for the Vungle SDK's mediationPartnerName declaration
+    const val MEDIATION_PARTNER_NAME = "ironsource"
+
     // Network configuration keys
     const val APP_ID_KEY = "AppID"
     const val PLACEMENT_ID_KEY = "PlacementId"
