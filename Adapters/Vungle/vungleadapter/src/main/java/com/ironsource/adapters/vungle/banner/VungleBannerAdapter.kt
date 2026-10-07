@@ -65,6 +65,7 @@ class VungleBannerAdapter(networkSettings: NetworkSettings) :
 
         bannerView = VungleBannerView(appContext, placementId, vungleBannerSize).apply {
             adListener = VungleBannerListener(listener, this)
+            mediationPartnerName = VungleConstants.MEDIATION_PARTNER_NAME
             adapterAdFormat = VungleConstants.ADAPTER_FORMAT_BANNER
         }
 
