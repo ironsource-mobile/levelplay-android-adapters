@@ -56,6 +56,7 @@ class FyberAdapter : LevelPlayBaseAdapter(), AdapterNetworkDataInterface {
             }
         }
 
+        @Suppress("ACCIDENTAL_OVERRIDE")
         @JvmStatic
         fun networkAdapterVersion(): String = FyberConstants.ADAPTER_VERSION
     }

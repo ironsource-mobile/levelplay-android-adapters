@@ -1,5 +1,9 @@
 # Changelog
 
+## Version 5.11.0
+* Supporting SDK version 8.5.0
+* Minimum SDK version updated to 23
+
 ## Version 5.10.0
 * Supporting SDK version 8.4.7
 
