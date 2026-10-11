@@ -32,6 +32,7 @@ class YSOAdapter : LevelPlayBaseAdapter() {
         private var initState: InitState = InitState.INIT_STATE_NONE
         private val initListeners = CopyOnWriteArrayList<NetworkInitializationListener>()
 
+        @Suppress("ACCIDENTAL_OVERRIDE")
         @JvmStatic
         fun networkAdapterVersion(): String = YSOConstants.ADAPTER_VERSION
     }
