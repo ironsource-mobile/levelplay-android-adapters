@@ -44,6 +44,7 @@ class VungleInterstitialAdapter(networkSettings: NetworkSettings) :
 
         interstitialAd = InterstitialAd(context.applicationContext, placementId, AdConfig()).apply {
             adListener = VungleInterstitialListener(listener)
+            mediationPartnerName = VungleConstants.MEDIATION_PARTNER_NAME
             adapterAdFormat = VungleConstants.ADAPTER_FORMAT_INTERSTITIAL
         }
         interstitialAd?.load(adData.serverData)

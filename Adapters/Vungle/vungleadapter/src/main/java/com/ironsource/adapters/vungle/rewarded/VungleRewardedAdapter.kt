@@ -44,6 +44,7 @@ class VungleRewardedAdapter(networkSettings: NetworkSettings) :
 
         rewardedVideoAd = RewardedAd(context.applicationContext, placementId, AdConfig()).apply {
             adListener = VungleRewardedListener(listener)
+            mediationPartnerName = VungleConstants.MEDIATION_PARTNER_NAME
             adapterAdFormat = VungleConstants.ADAPTER_FORMAT_REWARDED
         }
         rewardedVideoAd?.load(adData.serverData)
