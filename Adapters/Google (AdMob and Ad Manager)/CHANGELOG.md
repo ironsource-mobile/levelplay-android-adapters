@@ -1,5 +1,9 @@
 # Changelog
 
+## Version 5.17.0
+* Adopted `setAgeRestrictedTreatment()` in place of the deprecated `setTagForChildDirectedTreatment()` and `setTagForUnderAgeOfConsent()`
+* Removed ProGuard rules already provided by the AdMob SDK
+
 ## Version 5.16.0
 * General improvements and performance enhancements
 * Removed support for Native Banner ads

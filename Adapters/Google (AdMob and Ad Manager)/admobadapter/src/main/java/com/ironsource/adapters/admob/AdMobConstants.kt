@@ -74,6 +74,7 @@ object AdMobConstants {
         const val CCPA_VALUE = "value = %s"
         const val COPPA_VALUE = "key = %s, coppaValue = %s"
         const val EU_VALUE = "key = %s, euValue = %s"
+        const val AGE_RESTRICTED_TREATMENT = "ageRestrictedTreatment = %s"
         const val RATING_VALUE = "key = %s, ratingValue = %s"
         const val CONTENT_MAPPING_VALUE = "key = %s, contentMappingValue = %s"
         const val CONTENT_MAPPING_VALUES = "key = %s, contentMappingValues = %s"

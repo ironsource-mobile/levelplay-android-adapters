@@ -10,11 +10,10 @@ import com.google.android.libraries.ads.mobile.sdk.banner.BannerSignalRequest
 import com.google.android.libraries.ads.mobile.sdk.common.AdChoicesPlacement
 import com.google.android.libraries.ads.mobile.sdk.common.AdFormat
 import com.google.android.libraries.ads.mobile.sdk.common.AdRequest
+import com.google.android.libraries.ads.mobile.sdk.common.AgeRestrictedTreatment
 import com.google.android.libraries.ads.mobile.sdk.common.LoadAdError
 import com.google.android.libraries.ads.mobile.sdk.common.RequestConfiguration
 import com.google.android.libraries.ads.mobile.sdk.common.RequestConfiguration.MaxAdContentRating
-import com.google.android.libraries.ads.mobile.sdk.common.RequestConfiguration.TagForChildDirectedTreatment
-import com.google.android.libraries.ads.mobile.sdk.common.RequestConfiguration.TagForUnderAgeOfConsent
 import com.google.android.libraries.ads.mobile.sdk.initialization.AdapterStatus
 import com.google.android.libraries.ads.mobile.sdk.initialization.InitializationConfig
 import com.google.android.libraries.ads.mobile.sdk.interstitial.InterstitialSignalRequest
@@ -66,8 +65,8 @@ class AdMobAdapter : LevelPlayBaseAdapter() {
         // Shared metadata values between instances
         private var consent: Boolean? = null
         private var ccpaValue: Boolean? = null
-        private var coppaValue: TagForChildDirectedTreatment? = null
-        private var euValue: TagForUnderAgeOfConsent? = null
+        private var coppaValue: Boolean? = null
+        private var euValue: Boolean? = null
         private var ratingValue: MaxAdContentRating? = null
         private var contentMappingUrl: String? = null
         private var neighboringContentMappingUrls: MutableSet<String> = HashSet()
@@ -273,11 +272,11 @@ class AdMobAdapter : LevelPlayBaseAdapter() {
 
         when (key) {
             AdMobConstants.ADMOB_TFCD_KEY -> {
-                coppaValue = getAdMobCoppaValue(formattedValue)
+                coppaValue = MetaDataUtils.getMetaDataBooleanValue(formattedValue)
                 IronLog.ADAPTER_API.verbose(AdMobConstants.Logs.COPPA_VALUE.format(key, coppaValue))
             }
             AdMobConstants.ADMOB_TFUA_KEY -> {
-                euValue = getAdMobEuValue(formattedValue)
+                euValue = MetaDataUtils.getMetaDataBooleanValue(formattedValue)
                 IronLog.ADAPTER_API.verbose(AdMobConstants.Logs.EU_VALUE.format(key, euValue))
             }
             AdMobConstants.ADMOB_MAX_RATING_KEY -> {
@@ -293,19 +292,17 @@ class AdMobAdapter : LevelPlayBaseAdapter() {
         setRequestConfiguration()
     }
 
-    private fun getAdMobCoppaValue(value: String): TagForChildDirectedTreatment =
-        if (MetaDataUtils.getMetaDataBooleanValue(value)) {
-            TagForChildDirectedTreatment.TAG_FOR_CHILD_DIRECTED_TREATMENT_TRUE
-        } else {
-            TagForChildDirectedTreatment.TAG_FOR_CHILD_DIRECTED_TREATMENT_FALSE
+    private fun getAgeRestrictedTreatment(): AgeRestrictedTreatment? {
+        if (coppaValue == null && euValue == null) {
+            return null
         }
 
-    private fun getAdMobEuValue(value: String): TagForUnderAgeOfConsent =
-        if (MetaDataUtils.getMetaDataBooleanValue(value)) {
-            TagForUnderAgeOfConsent.TAG_FOR_UNDER_AGE_OF_CONSENT_TRUE
+        return if (coppaValue == true || euValue == true) {
+            AgeRestrictedTreatment.CHILD
         } else {
-            TagForUnderAgeOfConsent.TAG_FOR_UNDER_AGE_OF_CONSENT_FALSE
+            AgeRestrictedTreatment.UNSPECIFIED
         }
+    }
 
     private fun getAdMobRatingValue(value: String): MaxAdContentRating? {
         if (value.isEmpty()) {
@@ -329,8 +326,10 @@ class AdMobAdapter : LevelPlayBaseAdapter() {
         val builder = RequestConfiguration.Builder()
         var requestConfiguration: RequestConfiguration? = null
 
-        coppaValue?.let { requestConfiguration = builder.setTagForChildDirectedTreatment(it).build() }
-        euValue?.let { requestConfiguration = builder.setTagForUnderAgeOfConsent(it).build() }
+        getAgeRestrictedTreatment()?.let {
+            IronLog.ADAPTER_API.verbose(AdMobConstants.Logs.AGE_RESTRICTED_TREATMENT.format(it))
+            requestConfiguration = builder.setAgeRestrictedTreatment(it).build()
+        }
         ratingValue?.let { requestConfiguration = builder.setMaxAdContentRating(it).build() }
 
         requestConfiguration?.let { MobileAds.setRequestConfiguration(it) }
