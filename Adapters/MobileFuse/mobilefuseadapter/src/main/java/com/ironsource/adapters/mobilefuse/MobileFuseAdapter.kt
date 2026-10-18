@@ -42,6 +42,7 @@ class MobileFuseAdapter() : LevelPlayBaseAdapter(), com.mobilefuse.sdk.SdkInitLi
         private var doNotSellValue: String = MobileFuseConstants.DEFAULT_DO_NOT_SELL_VALUE
         private var doNotTrackValue: Boolean = false
 
+        @Suppress("ACCIDENTAL_OVERRIDE")
         @JvmStatic
         fun networkAdapterVersion(): String = MobileFuseConstants.ADAPTER_VERSION
     }
