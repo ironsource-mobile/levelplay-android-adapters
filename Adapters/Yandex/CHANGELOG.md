@@ -1,5 +1,8 @@
 # Changelog
 
+## Version 5.17.0
+* Network SDKs are now declared as dependencies of their respective adapters, eliminating the need to add them separately to the app's Gradle file
+
 ## Version 5.16.0
 * Supporting SDK version 8.6.0
 
