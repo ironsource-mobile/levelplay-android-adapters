@@ -1,5 +1,8 @@
 # Changelog
 
+## Version 5.18.0
+* Network SDKs are now declared as dependencies of their respective adapters, eliminating the need to add them separately to the app's Gradle file
+
 ## Version 5.17.0
 * Adopted `setAgeRestrictedTreatment()` in place of the deprecated `setTagForChildDirectedTreatment()` and `setTagForUnderAgeOfConsent()`
 * Removed ProGuard rules already provided by the AdMob SDK
