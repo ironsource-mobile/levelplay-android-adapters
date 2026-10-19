@@ -70,7 +70,6 @@ android {
  dependencies {
     implementation "com.unity3d.ads-mediation:mediation-sdk:${mediationsdkVersion}"
     implementation "com.unity3d.ads:unity-ads:${sdkVersion}"
-     implementation 'androidx.multidex:multidex:2.0.1'
  }
 
 task sourcesJar(type: Jar) {
