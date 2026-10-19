@@ -1,5 +1,10 @@
 # Changelog
 
+## Version 5.17.0
+* Supporting Mediation Partner Name
+* Fixed low code obfuscation in R8 release builds
+* Network SDKs are now declared as dependencies of their respective adapters, eliminating the need to add them separately to the app's Gradle file
+
 ## Version 5.16.0
 * Supporting SDK version 7.7.9
 
