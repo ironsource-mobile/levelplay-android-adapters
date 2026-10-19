@@ -1,5 +1,8 @@
 # Changelog
 
+## Version 5.6.0
+* Network SDKs are now declared as dependencies of their respective adapters, eliminating the need to add them separately to the app's Gradle file
+
 ## Version 5.5.0
 * General improvements and performance enhancements
 * **Important**: for this adapter version native ads are supported from SDK version 9.6.1 and above
