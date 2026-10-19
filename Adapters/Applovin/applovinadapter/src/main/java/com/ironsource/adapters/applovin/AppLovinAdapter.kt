@@ -77,6 +77,7 @@ class AppLovinAdapter : LevelPlayBaseAdapter() {
             }
         }
 
+        @Suppress("ACCIDENTAL_OVERRIDE")
         @JvmStatic
         fun networkAdapterVersion(): String = AppLovinConstants.ADAPTER_VERSION
     }
