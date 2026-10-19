@@ -43,6 +43,7 @@ class LineAdapter : LevelPlayBaseAdapter() {
             }
         }
 
+        @Suppress("ACCIDENTAL_OVERRIDE")
         @JvmStatic
         fun networkAdapterVersion(): String = LineConstants.ADAPTER_VERSION
 
