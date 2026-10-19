@@ -71,8 +71,6 @@ android {
  dependencies {
      implementation "com.unity3d.ads-mediation:mediation-sdk:${mediationsdkVersion}"
      implementation "com.chartboost:chartboost-sdk:${sdkVersion}"
-     // Chartboost Dependencies
-     implementation 'androidx.appcompat:appcompat:1.6.1'
  }
 
 task sourcesJar(type: Jar) {
