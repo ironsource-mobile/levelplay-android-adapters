@@ -1,5 +1,9 @@
 # Changelog
 
+## Version 5.27.0
+* Supporting SDK version 8.4.0.5
+* Removed ProGuard rules already included in the Pangle SDK
+
 ## Version 5.26.0
 * Supporting SDK version 8.3.0.5
 
