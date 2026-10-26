@@ -1,5 +1,10 @@
 # Changelog
 
+## Version 5.6.0
+* Supporting SDK version 3.2.0
+* Minimum SDK version updated to 24
+* Fixed low code obfuscation in R8 release builds
+
 ## Version 5.5.0
 * Network SDKs are now declared as dependencies of their respective adapters, eliminating the need to add them separately to the app's Gradle file
 
