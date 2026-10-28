@@ -2,8 +2,6 @@ package com.ironsource.adapters.yandex.rewarded
 
 import android.app.Activity
 import android.content.Context
-import android.os.Handler
-import android.os.Looper
 import com.ironsource.adapters.yandex.YandexAdapter
 import com.ironsource.adapters.yandex.YandexConstants
 import com.ironsource.mediationsdk.adunit.adapter.listener.RewardedVideoAdListener
@@ -24,7 +22,6 @@ import java.lang.ref.WeakReference
 class YandexRewardedAdapter(networkSettings: NetworkSettings) :
     LevelPlayBaseRewardedVideo<YandexAdapter>(networkSettings) {
 
-    private val mainHandler = Handler(Looper.getMainLooper())
     private var rewardedAdListener: YandexRewardedListener? = null
     private var rewardedAd: RewardedAd? = null
     private var isAdAvailableFlag = false
@@ -78,10 +75,8 @@ class YandexRewardedAdapter(networkSettings: NetworkSettings) :
             .setParameters(networkAdapter.getConfigParams())
             .build()
 
-        mainHandler.post {
-            val rewardedLoader = RewardedAdLoader(context.applicationContext)
-            rewardedLoader.loadAd(adRequest, rewardedAdListener!!)
-        }
+        val rewardedLoader = RewardedAdLoader(context.applicationContext)
+        rewardedLoader.loadAd(adRequest, rewardedAdListener!!)
     }
 
     override fun showAd(adData: AdData, activity: Activity, listener: RewardedVideoAdListener) {
@@ -93,11 +88,9 @@ class YandexRewardedAdapter(networkSettings: NetworkSettings) :
                 YandexConstants.Logs.AD_NOT_AVAILABLE
             )
         } else {
-            mainHandler.post {
-                rewardedAd?.apply {
-                    setAdEventListener(rewardedAdListener)
-                    show(activity)
-                }
+            rewardedAd?.apply {
+                setAdEventListener(rewardedAdListener)
+                show(activity)
             }
         }
     }

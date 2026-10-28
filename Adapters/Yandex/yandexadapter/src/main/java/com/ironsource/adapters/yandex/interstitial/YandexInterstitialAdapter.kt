@@ -2,8 +2,6 @@ package com.ironsource.adapters.yandex.interstitial
 
 import android.app.Activity
 import android.content.Context
-import android.os.Handler
-import android.os.Looper
 import com.ironsource.adapters.yandex.YandexAdapter
 import com.ironsource.adapters.yandex.YandexConstants
 import com.ironsource.mediationsdk.adunit.adapter.listener.InterstitialAdListener
@@ -24,7 +22,6 @@ import java.lang.ref.WeakReference
 class YandexInterstitialAdapter(networkSettings: NetworkSettings) :
     LevelPlayBaseInterstitial<YandexAdapter>(networkSettings) {
 
-    private val mainHandler = Handler(Looper.getMainLooper())
     private var interstitialAdListener: YandexInterstitialListener? = null
     private var interstitialAd: InterstitialAd? = null
     private var isAdAvailableFlag = false
@@ -78,10 +75,8 @@ class YandexInterstitialAdapter(networkSettings: NetworkSettings) :
             .setParameters(networkAdapter.getConfigParams())
             .build()
 
-        mainHandler.post {
-            val interstitialLoader = InterstitialAdLoader(context.applicationContext)
-            interstitialLoader.loadAd(adRequest, interstitialAdListener!!)
-        }
+        val interstitialLoader = InterstitialAdLoader(context.applicationContext)
+        interstitialLoader.loadAd(adRequest, interstitialAdListener!!)
     }
 
     override fun showAd(adData: AdData, activity: Activity, listener: InterstitialAdListener) {
@@ -93,11 +88,9 @@ class YandexInterstitialAdapter(networkSettings: NetworkSettings) :
                 YandexConstants.Logs.AD_NOT_AVAILABLE
             )
         } else {
-            mainHandler.post {
-                interstitialAd?.apply {
-                    setAdEventListener(interstitialAdListener)
-                    show(activity)
-                }
+            interstitialAd?.apply {
+                setAdEventListener(interstitialAdListener)
+                show(activity)
             }
         }
     }

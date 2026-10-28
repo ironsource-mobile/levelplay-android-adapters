@@ -1,5 +1,10 @@
 # Changelog
 
+## Version 5.18.0
+* Minimum LevelPlay SDK version updated to 9.6.1
+* The ad loading issue fixed in version 5.13.0 is now handled by the LevelPlay SDK
+* Fixed low code obfuscation in R8 release builds
+
 ## Version 5.17.0
 * Network SDKs are now declared as dependencies of their respective adapters, eliminating the need to add them separately to the app's Gradle file
 
