@@ -1,5 +1,9 @@
 # Changelog
 
+## Version 5.9.0
+* Minimum LevelPlay SDK version updated to 9.6.1
+* The ad loading improvement from version 5.5.0 is now handled by the LevelPlay SDK
+
 ## Version 5.8.0
 * Network SDKs are now declared as dependencies of their respective adapters, eliminating the need to add them separately to the app's Gradle file
 
