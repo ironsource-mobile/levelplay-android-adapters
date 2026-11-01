@@ -1,5 +1,9 @@
 # Changelog
 
+## Version 5.15.0
+* Supporting SDK version 6.2.0
+* Removed ProGuard rules already included in the Bigo SDK
+
 ## Version 5.14.0
 * Network SDKs are now declared as dependencies of their respective adapters, eliminating the need to add them separately to the app's Gradle file
 
