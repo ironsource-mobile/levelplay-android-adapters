@@ -32,6 +32,8 @@
 
 ## Version 5.10.0
 * Migrated to Google Ads Next Gen SDK version 1.1.1
+* Adaptive banners now use Google's large anchored adaptive size (`getLargeAnchoredAdaptiveBannerAdSize`), replacing the deprecated anchored adaptive API
+* **Important**: adaptive banners may be taller than in previous versions. Make sure your banner layout supports the new height before updating
 
 **Important!** The AdMob adapter has migrated from the legacy Google Mobile Ads SDK (`com.google.android.gms:play-services-ads`) to the new Google Ads Next Gen SDK (`com.google.android.libraries.ads.mobile.sdk:ads-mobile-sdk`).
 
