@@ -1,5 +1,9 @@
 # Changelog
 
+## Version 5.12.0
+* Removed the use of the deprecated Chartboost `isCached()` API for interstitial and rewarded ads
+* Removed ProGuard rules already included in the Chartboost SDK
+
 ## Version 5.11.0
 * Network SDKs are now declared as dependencies of their respective adapters, eliminating the need to add them separately to the app's Gradle file
 

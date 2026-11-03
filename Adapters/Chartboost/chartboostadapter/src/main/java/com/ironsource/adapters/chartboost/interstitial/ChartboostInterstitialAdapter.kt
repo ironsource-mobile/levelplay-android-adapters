@@ -73,9 +73,8 @@ class ChartboostInterstitialAdapter(networkSettings: NetworkSettings) :
         interstitialAd?.show()
     }
 
-    @Suppress("DEPRECATION")
     override fun isAdAvailable(adData: AdData): Boolean =
-        interstitialAd?.isCached() == true
+        interstitialAd != null
 
     override fun destroyAd(adData: AdData) {
         IronLog.ADAPTER_API.verbose()

@@ -73,9 +73,8 @@ class ChartboostRewardedAdapter(networkSettings: NetworkSettings) :
         rewardedAd?.show()
     }
 
-    @Suppress("DEPRECATION")
     override fun isAdAvailable(adData: AdData): Boolean =
-        rewardedAd?.isCached() == true
+        rewardedAd != null
 
     override fun destroyAd(adData: AdData) {
         IronLog.ADAPTER_API.verbose()
