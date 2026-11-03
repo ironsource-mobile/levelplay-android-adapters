@@ -1,5 +1,8 @@
 # Changelog
 
+## Version 5.13.0
+* Supporting SDK version 8.5.1
+
 ## Version 5.12.0
 * Removed ProGuard rules already included in the DT Exchange SDK
 * Network SDKs are now declared as dependencies of their respective adapters, eliminating the need to add them separately to the app's Gradle file
