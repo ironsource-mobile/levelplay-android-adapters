@@ -1,5 +1,8 @@
 # Changelog
 
+## Version 5.7.0
+* Removed ProGuard rules already included in the Meta Audience Network SDK
+
 ## Version 5.6.0
 * Network SDKs are now declared as dependencies of their respective adapters, eliminating the need to add them separately to the app's Gradle file
 
