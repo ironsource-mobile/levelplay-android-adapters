@@ -1,13 +1,9 @@
 # Add project specific ProGuard rules here.
-# By default, the flags in this file are appended to flags specified
-# in /Users/ori/Desktop/adt-bundle-mac-x86_64-20140702/sdk/tools/proguard/proguard-android.txt
-# You can edit the include path and order by changing the proguardFiles
-# directive in build.gradle.
+# You can control the set of applied configuration files using the
+# proguardFiles setting in build.gradle.
 #
 # For more details, see
 #   http://developer.android.com/guide/developing/tools/proguard.html
-
-# Add any project specific keep options here:
 
 # If your project uses WebView with JS, uncomment the following
 # and specify the fully qualified class name to the JavaScript interface
@@ -15,25 +11,11 @@
 #-keepclassmembers class fqcn.of.javascript.interface.for.webview {
 #   public *;
 #}
-# Keep filenames and line numbers for stack traces
--keepattributes SourceFile,LineNumberTable
 
-# Keep JavascriptInterface for WebView bridge
--keepattributes JavascriptInterface
+# Uncomment this to preserve the line number information for
+# debugging stack traces.
+#-keepattributes SourceFile,LineNumberTable
 
-# Sometimes keepattributes is not enough to keep annotations
--keep class android.webkit.JavascriptInterface {
-   *;
-}
-
-# Keep all classes in Unity Ads package
--keep class com.unity3d.ads.** {
-   *;
-}
-
-# Keep all classes in Unity Services package
--keep class com.unity3d.services.** {
-   *;
-}
-
--dontwarn com.google.ar.core.**
+# If you keep the line number information, uncomment this to
+# hide the original source file name.
+#-renamesourcefileattribute SourceFile
