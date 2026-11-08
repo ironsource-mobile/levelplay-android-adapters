@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.res.Configuration
 import com.amazon.aps.ads.Aps
 import com.amazon.aps.ads.model.ApsAdNetwork
+import com.amazon.aps.shared.util.ApsResult
 import com.amazon.device.ads.AdError
 import com.amazon.device.ads.DTBAdCallback
 import com.amazon.device.ads.DTBAdNetworkInfo
@@ -11,23 +12,37 @@ import com.amazon.device.ads.DTBAdRequest
 import com.amazon.device.ads.DTBAdResponse
 import com.amazon.device.ads.DTBAdSize
 import com.amazon.device.ads.SDKUtilities
-import com.ironsource.mediationsdk.SetAPSInterface
 import com.ironsource.mediationsdk.adunit.adapter.listener.NetworkInitializationListener
 import com.ironsource.mediationsdk.adunit.adapter.utility.AdData
+import com.ironsource.mediationsdk.adunit.adapter.utility.AdapterErrors
 import com.ironsource.mediationsdk.bidding.BiddingDataCallback
 import com.ironsource.mediationsdk.logger.IronLog
 import com.ironsource.mediationsdk.metadata.MetaDataUtils
 import com.unity3d.mediation.LevelPlay
 import com.unity3d.mediation.adapters.levelplay.LevelPlayBaseAdapter
-import org.json.JSONObject
+import java.util.concurrent.CopyOnWriteArrayList
+import java.util.concurrent.atomic.AtomicBoolean
 
-class APSAdapter : LevelPlayBaseAdapter(), SetAPSInterface {
+class APSAdapter : LevelPlayBaseAdapter() {
 
     companion object {
 
         private const val GitHash: String = BuildConfig.GitHash
 
         private var usPrivacyValue: String = APSConstants.US_PRIVACY_NOT_APPLICABLE
+
+        enum class InitState {
+            INIT_STATE_NONE,
+            INIT_STATE_IN_PROGRESS,
+            INIT_STATE_SUCCESS,
+            INIT_STATE_FAILED
+        }
+
+        private val wasInitCalled: AtomicBoolean = AtomicBoolean(false)
+        private var initState: InitState = InitState.INIT_STATE_NONE
+        private val initListeners = CopyOnWriteArrayList<NetworkInitializationListener>()
+
+        private var isTestMode: Boolean = false
 
         @Suppress("ACCIDENTAL_OVERRIDE")
         @JvmStatic
@@ -47,15 +62,83 @@ class APSAdapter : LevelPlayBaseAdapter(), SetAPSInterface {
         context: Context,
         networkInitializationListener: NetworkInitializationListener?
     ) {
-        IronLog.ADAPTER_API.verbose()
+        val appId = adData.getString(APSConstants.APP_ID)
+        if (appId.isNullOrEmpty()) {
+            val errorMessage = APSConstants.Logs.MISSING_APS_CONFIGURATION.format(APSConstants.APP_ID)
+            IronLog.INTERNAL.error(errorMessage)
+            networkInitializationListener?.onInitFailed(
+                AdapterErrors.ADAPTER_ERROR_MISSING_PARAMS,
+                errorMessage
+            )
+            return
+        }
 
-        // The APS SDK is initialized by the publisher directly, so once init is called
-        // we can assume the SDK is ready and report success immediately.
-        networkInitializationListener?.onInitSuccess()
+        if (initState == InitState.INIT_STATE_SUCCESS) {
+            networkInitializationListener?.onInitSuccess()
+            return
+        }
+
+        if (initState == InitState.INIT_STATE_FAILED) {
+            IronLog.INTERNAL.error(APSConstants.Logs.INIT_FAILED)
+            networkInitializationListener?.onInitFailed(
+                AdapterErrors.ADAPTER_ERROR_INTERNAL,
+                APSConstants.Logs.INIT_FAILED
+            )
+            return
+        }
+
+        networkInitializationListener?.let { initListeners.add(it) }
+
+        if (wasInitCalled.compareAndSet(false, true)) {
+            initState = InitState.INIT_STATE_IN_PROGRESS
+            IronLog.ADAPTER_API.verbose(APSConstants.Logs.APP_ID_LOG.format(appId))
+
+            Aps.enableLogging(isAdaptersDebugEnabled())
+            Aps.initialize(context.applicationContext, appId) { status ->
+                if (status?.result == ApsResult.SUCCESS) {
+                    onInitializationSuccess()
+                } else {
+                    onInitializationFailure()
+                }
+            }
+        }
     }
 
-    override fun setAPSData(adFormat: LevelPlay.AdFormat, apsData: JSONObject) {
-        IronLog.ADAPTER_API.error(APSConstants.Logs.APS_MANUAL_LOADING_NOT_REQUIRED)
+    private fun onInitializationSuccess() {
+        IronLog.ADAPTER_CALLBACK.verbose(APSConstants.Logs.INIT_SUCCESS)
+
+        if (isTestMode) {
+            Aps.setTestingMode(true)
+        }
+
+        initState = InitState.INIT_STATE_SUCCESS
+
+        for (listener in initListeners) {
+            listener.onInitSuccess()
+        }
+
+        initListeners.clear()
+    }
+
+    private fun onInitializationFailure() {
+        IronLog.ADAPTER_CALLBACK.error(APSConstants.Logs.INIT_FAILED)
+
+        initState = InitState.INIT_STATE_FAILED
+
+        for (listener in initListeners) {
+            listener.onInitFailed(AdapterErrors.ADAPTER_ERROR_INTERNAL, APSConstants.Logs.INIT_FAILED)
+        }
+
+        initListeners.clear()
+    }
+
+    override fun setTestMode(enabled: Boolean) {
+        IronLog.ADAPTER_API.verbose(APSConstants.Logs.TEST_MODE.format(enabled))
+        isTestMode = enabled
+
+        if (initState == InitState.INIT_STATE_SUCCESS) {
+            Aps.setTestingMode(enabled)
+        }
     }
 
     // endregion

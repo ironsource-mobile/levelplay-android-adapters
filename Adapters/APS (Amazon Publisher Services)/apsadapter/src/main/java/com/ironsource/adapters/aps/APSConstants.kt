@@ -6,6 +6,7 @@ object APSConstants {
     const val ADAPTER_VERSION: String = BuildConfig.VERSION_NAME
 
     // Network configuration keys
+    const val APP_ID: String = "appId"
     const val UUID: String = "uuid"
     const val APS_FORMAT: String = "apsFormat"
     const val APS_FORMAT_VIDEO: String = "video"
@@ -51,6 +52,10 @@ object APSConstants {
         const val MISSING_APS_CONFIGURATION: String = "Missing APS LevelPlay Platform configuration: %s"
         const val INVALID_AD_SIZE: String = "Missing APS LevelPlay Platform configuration: ad size (%s, %s)"
         const val APS_NOT_INITIALIZED: String = "APS is not initialized"
+        const val APP_ID_LOG: String = "appId = %s"
+        const val INIT_SUCCESS: String = "APS SDK initialized successfully"
+        const val INIT_FAILED: String = "APS SDK init failed"
+        const val TEST_MODE: String = "setTestMode = %s"
         const val MISSING_AD_DATA: String = "Missing ad data"
         const val AD_RESPONSE_MISSING: String = "APS adResponse is missing"
         const val AD_NOT_AVAILABLE: String = "Ad is not available"
@@ -67,7 +72,5 @@ object APSConstants {
         const val META_DATA_SET: String = "key = %s, value = %s"
         const val UUID_LOG: String = "uuid = %s"
         const val CREATIVE_ID: String = "creativeId = %s"
-        const val APS_MANUAL_LOADING_NOT_REQUIRED: String =
-            "APS loading is handled by Mediation and does not require any additional implementation in your code."
     }
 }

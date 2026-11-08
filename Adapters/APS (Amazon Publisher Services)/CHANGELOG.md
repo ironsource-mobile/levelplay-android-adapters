@@ -1,5 +1,20 @@
 # Changelog
 
+## Version 5.5.0
+* Supporting SDK version 12.0.5
+* **Important!** The adapter now initializes the APS SDK, so initializing APS separately in your app is no longer required. Make sure the APS App ID is configured on the LevelPlay platform before updating
+* Added ProGuard rules required by the APS SDK
+* Added test mode support
+
+---
+
+### ⚠️ Breaking Change – APS SDK Initialization
+
+**All adapter releases listed **above** this section initialize the APS SDK automatically, using the APS App ID configured on the LevelPlay platform.**  
+Adapter releases listed **below this section** require the app to initialize the APS SDK itself.
+
+---
+
 ## Version 5.4.0
 * Network SDKs are now declared as dependencies of their respective adapters, eliminating the need to add them separately to the app's Gradle file
 
