@@ -1,5 +1,8 @@
 # Changelog
 
+## Version 5.18.0
+* Supporting SDK version 7.8.0
+
 ## Version 5.17.0
 * Supporting Mediation Partner Name
 * Fixed low code obfuscation in R8 release builds
