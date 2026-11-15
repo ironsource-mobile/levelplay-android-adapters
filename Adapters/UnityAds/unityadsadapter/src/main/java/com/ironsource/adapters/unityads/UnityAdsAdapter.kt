@@ -114,6 +114,7 @@ class UnityAdsAdapter : LevelPlayBaseAdapter() {
             IronLog.ADAPTER_API.verbose(UnityAdsConstants.Logs.SOURCE_ID.format(sourceId))
 
             val initConfig = InitializationConfiguration.Builder(sourceId)
+                .withContext(context)
                 .withTestMode(false)
                 .withMediationInfo(mediationInfo)
                 .apply {
@@ -242,7 +243,11 @@ class UnityAdsAdapter : LevelPlayBaseAdapter() {
 
         (adData.configuration[UnityAdsConstants.UADS_TRAITS] as? Map<*, *>)?.forEach { (key, value) ->
             val keyString = key as? String
-            val valueString = value as? String
+            val valueString = when (value) {
+                is String -> value
+                is Boolean, is Number -> value.toString()
+                else -> null
+            }
             if (!keyString.isNullOrEmpty() && !valueString.isNullOrEmpty()) {
                 extras[keyString] = valueString
             }
