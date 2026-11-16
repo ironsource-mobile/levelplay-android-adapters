@@ -1,5 +1,8 @@
 # Changelog
 
+## Version 5.6.0
+* Fixed privacy settings handling
+
 ## Version 5.5.0
 * Fixed low code obfuscation in R8 release builds
 * Network SDKs are now declared as dependencies of their respective adapters, eliminating the need to add them separately to the app's Gradle file

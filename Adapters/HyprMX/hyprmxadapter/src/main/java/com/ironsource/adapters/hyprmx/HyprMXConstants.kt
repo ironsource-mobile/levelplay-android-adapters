@@ -11,6 +11,7 @@ object HyprMXConstants {
 
     // Meta data keys
     const val META_DATA_AGE_RESTRICTION_KEY = "HyprMX_ageRestricted"
+    const val META_DATA_CHILD_DIRECTED_KEY = "LevelPlay_ChildDirected"
 
     // Mediation provider
     const val MEDIATION_NAME = "ironsource"

@@ -147,7 +147,9 @@ class HyprMXAdapter : LevelPlayBaseAdapter() {
             MetaData.MetaDataValueTypes.META_DATA_VALUE_BOOLEAN
         )
 
-        if (MetaDataUtils.isValidMetaData(key, HyprMXConstants.META_DATA_AGE_RESTRICTION_KEY, formattedValue)) {
+        if (MetaDataUtils.isValidMetaData(key, HyprMXConstants.META_DATA_AGE_RESTRICTION_KEY, formattedValue) ||
+            MetaDataUtils.isValidMetaData(key, HyprMXConstants.META_DATA_CHILD_DIRECTED_KEY, formattedValue)
+        ) {
             setAgeRestrictionValue(MetaDataUtils.getMetaDataBooleanValue(formattedValue))
         }
     }
