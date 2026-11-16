@@ -14,7 +14,7 @@ object InMobiConstants {
 
     // MetaData keys
     const val META_DATA_AGE_RESTRICTED_KEY = "inMobi_AgeRestricted"
-    const val META_DATA_CHILD_DIRECTED_KEY = "LevelPlay_Child_Directed"
+    const val META_DATA_CHILD_DIRECTED_KEY = "LevelPlay_ChildDirected"
 
     // Token extras keys
     const val EXTRAS_TP_KEY = "tp"
