@@ -15,6 +15,7 @@ import com.ironsource.mediationsdk.adunit.adapter.utility.AdData
 import com.ironsource.mediationsdk.adunit.adapter.utility.AdapterErrors
 import com.ironsource.mediationsdk.bidding.BiddingDataCallback
 import com.ironsource.mediationsdk.logger.IronLog
+import com.ironsource.mediationsdk.metadata.MetaData
 import com.ironsource.mediationsdk.metadata.MetaDataUtils
 import com.unity3d.mediation.LevelPlay
 import com.unity3d.mediation.adapters.levelplay.LevelPlayBaseAdapter
@@ -185,7 +186,7 @@ class PangleAdapter() : LevelPlayBaseAdapter() {
 
     private fun setCOPPAValue(value: String) {
         val coppaValueString: String
-        when (value.toIntOrNull()) {
+        when (parseChildDirectedType(value)) {
             PangleConstants.PANGLE_CHILD_DIRECTED_TYPE_CHILD -> {
                 childDirected = PangleConstants.PANGLE_CHILD_DIRECTED_TYPE_CHILD
                 coppaValueString = PangleConstants.CHILD_DIRECTED_TYPE_CHILD_STRING
@@ -232,6 +233,17 @@ class PangleAdapter() : LevelPlayBaseAdapter() {
         }
 
         initListeners.clear()
+    }
+
+    private fun parseChildDirectedType(value: String): Int? {
+        value.toIntOrNull()?.let { return it }
+
+        val formattedValue = MetaDataUtils.formatValueForType(value, MetaData.MetaDataValueTypes.META_DATA_VALUE_BOOLEAN)
+        return when {
+            formattedValue.isEmpty() -> null
+            MetaDataUtils.getMetaDataBooleanValue(formattedValue) -> PangleConstants.PANGLE_CHILD_DIRECTED_TYPE_CHILD
+            else -> PangleConstants.PANGLE_CHILD_DIRECTED_TYPE_NON_CHILD
+        }
     }
 
     internal fun isCoppaChildUser(): Boolean {

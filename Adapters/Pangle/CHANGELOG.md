@@ -1,5 +1,8 @@
 # Changelog
 
+## Version 5.28.0
+* Fixed privacy settings handling
+
 ## Version 5.27.0
 * Supporting SDK version 8.4.0.5
 * Removed ProGuard rules already included in the Pangle SDK
