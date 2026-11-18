@@ -107,9 +107,9 @@ class VerveBannerAdapter(networkSettings: NetworkSettings) :
 
     private fun getBannerSize(bannerSize: ISBannerSize, context: Context): AdSize? {
         return when (bannerSize.description) {
-            ISBannerSize.BANNER.description -> AdSize.SIZE_320x50
-            ISBannerSize.RECTANGLE.description -> AdSize.SIZE_300x250
-            ISBannerSize.SMART.description -> {
+            VerveConstants.BANNER_SIZE_BANNER -> AdSize.SIZE_320x50
+            VerveConstants.BANNER_SIZE_RECTANGLE -> AdSize.SIZE_300x250
+            VerveConstants.BANNER_SIZE_SMART -> {
                 if (AdapterUtils.isLargeScreen(context)) {
                     AdSize.SIZE_728x90
                 } else {

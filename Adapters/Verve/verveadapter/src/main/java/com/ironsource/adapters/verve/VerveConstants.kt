@@ -21,6 +21,11 @@ object VerveConstants {
     // Bidding key
     const val TOKEN_KEY = "token"
 
+    // Banner sizes
+    const val BANNER_SIZE_BANNER = "BANNER"
+    const val BANNER_SIZE_RECTANGLE = "RECTANGLE"
+    const val BANNER_SIZE_SMART = "SMART"
+
     // Error messages
     const val UNKNOWN_ERROR = "Unknown error"
 
