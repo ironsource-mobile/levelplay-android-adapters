@@ -1,5 +1,8 @@
 # Changelog
 
+## Version 5.8.0
+* Supporting SDK version 6.22.1
+
 ## Version 5.7.0
 * Removed ProGuard rules already included in the Meta Audience Network SDK
 
