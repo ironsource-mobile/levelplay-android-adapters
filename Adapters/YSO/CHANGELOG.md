@@ -1,5 +1,8 @@
 # Changelog
 
+## Version 5.10.0
+* Supporting SDK version 1.3.10
+
 ## Version 5.9.0
 * Fixed low code obfuscation in R8 release builds
 
