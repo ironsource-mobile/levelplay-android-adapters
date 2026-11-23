@@ -16,6 +16,11 @@ object OguryConstants {
     // Token key
     const val TOKEN_KEY = "token"
 
+    // Banner sizes
+    const val BANNER_SIZE_BANNER = "BANNER"
+    const val BANNER_SIZE_RECTANGLE = "RECTANGLE"
+    const val BANNER_SIZE_SMART = "SMART"
+
     // Log messages
     object Logs {
         const val ASSET_KEY = "assetKey = %s"

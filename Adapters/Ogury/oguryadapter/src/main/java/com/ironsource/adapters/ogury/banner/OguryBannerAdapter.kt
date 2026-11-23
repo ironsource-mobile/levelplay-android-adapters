@@ -104,9 +104,9 @@ class OguryBannerAdapter(networkSettings: NetworkSettings) :
 
     private fun getBannerSize(context: Context, bannerSize: ISBannerSize): OguryBannerAdSize? =
         when (bannerSize.description) {
-            ISBannerSize.BANNER.description -> OguryBannerAdSize.SMALL_BANNER_320x50
-            ISBannerSize.RECTANGLE.description -> OguryBannerAdSize.MREC_300x250
-            ISBannerSize.SMART.description ->
+            OguryConstants.BANNER_SIZE_BANNER -> OguryBannerAdSize.SMALL_BANNER_320x50
+            OguryConstants.BANNER_SIZE_RECTANGLE -> OguryBannerAdSize.MREC_300x250
+            OguryConstants.BANNER_SIZE_SMART ->
                 if (AdapterUtils.isLargeScreen(context)) null else OguryBannerAdSize.SMALL_BANNER_320x50
             else -> null
         }
