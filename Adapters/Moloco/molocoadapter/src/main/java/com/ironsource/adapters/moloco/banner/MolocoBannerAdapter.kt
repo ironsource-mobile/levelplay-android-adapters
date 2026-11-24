@@ -122,10 +122,6 @@ class MolocoBannerAdapter(networkSettings: NetworkSettings) :
                 AdapterUtils.dpToPixels(context, MolocoConstants.BANNER_WIDTH),
                 AdapterUtils.dpToPixels(context, MolocoConstants.BANNER_HEIGHT)
             )
-            MolocoConstants.BANNER_SIZE_LARGE -> FrameLayout.LayoutParams(
-                AdapterUtils.dpToPixels(context, MolocoConstants.LEADERBOARD_WIDTH),
-                AdapterUtils.dpToPixels(context, MolocoConstants.LEADERBOARD_HEIGHT)
-            )
             MolocoConstants.BANNER_SIZE_RECTANGLE -> FrameLayout.LayoutParams(
                 AdapterUtils.dpToPixels(context, MolocoConstants.RECTANGLE_WIDTH),
                 AdapterUtils.dpToPixels(context, MolocoConstants.RECTANGLE_HEIGHT)
@@ -161,7 +157,6 @@ class MolocoBannerAdapter(networkSettings: NetworkSettings) :
         val mediationInfo = MolocoAdapter.mediationInfo
         when (size.description) {
             MolocoConstants.BANNER_SIZE_BANNER -> Moloco.createBanner(mediationInfo, adUnitId, null, createCallback)
-            MolocoConstants.BANNER_SIZE_LARGE -> Moloco.createBannerTablet(mediationInfo, adUnitId, null, createCallback)
             MolocoConstants.BANNER_SIZE_RECTANGLE -> Moloco.createMREC(mediationInfo, adUnitId, null, createCallback)
             MolocoConstants.BANNER_SIZE_SMART -> {
                 if (AdapterUtils.isLargeScreen(context)) {

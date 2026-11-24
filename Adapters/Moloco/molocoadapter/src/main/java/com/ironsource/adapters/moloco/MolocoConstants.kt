@@ -24,7 +24,6 @@ object MolocoConstants {
 
     // Banner size descriptions
     const val BANNER_SIZE_BANNER = "BANNER"
-    const val BANNER_SIZE_LARGE = "LEADERBOARD"
     const val BANNER_SIZE_RECTANGLE = "RECTANGLE"
     const val BANNER_SIZE_SMART = "SMART"
 
