@@ -3,23 +3,25 @@ package com.ironsource.adapters.bidmachine.rewarded
 import com.ironsource.adapters.bidmachine.BidMachineAdapter
 import com.ironsource.adapters.bidmachine.BidMachineConstants
 import com.ironsource.mediationsdk.adunit.adapter.listener.RewardedVideoAdListener
-import com.ironsource.mediationsdk.adunit.adapter.utility.AdapterErrorType
 import com.ironsource.mediationsdk.adunit.adapter.utility.AdapterErrors
+import com.ironsource.mediationsdk.adunit.adapter.utility.AdapterErrorType
 import com.ironsource.mediationsdk.logger.IronLog
-import io.bidmachine.rewarded.RewardedAd
-import io.bidmachine.rewarded.RewardedListener
-import io.bidmachine.utils.BMError
+import io.bidmachine.Ad
+import io.bidmachine.AdLoadCallback
+import io.bidmachine.BMError
+import io.bidmachine.format.rewardedad.RewardedAd
+import io.bidmachine.format.rewardedad.RewardedListener
 
 class BidMachineRewardedListener(
     private val listener: RewardedVideoAdListener
-) : RewardedListener {
+) : AdLoadCallback<RewardedAd>, RewardedListener {
 
     /**
      * Called when Ad was loaded and ready to be displayed
      * @param ad - RewardedAd instance
      */
     override fun onAdLoaded(ad: RewardedAd) {
-        val creativeId = ad.auctionResult?.creativeId
+        val creativeId = (ad as Ad).getAuctionInfo().creativeId
         IronLog.ADAPTER_CALLBACK.verbose(BidMachineConstants.Logs.CREATIVE_ID.format(creativeId ?: ""))
 
         if (creativeId.isNullOrEmpty()) {
@@ -32,13 +34,16 @@ class BidMachineRewardedListener(
 
     /**
      * Called when Ad failed to load
-     * @param ad - RewardedAd instance
-     * @param error - BMError with additional info about error
+     * @param bmError - BMError with additional info about error
      */
-    override fun onAdLoadFailed(ad: RewardedAd, error: BMError) {
-        IronLog.ADAPTER_CALLBACK.error(BidMachineConstants.Logs.FAILED_TO_LOAD.format(error.code, error.message))
-        val errorType = BidMachineAdapter.getLoadErrorType(error)
-        listener.onAdLoadFailed(errorType, error.code, error.message)
+    override fun onAdLoadFailed(bmError: BMError) {
+        IronLog.ADAPTER_CALLBACK.error(BidMachineConstants.Logs.FAILED_TO_LOAD.format(bmError.code, bmError.message))
+        val errorType = BidMachineAdapter.getLoadErrorType(bmError)
+        listener.onAdLoadFailed(errorType, bmError.code, bmError.message)
+    }
+
+    override fun onAdPresented(ad: RewardedAd) {
+        // Keep reporting onAdOpened when the impression is tracked.
     }
 
     /**
@@ -53,11 +58,11 @@ class BidMachineRewardedListener(
     /**
      * Called when Ad show failed
      * @param ad - RewardedAd instance
-     * @param error - BMError with additional info about error
+     * @param bmError - BMError with additional info about error
      */
-    override fun onAdShowFailed(ad: RewardedAd, error: BMError) {
-        IronLog.ADAPTER_CALLBACK.error(BidMachineConstants.Logs.FAILED_TO_SHOW.format(error.code, error.message))
-        listener.onAdShowFailed(error.code, error.message)
+    override fun onAdShowFailed(ad: RewardedAd, bmError: BMError) {
+        IronLog.ADAPTER_CALLBACK.error(BidMachineConstants.Logs.FAILED_TO_SHOW.format(bmError.code, bmError.message))
+        listener.onAdShowFailed(bmError.code, bmError.message)
     }
 
     /**
@@ -82,9 +87,8 @@ class BidMachineRewardedListener(
     /**
      * Called when Ad was closed (e.g - user click close button)
      * @param ad - RewardedAd instance
-     * @param finished - Value for indicated, if ads was finished (e.g - video playing finished)
      */
-    override fun onAdClosed(ad: RewardedAd, finished: Boolean) {
+    override fun onAdClosed(ad: RewardedAd) {
         IronLog.ADAPTER_CALLBACK.verbose()
         listener.onAdClosed()
     }

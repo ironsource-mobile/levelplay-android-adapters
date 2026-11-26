@@ -1,5 +1,11 @@
 # Changelog
 
+## Version 5.10.0
+* Supporting SDK version 4.0.0
+* Added support for adaptive banners.
+* Empty bid responses now use waterfall loading.
+* Removed forwarding of `do_not_sell` metadata. The SDK reads US privacy signals from the IAB preferences written by the app's CMP.
+
 ## Version 5.9.0
 * Network SDKs are now declared as dependencies of their respective adapters, eliminating the need to add them separately to the app's Gradle file
 
