@@ -5,6 +5,9 @@ object BidMachineConstants {
     // Adapter version
     const val ADAPTER_VERSION = BuildConfig.VERSION_NAME
 
+    // Mediation name
+    const val MEDIATION_NAME = "ironsource"
+
     // Configuration keys
     const val SOURCE_ID_KEY = "sourceId"
     const val PLACEMENT_ID_KEY = "placementId"
@@ -23,16 +26,13 @@ object BidMachineConstants {
     // Meta data keys
     const val META_DATA_COPPA_KEY = "BidMachine_COPPA"
 
-    // CCPA values
-    const val CCPA_NO_CONSENT_VALUE = "1YY-"
-    const val CCPA_CONSENT_VALUE = "1YN-"
-
     // Error messages
     const val BANNER_SIZE_INVALID = "Banner size is invalid or not of type ISBannerSize"
     const val UNSUPPORTED_BANNER_SIZE = "Unsupported or null banner size"
     const val TOKEN_EMPTY = "failed to receive token - returned null/empty token"
     const val AD_EXPIRED = "Ad expired"
     const val AD_NOT_READY = "Ad is not ready"
+    const val SDK_NOT_INITIALIZED = "BidMachine SDK is not initialized"
 
     // Logging messages
     object Logs {
@@ -45,7 +45,6 @@ object BidMachineConstants {
         const val TOKEN = "token = %s"
         const val TOKEN_FAILED = "%s - BidMachine"
         const val CONSENT = "consent = %s"
-        const val CCPA = "value = %s"
         const val COPPA = "isCoppa = %s"
         const val META_DATA = "key = %s, value = %s"
         const val FAILED_TO_LOAD = "Failed to load, errorCode = %s, errorMessage = %s"

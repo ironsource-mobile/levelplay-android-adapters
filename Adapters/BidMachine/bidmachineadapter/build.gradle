@@ -21,13 +21,6 @@ def getGitHash = { ->
     return stdout.toString().trim()
 }
 
-repositories {
-    mavenCentral()
-    maven {
-        url 'https://artifactory.bidmachine.io/bidmachine'
-    }
-}
-
 android {
     namespace "com.ironsource.adapters.bidmachine"
     compileSdk 36

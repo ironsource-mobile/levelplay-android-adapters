@@ -4,20 +4,22 @@ import com.ironsource.adapters.bidmachine.BidMachineAdapter
 import com.ironsource.adapters.bidmachine.BidMachineConstants
 import com.ironsource.mediationsdk.adunit.adapter.listener.InterstitialAdListener
 import com.ironsource.mediationsdk.logger.IronLog
-import io.bidmachine.interstitial.InterstitialAd
-import io.bidmachine.interstitial.InterstitialListener
-import io.bidmachine.utils.BMError
+import io.bidmachine.Ad
+import io.bidmachine.AdLoadCallback
+import io.bidmachine.BMError
+import io.bidmachine.format.interstitialad.InterstitialAd
+import io.bidmachine.format.interstitialad.InterstitialListener
 
 class BidMachineInterstitialListener(
     private val listener: InterstitialAdListener
-) : InterstitialListener {
+) : AdLoadCallback<InterstitialAd>, InterstitialListener {
 
     /**
      * Called when Ad was loaded and ready to be displayed
-     * @param interstitialAd - Interstitial instance
+     * @param ad - Interstitial instance
      */
-    override fun onAdLoaded(interstitialAd: InterstitialAd) {
-        val creativeId = interstitialAd.auctionResult?.creativeId
+    override fun onAdLoaded(ad: InterstitialAd) {
+        val creativeId = (ad as Ad).getAuctionInfo().creativeId
         IronLog.ADAPTER_CALLBACK.verbose(BidMachineConstants.Logs.CREATIVE_ID.format(creativeId ?: ""))
 
         if (creativeId.isNullOrEmpty()) {
@@ -30,58 +32,60 @@ class BidMachineInterstitialListener(
 
     /**
      * Called when Ad failed to load
-     * @param interstitialAd - Interstitial instance
-     * @param error - BMError with additional info about error
+     * @param bmError - BMError with additional info about error
      */
-    override fun onAdLoadFailed(interstitialAd: InterstitialAd, error: BMError) {
-        IronLog.ADAPTER_CALLBACK.error(BidMachineConstants.Logs.FAILED_TO_LOAD.format(error.code, error.message))
-        val errorType = BidMachineAdapter.getLoadErrorType(error)
-        listener.onAdLoadFailed(errorType, error.code, error.message)
+    override fun onAdLoadFailed(bmError: BMError) {
+        IronLog.ADAPTER_CALLBACK.error(BidMachineConstants.Logs.FAILED_TO_LOAD.format(bmError.code, bmError.message))
+        val errorType = BidMachineAdapter.getLoadErrorType(bmError)
+        listener.onAdLoadFailed(errorType, bmError.code, bmError.message)
+    }
+
+    override fun onAdPresented(ad: InterstitialAd) {
+        // Keep reporting onAdOpened when the impression is tracked.
     }
 
     /**
      * Called when Ad Impression has been tracked
-     * @param interstitialAd - Interstitial instance
+     * @param ad - Interstitial instance
      */
-    override fun onAdImpression(interstitialAd: InterstitialAd) {
+    override fun onAdImpression(ad: InterstitialAd) {
         IronLog.ADAPTER_CALLBACK.verbose()
         listener.onAdOpened()
     }
 
     /**
      * Called when Ad show failed
-     * @param interstitialAd - Interstitial instance
-     * @param error - BMError with additional info about error
+     * @param ad - Interstitial instance
+     * @param bmError - BMError with additional info about error
      */
-    override fun onAdShowFailed(interstitialAd: InterstitialAd, error: BMError) {
-        IronLog.ADAPTER_CALLBACK.error(BidMachineConstants.Logs.FAILED_TO_SHOW.format(error.code, error.message))
-        listener.onAdShowFailed(error.code, error.message)
+    override fun onAdShowFailed(ad: InterstitialAd, bmError: BMError) {
+        IronLog.ADAPTER_CALLBACK.error(BidMachineConstants.Logs.FAILED_TO_SHOW.format(bmError.code, bmError.message))
+        listener.onAdShowFailed(bmError.code, bmError.message)
     }
 
     /**
      * Called when Ad has been clicked
-     * @param interstitialAd - Interstitial instance
+     * @param ad - Interstitial instance
      */
-    override fun onAdClicked(interstitialAd: InterstitialAd) {
+    override fun onAdClicked(ad: InterstitialAd) {
         IronLog.ADAPTER_CALLBACK.verbose()
         listener.onAdClicked()
     }
 
     /**
      * Called when Ad was closed (e.g - user click close button)
-     * @param interstitialAd - Interstitial instance
-     * @param finished - Value for indicated, if ads was finished
+     * @param ad - Interstitial instance
      */
-    override fun onAdClosed(interstitialAd: InterstitialAd, finished: Boolean) {
+    override fun onAdClosed(ad: InterstitialAd) {
         IronLog.ADAPTER_CALLBACK.verbose()
         listener.onAdClosed()
     }
 
     /**
      * Called when Ad expired
-     * @param interstitialAd - Interstitial instance
+     * @param ad - Interstitial instance
      */
-    override fun onAdExpired(interstitialAd: InterstitialAd) {
+    override fun onAdExpired(ad: InterstitialAd) {
         IronLog.ADAPTER_CALLBACK.verbose()
     }
 }
